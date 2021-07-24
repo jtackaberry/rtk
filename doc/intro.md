@@ -8,7 +8,7 @@ script.
 
 The **@{tutorial}** is the best place to get started coding with rtk.
 
-Visit the [project page on GitHub[(https://github.com/jtackaberry/rtk) for original
+Visit the [project page on GitHub](https://github.com/jtackaberry/rtk) for original
 source code and issue tracking.
 
 ## Download
