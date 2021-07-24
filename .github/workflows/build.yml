@@ -1,0 +1,60 @@
+name: Build
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore: '.github/**'
+  pull_request:
+    branches: [ master ]
+
+  # Allows manual execution of job
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: jtackaberry/luadox:latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build rtk.lua
+        run: |
+          ls -l
+          mkdir -p doc/html/download
+          set
+          python3 tools/luaknit.py rtk=src/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: $(date +%Y%m%d)-${GITHUB_SHA:0:7}\nbuild: $(date)" > doc/html/download/_rtk.lua
+      - name: Build documentation
+        run: |
+          cd doc
+          luadox -c luadox.conf
+          cp -a img/ html/
+      - uses: actions/upload-artifact@v2
+        with:
+           name: html
+           path: doc/html/
+  push:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          ref: 'gh-pages'
+      - uses: actions/download-artifact@v2
+        with:
+          name: html
+      - name: Replace rtk.lua if code updated
+        run: |
+          # Don't fail if rtk.lua doesn't exist (initial build)
+          sed '/^--/d' download/rtk.lua > a || true
+          sed '/^--/d' download/_rtk.lua > b
+          cmp -s a b && rm -f download/_rtk.lua || mv download/_rtk.lua download/rtk.lua
+          rm -f a b
+      - name: Commit generated files
+        run: |
+          git config --global user.name 'GitHub CI Bot'
+          git config --global user.email 'jtackaberry@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git add download/rtk.lua
+          git commit -m "Compile rtk.lua via ${GITHUB_SHA:0:7}" && git push origin gh-pages || echo "rtk.lua didn't change"
+          git add *
+          git commit -am "Generate documentation via ${GITHUB_SHA:0:7}" && git push origin gh-pages || echo "Documentation didn't changed"

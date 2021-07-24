@@ -1,0 +1,291 @@
+-- Copyright 2017-2021 Jason Tackaberry
+--
+-- Licensed under the Apache License, Version 2.0 (the "License");
+-- you may not use this file except in compliance with the License.
+-- You may obtain a copy of the License at
+--
+--     http://www.apache.org/licenses/LICENSE-2.0
+--
+-- Unless required by applicable law or agreed to in writing, software
+-- distributed under the License is distributed on an "AS IS" BASIS,
+-- WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+-- See the License for the specific language governing permissions and
+-- limitations under the License.
+
+local rtk = require('rtk.core')
+local class = require('rtk.middleclass')
+
+--- Defines an attribute of a widget class.
+--
+-- This class is only needed when creating custom widgets by subclassing `rtk.Widget`.
+--
+-- @example
+--   local MyWidget = rtk.class('MyWidget', rtk.Widget)
+--   MyWidget.register{
+--       myattr = rtk.Attribute{
+--           default=42,
+--           -- Convert stringified numbers to actual numbers when attr() is called
+--           calculate=function(self, attr, value, target)
+--               return tonumber(value)
+--           end,
+--           -- Changing myattr affects geometry so require a full reflow when setting.
+--           reflow=rtk.Widget.REFLOW_FULL,
+--       }
+--   }
+--
+-- When a subclass registers an rtk.Attribute instance for an attribute that a parent
+-- class already registered, then the subclass's fields will overwrite those from the
+-- parent, but otherwise will be merged, so there is no need to reimplement fields
+-- from the parent class if no changes are needed.
+--
+-- @class rtk.Attribute
+-- @see rtk.class
+
+--- Attribute Constants.
+--
+-- @section attrconst
+-- @compact fields
+-- @fullnames
+
+rtk.Attribute = {
+    -- Internal value used for defaults when the default passed to rtk.Attribute
+    -- is a function.
+    FUNCTION = {},
+
+    --- Proxy for nil keys or values, since Lua-native nils can't otherwise be used
+    -- as table keys.  See `calculate`.
+    NIL = {},
+
+
+    --- Special value that can be passed to `rtk.Widget:attr()` in order to restore the
+    -- class default value for an attribute.
+    DEFAULT = {},
+
+    --- Class API
+    -- @section api
+
+    --- The default value for the attribute when the class is instantiated.
+    --
+    -- This can also be a function, in which case it is invoked at object instantiation
+    -- time, not at import time, and so can be used as a means of providing lazy or
+    -- dynamic defaults.  A common use case for this is attributes that default to
+    -- some value in the current theme: as the current theme isn't known at import time,
+    -- this needs to be lazy-evaluated.
+    --
+    --  If it's a function, it will receive 2 arguments:
+    --   1. the instance of the object whose default is being fetched
+    --   2. the attribute name
+    -- @type any|function
+    default = nil,
+    --- Allows attribute values to be arbitrarily translated as part of the generation
+    -- of the attribute's calculated value.
+    --
+    -- If this is table, then it's a simple LUT mapping input -> output.
+    --
+    -- If a function, then the function will receive 4 arguments:
+    --   1. the instance of the object whose attribute is being set
+    --   2. the attribute name
+    --   3. the attribute value
+    --   4. the target table for any injected dynamically calculated attributes (e.g. for shorthand attributes
+    --      such as `rtk.Widget.padding`, which implicitly generates `tpadding`, `rpadding`,
+    --      etc.)
+    --
+    -- The function must return the calculated version of the value.
+    --
+    -- @type table|function|nil
+    calculate = nil,
+    --- If true, ensures that the attribute is calculated after all non-priority
+    -- attributes. This is used for attributes that either override or depend upon other
+    -- attributes. For example, shorthand attributes like `rtk.Widget.padding` which
+    -- overrides @{rtk.Widget.tpadding|tpadding}, @{rtk.Widget.rpadding|rpadding}, etc. or
+    -- attributes like `rtk.Button.icon` which have a dependency on `rtk.Button.color` for
+    -- luma-adaptive icon styling.
+    -- @type boolean|nil
+    priority = nil,
+    -- Defines the @{rtk.Widget.reflow|reflow behavior} when this attribute is set. When
+    -- nil, generally `rtk.Widget.REFLOW_PARTIAL` is assumed.
+    -- @type reflowconst|nil
+    reflow = nil,
+    --- A table of one or more attribute names that will be set to nil when this attribute
+    -- is set.  Useful when setting the attribute intends to replace other attributes.
+    -- For example, setting `rtk.Widget.padding` will clear any previous values for
+    -- @{rtk.Widget.tpadding|tpadding}, @{rtk.Widget.rpadding|rpadding}, etc.
+    -- @type table|nil
+    replaces = nil,
+    --- If defined, provides a step function for animating the attribute.  The step function
+    -- receives two arguments: the widget instance being animated, and a table describing
+    -- the animation.  Relevant keys in the animation table are src (originating value),
+    -- dst (target value the animation moves towards), and pct (the percentage from 0.0 to 1.0
+    -- within the animation).  The same table will be passed to the step function each time,
+    -- so it can also be used to hold state between invocations.
+    -- @type function|nil
+    animate = nil,
+    --- An optional custom function to fetch the current calculated value for the attribute.
+    --
+    -- Normally those interested in calculated attributes will consult the
+    -- `rtk.Widget.calc` table but attributes can define custom getters.  One use case for
+    -- this is calculated shorthand metrics.  For example, suppose a widget has
+    -- `padding=20` and `lpadding=50`.  The `calc.padding` value would be `{20, 20, 20, 20}`
+    -- because that's the table representation of the `padding` attribute, but for *practical*
+    -- purposes, callers would want a table version of underlying `tpadding`, `rpadding`, etc.
+    -- attributes, or `{20, 20, 20, 50}` in the previous example.  One case of such a
+    -- caller is `rtk.Widget:animate()` which needs to know the proper starting value to
+    -- animate shorthand attributes.
+    --
+    -- This function receives 3 arguments:
+    --   1. the instance of the object whose attributes are being fetched
+    --   2. the attribute name
+    --   3. the target table holding calculated attributes (`rtk.Widget.calc` typically)
+    --
+    -- The function then returns the current calculated value of the attribute.
+    -- @type function|nil
+    get = nil,
+}
+
+-- Pseudo class, but not using middleclass since we don't need the overhead.
+setmetatable(rtk.Attribute, {
+    __call = function(self, attrs)
+        attrs._is_rtk_attr = true
+        return attrs
+    end
+})
+
+--- References the `rtk.Attribute` field from another attribute in the class or its
+-- superclasses.
+--
+-- References are resolved after all attributes are registered, so an attribute can
+-- reference a field from another attribute that hasn't been defined yet.
+--
+-- It's also possible to clone an entire attribute, not just one of its fields.
+--
+-- @example
+--    MyWidget.register{
+--        iconpos=rtk.Attribute{
+--            default=rtk.Widget.RIGHT,
+--            -- Clone the calculate field from superclass's halign attribute
+--            calculate=rtk.Reference('halign'),
+--        },
+--        -- Clone the superclass's bg attribute's metadata completely
+--        color=rtk.Reference('bg'),
+--    }
+--
+function rtk.Reference(attr)
+    return {
+        _is_rtk_reference = true,
+        attr = attr
+    }
+end
+
+local function register(cls, attrs)
+    local attributes = cls.static.attributes
+    if attributes and attributes.__class == cls.name then
+        -- Attributes were already registered on this class, so we can continue
+        -- to use the attributes value as-is.
+    elseif cls.super then
+        -- Initial registration of new subclass
+        attributes = {}
+        for k, v in pairs(cls.super.static.attributes) do
+            if k ~= '__class' and k ~= 'get' then
+                attributes[k] = table.shallow_copy(v)
+            end
+        end
+    else
+        -- Registration of base class.
+        attributes = {defaults={}}
+    end
+    local refs = {}
+    for attr, attrtable in pairs(attrs) do
+        assert(
+            attr ~= 'id' and attr ~= 'get' and attr ~= 'defaults',
+            "attempted to assign a reserved attribute"
+        )
+        if type(attrtable) == 'table' and attrtable._is_rtk_reference then
+            -- This is a top-level rtk.Reference at the attribute level, so we clone
+            -- everything from the referenced attribute.
+            local srcattr = attrtable.attr
+            attrtable = {}
+            refs[#refs+1] = {attrtable, nil, srcattr}
+        else
+            if type(attrtable) ~= 'table' or not attrtable._is_rtk_attr then
+                attrtable = {default=attrtable}
+            end
+            if attributes[attr] then
+                attrtable = table.merge(attributes[attr], attrtable)
+            end
+            for field, v in pairs(attrtable) do
+                if type(v) == 'table' and v._is_rtk_reference then
+                    -- Attribute field is an rtk.Reference, so we queue it up to be resolved later.
+                    refs[#refs+1] = {attrtable, field, v.attr}
+                end
+            end
+            if type(attrtable.default) == 'function' then
+                attrtable.default_func = attrtable.default
+                attrtable.default = rtk.Attribute.FUNCTION
+            end
+        end
+        attributes[attr] = attrtable
+        attributes.defaults[attr] = attrtable.default
+    end
+    -- Now resolve any references.
+    for _, ref in ipairs(refs) do
+        local attrtable, field, srcattr = table.unpack(ref)
+        local src = attributes[srcattr]
+        if field then
+            -- Single field rtk.Reference
+            attrtable[field] = src[field]
+        else
+            -- Entire attribute rtk.Reference, copy everything
+            for k, v in pairs(src) do
+                attrtable[k] = v
+            end
+        end
+    end
+    attributes.__class = cls.name
+    attributes.get = function(attr)
+        return attributes[attr] or rtk.Attribute.NIL
+    end
+    cls.static.attributes = attributes
+end
+
+
+--- Creates a new class.
+--
+-- This function [wraps middleclass](https://github.com/kikito/middleclass/wiki/Reference)
+-- and includes a static class method `register()` on the returned class for registering
+-- attributes.  The `register()` function takes a table that describes the class's attributes,
+-- where each field in the table is an instance of `rtk.Attribute`.
+--
+-- All classes in rtk use this function, and therefore provide all the same capabilities
+-- as [middleclass](https://github.com/kikito/middleclass) itself.  Middleclass is bundled
+-- with rtk, but also includes some minor tweaks (e.g. to support finalizers for garbage
+-- collection).
+--
+-- For simple attributes that don't need any special behavior or treatment, the value
+-- can be the attribute's default value, rather than an `rtk.Attribute`.
+-- @see rtk.Attribute
+-- @within rtk
+-- @order first
+function rtk.class(name, super, attributes)
+    local cls = class(name, super)
+    cls.static.register = function(attrs)
+        register(cls, attrs)
+    end
+    if attributes then
+        register(cls, attributes)
+    end
+    return cls
+end
+
+--- Determine if a value is an instance or sublcass of a particular class.
+--
+-- @tparam any v the value to test
+-- @tparam rtk.class cls a class object as returned by `rtk.class()`
+-- @treturn boolean true if the value is an instance of cls (or a subclass thereof)
+-- @within rtk
+-- @order after rtk.class
+function rtk.isa(v, cls)
+    if type(v) == 'table' and v.isInstanceOf then
+        return v:isInstanceOf(cls)
+    end
+    return false
+end
