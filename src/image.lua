@@ -292,9 +292,9 @@ end
 
 --- Loads an image from disk.
 --
--- After this method returns, a new `id` will be assigned to the image, and `path`, `w`,
--- and `h` will be updated to reflect the newly loaded image.  If the load fails, those
--- attributes will be set to nil.
+-- After this method returns, a new `id` will be assigned to the image if necessary, and
+-- `path`, `w`, and `h` will be updated to reflect the newly loaded image.  If the load
+-- fails, those attributes will be set to nil.
 --
 -- If no file is found at the given path, it is treated as a path that's relative to the
 -- current script path or any non-icon image paths previously registered with
@@ -323,9 +323,15 @@ function rtk.Image:load(path)
         end
     end
     self._path = found
-    local id = rtk.Image.static.ids:next()
-    self.id = gfx.loadimg(id, found)
-    if self.id ~= -1 then
+    local id = self.id
+    -- Only allocate a new candidate id if we don't already have one (or do have one
+    -- but don't actually own it).
+    if not id or self._ref then
+        id = rtk.Image.static.ids:next()
+    end
+    local res = gfx.loadimg(id, found)
+    if res ~= -1 then
+        self.id = id
         self.path = found
         self.w, self.h = gfx.getimgdim(self.id)
         return self
