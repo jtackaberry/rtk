@@ -1309,7 +1309,10 @@ function rtk.Window:_update()
     if mouse_moved then
         if self.in_window then
             self._jsx = nil
-        else
+        elseif not buttons_down then
+            -- Only save position if no buttons are down.  Handles case where the mouse
+            -- is clicking on scrollbar and dragging outside the window. Once it releases,
+            -- we should not be restoring position.
             self._jsx, self._jsy = reaper.GetMousePosition()
         end
         if self._mouse_refresh_queued then
