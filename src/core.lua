@@ -666,7 +666,7 @@ rtk.themes = {
         -- this to 0 to use a single solid color for all buttons globally.
         -- @type number
         button_gradient_mul = 1,
-        --- Opacity of the black overlay for @{rtk.Button.tagged|tagged buttons}.
+        --- Opacity of the black overlay for @{rtk.Button.tagged|tagged buttons} (default 0.32).
         -- @type number
         button_tag_alpha = 0.32,
         --- the degree of gradient in normal button surfaces (i.e. not hovering or clicked)
