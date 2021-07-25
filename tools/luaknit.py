@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# python3 ../local/luabuild.py main=main.lua screens/*.lua  > ../reaticulate.lua
-# python3 ../../rtk/tools/luaknit.py rtk=rtk/init.lua  > rtk.lua
-# luac -s -o ../reaticulate-x64.luac rtk.lua
 import sys
 import os
 import re
