@@ -38,8 +38,10 @@ rtk.CheckBox.static._icon_unchecked = nil
 
 
 --- A conventional dual state checkbox (default)
+-- @meta 'dualstate'
 rtk.CheckBox.static.DUALSTATE = 0
 --- A tri-state checkbox with includes checked, unchecked, plus an indeterminate state.
+-- @meta 'tristate'
 rtk.CheckBox.static.TRISTATE = 1
 
 --- CheckBox State Constants.
@@ -50,10 +52,13 @@ rtk.CheckBox.static.TRISTATE = 1
 -- @compact
 
 --- The checkbox is unchecked (off).
+-- @meta 'unchecked'
 rtk.CheckBox.static.UNCHECKED = false
 --- The checkbox is checked (on).
+-- @meta 'checked'
 rtk.CheckBox.static.CHECKED = true
 --- The checkbox is neither checked nor unchecked but an indeterminate middle state.
+-- @meta 'indeterminate'
 rtk.CheckBox.static.INDETERMINATE = 2
 
 
