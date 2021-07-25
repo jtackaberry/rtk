@@ -24,7 +24,7 @@ useful, so your entrypoint script (the one directly executed by a REAPER action)
 will need to initialize `package.path`.
 
 This example sets `package.path` to search the directory that holds the entrypoint
-script (i.e. the script the REAPER action invokes), and imports rtk:
+script, and imports rtk:
 
 ```lua
 -- Set package path to search within directory containing current script.
