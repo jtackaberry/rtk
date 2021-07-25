@@ -576,15 +576,15 @@ end
 
 ## Debugging Layouts
 
-Sometimes it's not clear why widgets are being positioned the way they are.  To help
-with the process of debugging and reasoning about the layout process, all widgets
-have a @{rtk.Widget.debug|debug} attribute that, when set to true, will paint the
-boundaries showing their content box and overall box (which includes padding).
+Sometimes it's not clear why widgets are being positioned the way they are.  To help with
+debugging and reasoning about the layout process, all widgets have a
+@{rtk.Widget.debug|debug} attribute that, when set to true, will paint the boundaries
+showing their content boundary and overall box (which includes padding).
 
 Perhaps more usefully, though, the global `rtk.debug` flag enables dynamic
 inspection by hovering the mouse over the widget.  Out of the box, this can be
 toggled by pressing F12 inside the `rtk.Window`, creating a kind of poor man's
-version of debug tools you might find in your browser.
+version of debug tools you might find in your web browser.
 
 ![](../img/layout-debug.gif)
 
