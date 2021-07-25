@@ -3,7 +3,8 @@ name: Build
 on:
   push:
     branches: [ master ]
-    paths-ignore: '.github/**'
+    paths-ignore:
+      - '.github/**'
   pull_request:
     branches: [ master ]
 
@@ -19,9 +20,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build rtk.lua
         run: |
-          ls -l
           mkdir -p doc/html/download
-          set
           python3 tools/luaknit.py rtk=src/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: $(date +%Y%m%d)-${GITHUB_SHA:0:7}\nbuild: $(date)" > doc/html/download/_rtk.lua
       - name: Build documentation
         run: |
