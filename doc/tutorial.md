@@ -24,10 +24,10 @@ useful, so your entrypoint script (the one directly executed by a REAPER action)
 will need to initialize `package.path`.
 
 This example sets `package.path` to search the directory that holds the entrypoint
-script, and imports rtk:
+script (i.e. the script the REAPER action invokes), and imports rtk:
 
 ```lua
--- Set package path to search within directory containing current script
+-- Set package path to search within directory containing current script.
 local path = ({reaper.get_action_context()})[2]:match('^.+[\\//]')
 package.path = string.format('%s?.lua;%s?/init.lua', path, path)
 
@@ -37,6 +37,11 @@ local rtk = require('rtk')
 -- this tutorial we will assume both rtk and log variables have been set.
 local log = rtk.log
 ```
+
+Setting `package.path` only needs to be done once by your entrypoint script.
+Once you've done that, you can `require()` other files (say if your application
+is spread across multiple files), and those other files can `require('rtk')`
+without needing to touch `package.path` again.
 
 ## Widgets
 

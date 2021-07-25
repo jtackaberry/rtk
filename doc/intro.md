@@ -60,9 +60,14 @@ necessary pass along the extension requirement(s) to your users.
 Here's a simple example to give you a flavor of what rtk looks like:
 
 ```lua
--- Import the rtk library (which assumes package.path has already been
--- setup to find rtk.lua)
+-- This boilerplate is needed to tell Lua where to find rtk.lua. Here
+-- it assumes rtk.lua is in the same directory as your script.  See
+-- the Tutorial for a bit more context.
+local path = ({reaper.get_action_context()})[2]:match('^.+[\\//]')
+package.path = string.format('%s?.lua;%s?/init.lua', path, path)
+-- Now we can import the rtk library.
 local rtk = require('rtk')
+
 -- Create an rtk.Window object that is to be the main application window
 local window = rtk.Window()
 -- Create a new button initialized with this label.  Note the curly braces,
