@@ -574,6 +574,27 @@ b.onclick = function()
 end
 ```
 
+## Debugging Layouts
+
+Sometimes it's not clear why widgets are being positioned the way they are.  To help
+with the process of debugging and reasoning about the layout process, all widgets
+have a @{rtk.Widget.debug|debug} attribute that, when set to true, will paint the
+boundaries showing their content box and overall box (which includes padding).
+
+Perhaps more usefully, though, the global `rtk.debug` flag enables dynamic
+inspection by hovering the mouse over the widget.  Out of the box, this can be
+toggled by pressing F12 inside the `rtk.Window`, creating a kind of poor man's
+version of debug tools you might find in your browser.
+
+![](../img/layout-debug.gif)
+
+The popup shows the hovering widget's:
+ * class name (e.g. `HBox`)
+ * @{rtk.Widget.id|unique id}
+ * geometry
+ * content and box boundaries
+ * cell boundaries (if hovering over a container)
+
 ## What Now?
 
 Now would be a good time to read through the `rtk.Widget` API documentation.  This is
