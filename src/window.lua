@@ -1352,9 +1352,10 @@ function rtk.Window:_update()
                 self.in_window = false
                 -- Above self.in_window was set purely based on mouse position.  We've
                 -- just learned that in fact the window is occluded and have reset
-                -- self.in_window, but here we also say that in_window never changed to
-                -- continuous prevent simulated mousemoves while in this condition.
-                in_window_changed = false
+                -- self.in_window, but here we also reevaluate in_window_changed based on
+                -- the previous value of self.in_window, in order to prevent continuous
+                -- simulated mousemoves while the mouse is over the occluded window.
+                in_window_changed = last_in_window ~= false
             end
         end
         -- Ensure we emit the event if draw is forced, or if we're moving within the window, or
