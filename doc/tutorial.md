@@ -101,7 +101,7 @@ log.info('button visibility is now %s', b.visible)
 ```
 
 But in fact it's more convenient to use the `rtk.Widget:hide()` and `rtk.Widget:show()`
-convenience methods.  Apart from being more readable, they implement tiny optimizations.
+methods.  Apart from being more readable, they implement tiny optimizations.
 
 ```lua
 -- Show the button again
@@ -126,8 +126,8 @@ You can read more about attributes @{widget.attributes|here}.
 
 #### Event Handlers
 
-If *attributes* and *methods* control the widget's behavior, responding to user
-interactions and state changes is where **event handlers** come in.
+If *attributes* and *methods* control the widget's appearance and behavior, responding to
+user interactions and state changes is where **event handlers** come in.
 
 Event handlers are special widget methods that begin with "**`on`**" and they are
 meant to be replaced by your own functions.  For example:
@@ -391,12 +391,13 @@ start.
             local b = screen.toolbar:add(rtk.Button{'Back', icon='18-arrow_back', flat=true})
             b.onclick = function()
                 app:pop_screen()
-                -- Marks the click event as being handled.  This prevents the event from
-                -- propagating to lower-zindex widgets.  We particularly want to do this
+                -- Marks the click event as being handled. This prevents the event from
+                -- propagating to lower-zindex widgets. We particularly want to do this
                 -- for toolbar buttons on borderless windows, otherwise if the user
                 -- inadvertently double clicks the button and we don't mark this click
-                -- as being handled, then second click falls through to the rtk.Window
-                -- and would maximize the window.
+                -- as having been handled, then the second click will fall through to the
+                -- rtk.Window and register as a double click along the toolbar, maximizing
+                -- the window.
                 return true
             end
 
@@ -440,6 +441,7 @@ within the settings screen is a no-op.
     local b = app.toolbar:add(rtk.Button{icon='18-settings', flat=true})
     b.onclick = function()
         app:push_screen('settings')
+        -- Mark as handled, for the same reason as described above.
         return true
     end
     window:open()
@@ -465,9 +467,9 @@ examine the current REAPER theme's window background color (or rather its lumina
 automatically choose either `dark` or `light` rtk themes, setting the background color
 based to the REAPER theme's color.
 
-You can override the default behavior by explicitly calling `rtk.set_theme()` or,
-perhaps more conveniently, `rtk.set_theme_by_bgcolor()` which will choose either
-`light` or `dark` rtk themes and set the background to your own chosen color.
+You can override the default behavior by explicitly calling `rtk.set_theme()` or, perhaps
+more conveniently, `rtk.set_theme_by_bgcolor()` which will automatically choose either the
+`light` or `dark` rtk theme and set the background to your own chosen color.
 
 ```lua
 -- Flying in the danger zone?
@@ -481,7 +483,7 @@ rtk.set_theme_by_bgcolor('#1c4d9f')
 -- luminance and do something a little less typical.  Here we use
 -- the dark theme, but force the background color to a light grey.
 -- You probably don't *want* to do this -- you'll get barely readable
--- white text on a slightly-less-white background, but you get the idea.
+-- white text on a slightly-less-white background -- but you get the idea.
 rtk.set_theme('dark', {bg='lightgrey'})
 ```
 
