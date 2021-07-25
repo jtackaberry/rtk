@@ -2216,8 +2216,9 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                 -- We only set mouseover to true if the event wasn't already handled by a higher
                 -- z-index widget (or we handled it above).  And if a mouse button was pressed while
                 -- the mouse was dragged over the widget region, we don't count that.
-                if (not event.handled or event.handled == self) and event.buttons == 0 then
+                if not self.mouseover and (not event.handled or event.handled == self) and event.buttons == 0 then
                     self.mouseover = true
+                    self:queue_draw()
                 end
                 if self.mouseover and calc.cursor then
                     self.window:request_mouse_cursor(calc.cursor)
@@ -2231,6 +2232,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     self:_handle_mouseleave(event)
                     self.hovering = false
                     self.mouseover = false
+                    self:queue_draw()
                 else
                     -- It's possible for mouseover to have been false even while hovering is true
                     -- if we were dragging.  Flip mouseover back to true just in case this scenario
