@@ -81,6 +81,8 @@ rtk.Button.register{
     -- @type rtk.Image|string|nil
     -- @meta read/write
     icon = rtk.Attribute{
+        -- Ensure icon gets calculated after color, as calculated color value influences
+        -- whether we use light or dark icons.
         priority=true,
         reflow=rtk.Widget.REFLOW_FULL,
         calculate=function(self, attr, value, target)
@@ -131,7 +133,23 @@ rtk.Button.register{
         default=function(self, attr)
             return rtk.theme.button
         end,
-        calculate=rtk.Reference('bg'),
+        calculate=function(self, attr, value, target)
+            local color = rtk.Widget.attributes.bg.calculate(self, attr, value, target)
+            -- Determine if it's dark or light, otherwise use the current theme.
+            local luma = rtk.color.luma(color, rtk.theme.bg)
+            local dark = luma < rtk.light_luma_threshold
+            local theme = rtk.theme
+            if dark ~= theme.dark then
+                -- The current theme doesn't work for the given color luma.
+                theme = dark and rtk.themes.dark or rtk.themes.light
+            end
+            self._theme = theme
+            if not self.textcolor then
+                -- Could be from another theme, so explicitly convert it to RGBA table
+                target.textcolor = {rtk.color.rgba(theme.button_label)}
+            end
+            return color
+        end,
     },
 
     --- Text color when label is drawn over button surface, where a nil value is adaptive
@@ -339,17 +357,11 @@ function rtk.Button:initialize(attrs, ...)
     self._theme = rtk.theme
     self._theme_font = self._theme_font or rtk.theme.button_font or rtk.theme.default_font
     rtk.Widget.initialize(self, attrs, self.class.attributes.defaults, ...)
-
-    -- Explicitly trigger attr handlers for these attributes for icon and text style
-    -- detection.
-    self:_handle_attr('color', self.color)
-    -- self:_handle_attr('icon', self.icon)
-
     self._font = rtk.Font()
 end
 
 function rtk.Button:__tostring_info()
-    return self.label or (icon and self.icon.path)
+    return self.label or (self.icon and self.icon.path)
 end
 
 function rtk.Button:_handle_attr(attr, value, oldval, trigger, reflow)
@@ -357,22 +369,7 @@ function rtk.Button:_handle_attr(attr, value, oldval, trigger, reflow)
     if ret == false then
         return ret
     end
-    if attr == 'color' then
-        -- If we have a color value, determine if it's dark or light, otherwise use the
-        -- current theme.
-        local luma = rtk.color.luma(value, rtk.theme.bg)
-        local dark = luma < rtk.light_luma_threshold
-        local theme = rtk.theme
-        if dark ~= theme.dark then
-            -- The current theme doesn't work for the given color luma.
-            theme = dark and rtk.themes.dark or rtk.themes.light
-        end
-        self._theme = theme
-        if not self.textcolor then
-            -- Could be from another theme, so explicitly convert it to RGBA table
-            self.calc.textcolor = {rtk.color.rgba(theme.button_label)}
-        end
-    elseif self._segments and (attr == 'wrap' or attr == 'label') then
+    if self._segments and (attr == 'wrap' or attr == 'label') then
         -- Force regeneration of segments on next reflow
         self._segments.invalid = true
     end
