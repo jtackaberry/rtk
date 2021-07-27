@@ -1393,7 +1393,7 @@ function rtk.Window:_update()
             -- Continuously generated mousedown events for the last-pressed button for onlongpress()
             -- and for time-deferred onmousedown() (for touch-scrolling).  We only need to keep
             -- firing these simulated events for as long as rtk.long_press_delay or
-            -- rtk.touch_active_delay (whichever is longer) as elapsed.  We include the time for
+            -- rtk.touch_activate_delay (whichever is longer) as elapsed.  We include the time for
             -- a couple extra update cycles as well to ensure those thresholds get tripped.
             local buttonstate = rtk.mouse.state[rtk.mouse.state.latest]
             local wait = math.max(rtk.long_press_delay, rtk.touch_activate_delay)
