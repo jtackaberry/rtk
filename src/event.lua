@@ -293,6 +293,7 @@ function rtk.Event:clone(overrides)
     for k, v in pairs(self) do
         event[k] = v
     end
+    event.handled = nil
     table.merge(event, overrides or {})
     return event
 end
