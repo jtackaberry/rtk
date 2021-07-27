@@ -250,7 +250,8 @@ function rtk.Event:set_button_state(key, value)
 end
 
 function rtk.Event:get_button_state(key)
-    return rtk.mouse.state[self.button][key]
+    local s = rtk.mouse.state[self.button]
+    return s and s[key]
 end
 
 --- Set the various modifier attributes according to the mouse/keyboard
