@@ -387,6 +387,8 @@ end
 --   pass false here as a small optimization.
 -- @treturn rtk.Image returns self for method chaining
 function rtk.Image:resize(w, h, clear)
+    w = math.ceil(w)
+    h = math.ceil(h)
     if self.w ~= w or self.h ~= h then
         if not self.id then
             return self:create(w, h)
@@ -426,7 +428,7 @@ function rtk.Image:scale(w, h, mode)
     w = w or (h / aspect)
     h = h or (w * aspect)
     local newimg = rtk.Image(w, h)
-    newimg:blit{src=self, sx=self.x, sy=self.y, sw=self.w, sh=self.h, dw=w, dh=h, mode=mode}
+    newimg:blit{src=self, sx=self.x, sy=self.y, sw=self.w, sh=self.h, dw=newimg.w, dh=newimg.h, mode=mode}
     return newimg
 end
 
