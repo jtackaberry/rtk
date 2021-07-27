@@ -43,6 +43,29 @@ local log = require('rtk.log')
 --  -- chooses to place it).
 --  window:open{halign='center', valign='top'}
 --
+-- ### Closing the Window
+--
+-- Out of the box, undocked (i.e. floating) windows will be closed when the user hits the
+-- escape key while the window is focused.  Or, to be more precise, when there is an
+-- *@{rtk.Event.handled|unhandled}* `rtk.Event.KEY` event with an @{rtk.keycodes.ESCAPE|ESCAPE}
+-- @{rtk.Event.keycode|keycode} and `docked` is false.  You can override this by
+-- explicitly handling this event via `onkeypresspost()`:
+--
+-- @code
+--  local window = rtk.Window()
+--  window.onkeypresspost = function(self, event)
+--      if not event.handled and event.keycode == rtk.keycodes.ESCAPE and
+--         not window.docked then
+--          -- Prevent default behavior of escape key closing the window
+--          -- by marking the event as handled.
+--          event:set_handled(self)
+--      end
+--  end
+--
+-- The window will of course also close when the user clicks on the window's OS-native
+-- close button (for non-`borderless` windows), or when programmatically when you call
+-- `rtk.Window:close()`.
+--
 -- @class rtk.Window
 -- @inherits rtk.Container
 rtk.Window = rtk.class('rtk.Window', rtk.Container)
@@ -1520,9 +1543,14 @@ function rtk.Window:_update()
         end
         if event.type == rtk.Event.KEY then
             self:onkeypresspost(event)
-            if not event.handled and event.keycode == rtk.keycodes.F12 and log.level <= log.DEBUG then
+            if event.handled then
+                return
+            end
+            if event.keycode == rtk.keycodes.F12 and log.level <= log.DEBUG then
                 rtk.debug = not rtk.debug
                 self:queue_draw()
+            elseif event.keycode == rtk.keycodes.ESCAPE and not self.docked then
+                self:close()
             end
         end
         -- If the current cursor is undefined, it means no widgets requested a custom cursor,
