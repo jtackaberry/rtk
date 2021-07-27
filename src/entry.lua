@@ -762,7 +762,7 @@ function rtk.Entry:_handle_keypress(event)
             selecting = nil
         end
     else
-        return
+        return ok
     end
     if selecting then
         if not self._selstart then
