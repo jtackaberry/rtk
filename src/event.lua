@@ -164,7 +164,7 @@ function rtk.Event:__tostring()
     elseif self.type == 4 then
         custom = string.format(' wheel=%s,%s', self.hwheel, self.wheel)
     elseif self.type == 5 then
-        custom = string.format(" '%s' / %s", self.char, self.keycode)
+        custom = string.format(' char=%s keycode=%s', self.char, self.keycode)
     elseif self.type == 6 then
         custom = ' ' .. table.tostring(self.files)
     end
