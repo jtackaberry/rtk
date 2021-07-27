@@ -2090,7 +2090,7 @@ end
 
 function rtk.Widget:_get_touch_activate_delay(event)
     return (rtk.touchscroll and not self:focused() and event.button == rtk.mouse.BUTTON_LEFT) and
-           (self.touch_activate_delay or rtk.touch_activate_delay) or 0
+           self.touch_activate_delay or rtk.touch_activate_delay
 end
 
 -- Whether the event should be handled by us, which currently just checks if
@@ -2381,6 +2381,15 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                 self:_handle_dropblur(event, rtk.dragging, rtk.dragarg)
                 rtk.dropping = nil
             end
+            self:queue_draw()
+        end
+    end
+    -- When touchscroll is enabled, ensure we also mark the mouseup as handled if we had
+    -- previously handled mousedown and were focused as a result. This prevents rtk.Window
+    -- from blurring us when touchscroll is enabled.
+    if rtk.touchscroll and event.type == rtk.Event.MOUSEUP and self:focused() then
+        if event:get_button_state('mousedown-handled') == self then
+            event:set_handled(self)
             self:queue_draw()
         end
     end
