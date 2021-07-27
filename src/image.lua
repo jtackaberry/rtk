@@ -148,11 +148,7 @@ function rtk.Image.static.make_icon(name, style)
         img.style = style
     end
     if not img then
-        if not rtk.theme then
-            log.error('rtk: rtk.Image.make_icon("%s") called without having first called rtk.set_theme()', name)
-        else
-            log.error('rtk: rtk.Image.make_icon("%s"): icon not found in any icon path', name)
-        end
+        log.error('rtk: rtk.Image.make_icon("%s"): icon not found in any icon path', name)
     end
     return img
 end
