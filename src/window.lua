@@ -1387,7 +1387,7 @@ function rtk.Window:_update()
            -- Also generate mousemove events if we're currently dragging but the mouse isn't
            -- otherwise moving.  This allows dragging against the edge of a viewport to steadily
            -- scroll.
-           (rtk.dragging and buttons_down) then
+           (rtk.dnd.dragging and buttons_down) then
             event = self:_get_mousemove_event(not mouse_moved)
         elseif rtk.mouse.down ~= 0 then
             -- Continuously generated mousedown events for the last-pressed button for onlongpress()
@@ -1509,7 +1509,7 @@ function rtk.Window:_update()
             if event.debug then
                 event.debug:_draw_debug_info(event)
             end
-            if self._tooltip_widget and not rtk.dragging then
+            if self._tooltip_widget and not rtk.dnd.dragging then
                 self._tooltip_widget:_draw_tooltip(rtk.mouse.x, rtk.mouse.y, calc.w, calc.h)
             end
             self._backingstore:popdest()
@@ -1627,16 +1627,16 @@ function rtk.Window:_handle_window_event(event, now)
         end
         self._last_mouseup_time = event.time
         rtk._drag_candidates = nil
-        if rtk.dropping then
-            rtk.dropping:_handle_dropblur(event, rtk.dragging, rtk.dragarg)
-            rtk.dropping = nil
+        if rtk.dnd.dropping then
+            rtk.dnd.dropping:_handle_dropblur(event, rtk.dnd.dragging, rtk.dnd.arg)
+            rtk.dnd.dropping = nil
         end
         -- FIXME: we should only do this if the mouse button released was same button that
         -- started the drag.
-        if rtk.dragging then
-            rtk.dragging:_handle_dragend(event, rtk.dragarg)
-            rtk.dragging = nil
-            rtk.dragarg = nil
+        if rtk.dnd.dragging then
+            rtk.dnd.dragging:_handle_dragend(event, rtk.dnd.arg)
+            rtk.dnd.dragging = nil
+            rtk.dnd.arg = nil
             -- Inject a mousemove event just in case there is any post-drag-drop state
             -- that should be visually reflected. For example, rtk.Viewport could be
             -- showing its scrollbar (if a child widget has show_scrollbar_on_drag set to
@@ -1646,7 +1646,7 @@ function rtk.Window:_handle_window_event(event, now)
             rtk.Container._handle_event(self, 0, 0, tmp, false, rtk._modal == nil)
         end
     elseif rtk._drag_candidates and event.type == rtk.Event.MOUSEMOVE and
-           not event.simulated and event.buttons ~= 0 and not rtk.dragarg then
+           not event.simulated and event.buttons ~= 0 and not rtk.dnd.arg then
         -- Mouse moved while mouse button pressed, test now to see any of the drag
         -- candidates we registered from the preceding MOUSEDOWN event want to
         -- start a drag.
@@ -1655,7 +1655,7 @@ function rtk.Window:_handle_window_event(event, now)
         -- to reset it as handled to prevent further propogation.
         event.handled = nil
         -- Reset droppable status.
-        rtk.droppable = true
+        rtk.dnd.droppable = true
         local missed = false
         -- Distance threshold required to trigger a drag operation in pixels.  This
         -- defaults based on the global scale.
@@ -1675,12 +1675,13 @@ function rtk.Window:_handle_window_event(event, now)
                 local dy = math.abs(ey - event.y)
                 local tthresh = widget:_get_touch_activate_delay(event)
                 if event.time - when >= tthresh and (dx > dthresh or dy > dthresh) then
-                    arg, droppable = widget:_handle_dragstart(event, ex, ey, when)
+                    local arg, droppable = widget:_handle_dragstart(event, ex, ey, when)
                     if arg then
-                        rtk.dragging = widget
-                        rtk.dragarg = arg
-                        rtk.droppable = droppable ~= false and true or false
-                        widget:_handle_dragmousemove(event, rtk.dragarg)
+                        rtk.dnd.dragging = widget
+                        rtk.dnd.arg = arg
+                        rtk.dnd.droppable = droppable ~= false and true or false
+                        rtk.dnd.buttons = event.button
+                        widget:_handle_dragmousemove(event, arg)
                         break
                     elseif event.handled then
                         break

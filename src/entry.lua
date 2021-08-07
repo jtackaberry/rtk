@@ -835,7 +835,7 @@ function rtk.Entry:_handle_click(event)
         -- Triple click selects all text
         self:select_all()
         self._last_doubleclick_time = 0
-    elseif rtk.dragging ~= self then
+    elseif rtk.dnd.dragging ~= self then
         self:select_range(nil)
         rtk.Widget.focus(self)
     end

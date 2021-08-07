@@ -138,38 +138,11 @@ local rtk = {
     -- @type boolean
     focused = nil,
 
-    --- The currently dragging `rtk.Widget` (or nil if none), which is set when
-    -- the user drags a widget and that widget's `rtk.Widget:ondragstart()`
-    -- handler returns a value that approves the drag operation.
-    -- @meta read-only
-    -- @type rtk.Widget|nil
-    dragging = nil,
-    --- true if the currently `dragging` widget is eligible to be dropped and false
-    -- otherwise.  When false, it means ondrop*() handlers will never be called.
-    -- This is implicitly set based on the return value of the widget's
-    -- `rtk.Widget:ondragstart()` handler.  This is useful for drag-only
-    -- widgets such scrollbars that want to leverage the global drag-handling
-    -- logic without any need for droppability.
-    -- @meta read-only
-    -- @type boolean
-    droppable = true,
-    -- The current drop target of the currently dragging widget (or nil if
-    -- not dragging or not currently over a valid top target)
-    -- @meta read-only
-    -- @type rtk.Widget|nil
-    dropping = nil,
-    --- The user argument as returned by `rtk.Widget:ondragstart()` for the currently
-    -- `dragging` widget
-    -- @meta read-only
-    -- @type any
-    dragarg = nil,
-
     --- A table holding the current theme colors which is initialized via `rtk.set_theme()`.
     -- See `rtk.themes` for field details.
     -- @meta read-only
     -- @type table
     theme = nil,
-
 
     -- A stack of blit dest ids,
     _dest_stack = {},
@@ -205,6 +178,47 @@ local rtk = {
     _last_error = nil,
     -- If rtk.quit() was called, which prevents any further deferred calls.
     _quit = false,
+}
+
+--- rtk.dnd.
+--
+-- Holds the state of the current drag-and-drop operation (if any).
+--
+-- @table rtk.dnd
+-- @fullnames
+rtk.dnd = {
+    --- The currently dragging `rtk.Widget` (or nil if none), which is set when
+    -- the user drags a widget and that widget's `rtk.Widget:ondragstart()`
+    -- handler returns a value that approves the drag operation.
+    -- @meta read-only
+    -- @type rtk.Widget|nil
+    dragging = nil,
+    --- true if the currently `dragging` widget is eligible to be dropped and false
+    -- otherwise.  When false, it means ondrop*() handlers will never be called.
+    -- This is implicitly set based on the return value of the widget's
+    -- `rtk.Widget:ondragstart()` handler.  This is useful for drag-only
+    -- widgets such scrollbars that want to leverage the global drag-handling
+    -- logic without any need for droppability.
+    -- @meta read-only
+    -- @type boolean
+    droppable = nil,
+    -- The current drop target of the currently dragging widget (or nil if
+    -- not dragging or not currently over a valid top target)
+    -- @meta read-only
+    -- @type rtk.Widget|nil
+    dropping = nil,
+    --- The user argument as returned by `rtk.Widget:ondragstart()` for the currently
+    -- `dragging` widget
+    -- @meta read-only
+    -- @type any
+    arg = nil,
+    --- A bitmap of mouse button constants (@{rtk.mouse.BUTTON_LEFT|BUTTON_LEFT},
+    -- @{rtk.mouse.BUTTON_MIDDLE|BUTTON_MIDDLE}, or @{rtk.mouse.BUTTON_RIGHT|BUTTON_RIGHT})
+    -- that were pressed when the drag operation began.  This mouse button(s) needs to
+    -- be released in order for `rtk.Widget:ondragend()` to fire.
+    -- @type rtk.mouse
+    -- @meta read-only
+    buttons = nil,
 }
 
 local _os = reaper.GetOS():lower():sub(1, 3)

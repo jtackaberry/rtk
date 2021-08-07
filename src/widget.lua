@@ -2170,14 +2170,15 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     if not listen and rtk._modal and rtk._modal[self.id] == nil then
         return false
     end
+    local dnd = rtk.dnd
     if not clipped and self:_is_mouse_over(clparentx, clparenty, event) then
         -- Here, the mouse is inside our viewport (if applicable) and the mouse is within
         -- our region.  The mouse *may* be over a higher z-order widget that's occluding
         -- us: we know if that's the case because event.handled will be true.
         event:set_widget_mouseover(self, clparentx, clparenty)
         if event.type == rtk.Event.MOUSEMOVE and not calc.disabled then
-            if rtk.dragging == self then
-                self:_handle_dragmousemove(event, rtk.dragarg)
+            if dnd.dragging == self then
+                self:_handle_dragmousemove(event, dnd.arg)
             end
             if self.hovering == false then
                 -- Mousemove event over a widget that's not currently marked as hovering.
@@ -2198,20 +2199,20 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     end
                 else
                     -- If here, mouse is moving while buttons are pressed.
-                    if rtk.dragarg and not event.simulated and rtk.droppable then
+                    if dnd.arg and not event.simulated and rtk.dnd.droppable then
                         -- We are actively dragging a widget
-                        if rtk.dropping == self or self:_handle_dropfocus(event, rtk.dragging, rtk.dragarg) then
-                            if rtk.dropping then
-                                if rtk.dropping ~= self then
-                                    rtk.dropping:_handle_dropblur(event, rtk.dragging, rtk.dragarg)
+                        if dnd.dropping == self or self:_handle_dropfocus(event, dnd.dragging, dnd.arg) then
+                            if dnd.dropping then
+                                if dnd.dropping ~= self then
+                                    dnd.dropping:_handle_dropblur(event, dnd.dragging, dnd.arg)
                                 elseif not event.simulated then
                                     -- self is the drop target
-                                    rtk.dropping:_handle_dropmousemove(event, rtk.dragging, rtk.dragarg)
+                                    dnd.dropping:_handle_dropmousemove(event, dnd.dragging, dnd.arg)
                                 end
                             end
                             event:set_handled(self)
                             self:queue_draw()
-                            rtk.dropping = self
+                            dnd.dropping = self
                         end
                     end
                 end
@@ -2299,7 +2300,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
         elseif event.type == rtk.Event.MOUSEUP and not calc.disabled then
             if not event.handled then
                 local mousedown_handled = event:get_button_state('mousedown-handled')
-                if not rtk.dragging and not mousedown_handled and
+                if not dnd.dragging and not mousedown_handled and
                    event:is_widget_pressed(self) and not event:get_button_state(self) then
                     -- Mousedown had occurred over us, but the button wasn't pressed long enough
                     -- to exeed the threshold to trigger onmousedown originally, so we simulate a
@@ -2322,7 +2323,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     -- Don't fire an onclick() if we had already experienced a *handled*
                     -- onlongpress (where the mouse button state for this widget will be
                     -- set to 2).
-                    if state ~= 2 and not rtk.dragging then
+                    if state ~= 2 and not dnd.dragging then
                         if self:_handle_click(event) then
                             event:set_handled(self)
                             self:queue_draw()
@@ -2342,10 +2343,10 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     self.window:request_mouse_cursor(calc.cursor)
                 end
             end
-            -- rtk.dragging and rtk.dropping are also nulled (as needed) in rtk.Window.update()
-            if rtk.dropping == self then
-                self:_handle_dropblur(event, rtk.dragging, rtk.dragarg)
-                if self:_handle_drop(event, rtk.dragging, rtk.dragarg) then
+            -- dnd.dragging and dnd.dropping are also nulled (as needed) in rtk.Window.update()
+            if dnd.dropping == self then
+                self:_handle_dropblur(event, dnd.dragging, dnd.arg)
+                if self:_handle_drop(event, dnd.dragging, dnd.arg) then
                     event:set_handled(self)
                     self:queue_draw()
                 end
@@ -2366,24 +2367,24 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     -- Cases below are when mouse is not over over widget
     elseif event.type == rtk.Event.MOUSEMOVE then
         self.mouseover = false
-        if rtk.dragging == self then
+        if dnd.dragging == self then
             -- If we're dragging, then set our mouse cursor.
             self.window:request_mouse_cursor(calc.cursor)
-            self:_handle_dragmousemove(event, rtk.dragarg)
+            self:_handle_dragmousemove(event, dnd.arg)
         end
         if self.hovering == true then
             -- Be sure not to trigger mouseleave if we're dragging this widget
-            if rtk.dragging ~= self then
+            if dnd.dragging ~= self then
                 self:_handle_mouseleave(event)
                 self:queue_draw()
                 self.hovering = false
             end
-        elseif event.buttons ~= 0 and rtk.dropping then
-            if rtk.dropping == self then
+        elseif event.buttons ~= 0 and dnd.dropping then
+            if dnd.dropping == self then
                 -- Dragging extended outside the bounds of the last drop target (we know because
                 -- we're not hovering), so need to reset.
-                self:_handle_dropblur(event, rtk.dragging, rtk.dragarg)
-                rtk.dropping = nil
+                self:_handle_dropblur(event, dnd.dragging, dnd.arg)
+                dnd.dropping = nil
             end
             self:queue_draw()
         end
