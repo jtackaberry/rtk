@@ -632,7 +632,7 @@ function rtk.Viewport:_handle_dragstart(event, x, y, t)
             -- If here, we are dragging the scroll handle itself. Second return value of false
             -- indicates we are not droppable
             return {true, y - self:_get_vscrollbar_client_pos(), nil, false}, false
-        elseif rtk.touchscroll and self._vscrollh > 0 then
+        elseif rtk.touchscroll and event.buttons & rtk.mouse.BUTTON_LEFT ~= 0 and self._vscrollh > 0 then
             -- return {true, y, {{x, y, t}, {event.x, event.y, event.time}}, true}, false
             self.window:_set_touch_scrolling(self, true)
             return {true, y, {{x, y, t}}, true}, false
