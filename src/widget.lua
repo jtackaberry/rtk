@@ -2089,8 +2089,12 @@ function rtk.Widget:_draw_borders(offx, offy, alpha, all)
 end
 
 function rtk.Widget:_get_touch_activate_delay(event)
-    return (rtk.touchscroll and not self:focused() and event.button == rtk.mouse.BUTTON_LEFT) and
-           self.touch_activate_delay or rtk.touch_activate_delay
+    if not rtk.touchscroll then
+        return self.touch_activate_delay or 0
+    else
+        return (not self:focused() and event.button == rtk.mouse.BUTTON_LEFT) and
+               self.touch_activate_delay or rtk.touch_activate_delay
+    end
 end
 
 -- Whether the event should be handled by us, which currently just checks if
