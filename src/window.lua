@@ -1633,7 +1633,7 @@ function rtk.Window:_handle_window_event(event, now)
         end
         -- FIXME: we should only do this if the mouse button released was same button that
         -- started the drag.
-        if rtk.dnd.dragging then
+        if rtk.dnd.dragging and event.buttons & rtk.dnd.buttons == 0 then
             rtk.dnd.dragging:_handle_dragend(event, rtk.dnd.arg)
             rtk.dnd.dragging = nil
             rtk.dnd.arg = nil
