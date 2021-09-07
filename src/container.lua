@@ -218,6 +218,30 @@ rtk.Container.register{
 
 --- Create a new container, initializing with the given attributes.
 --
+-- Any positional arguments passed will be automatically added as children
+-- of the container via `add()`.   In this case, cell attributes can optionally be
+-- specified via a `cellattrs` field on the child widget.
+--
+-- @example
+--   local c = rtk.Container{
+--       bg='red',
+--       padding=10,
+--       w=200,
+--       rtk.Text{'Some Random Text'},
+--       rtk.Button{'I Do Nothing', cellattrs={halign='center'}},
+--   }
+--
+-- Which is equivalent to:
+--
+-- @code
+--   local c = rtk.Container{bg='red', padding=10, w=200}
+--   c:add(rtk.Text{'Some Random Text'})
+--   c:add(rtk.Button{'I Do Nothing'}, {halign='center'})
+--
+-- This makes it possible to specify a full widget hierarchy for the entire window (or
+-- arbitrary subsections of it) using a single declaration of nested widgets (otherwise
+-- known as an S-expression).
+--
 -- @display rtk.Container
 function rtk.Container:initialize(attrs, ...)
     self.children = {}
@@ -235,6 +259,14 @@ function rtk.Container:initialize(attrs, ...)
     -- children in the correct order.
     self._z_indexes = {}
     rtk.Widget.initialize(self, attrs, self.class.attributes.defaults, ...)
+
+    -- Automatically add() any widgets passed as positional arguments
+    if attrs and #attrs > 0 then
+        for i = 1, #attrs do
+            local w = attrs[i]
+            self:add(w)
+        end
+    end
 end
 
 function rtk.Container:_handle_mouseenter(event)
@@ -309,7 +341,7 @@ end
 --   the given widget
 function rtk.Container:add(widget, attrs)
     self:_reparent_child(widget)
-    self.children[#self.children+1] = {widget, self:_calc_cell_attrs(attrs)}
+    self.children[#self.children+1] = {widget, self:_calc_cell_attrs(attrs or widget.cellattrs)}
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -319,14 +351,14 @@ end
 --- Updates the cell attributes of a previously @{add|added} widget.
 --
 -- @tparam rtk.Widget widget the widget whose cell attributes are to be updated
--- @tparam table attrs the new @{container.cellattrs|cell attributes}
--- @tparam bool merge if false, the cell attributes will be completely replaced
---   with the given attrs, otherwise they will be merged such that previous
+-- @tparam table|nil attrs the new @{container.cellattrs|cell attributes}
+-- @tparam bool|nil merge if false (default), the cell attributes will be completely
+--   replaced with the given attrs, otherwise they will be merged such that previous
 --   cell attributes will be preserved unless overridden in attrs.
 function rtk.Container:update(widget, attrs, merge)
     local n = self:get_child_index(widget)
     assert(n, 'Widget not found in container')
-    attrs = self:_calc_cell_attrs(attrs)
+    attrs = self:_calc_cell_attrs(attrs or widget.cellattrs)
     if merge then
         local cellattrs = self.children[n][2]
         table.merge(cellattrs, attrs)
@@ -352,7 +384,7 @@ end
 --   the given widget
 function rtk.Container:insert(pos, widget, attrs)
     self:_reparent_child(widget)
-    table.insert(self.children, pos, {widget, self:_calc_cell_attrs(attrs)})
+    table.insert(self.children, pos, {widget, self:_calc_cell_attrs(attrs or widget.cellattrs)})
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -376,7 +408,7 @@ function rtk.Container:replace(index, widget, attrs)
     end
     local prev = self:_unparent_child(index)
     self:_reparent_child(widget)
-    self.children[index] = {widget, self:_calc_cell_attrs(attrs)}
+    self.children[index] = {widget, self:_calc_cell_attrs(attrs or widget.cellattrs)}
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
