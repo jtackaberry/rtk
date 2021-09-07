@@ -415,6 +415,10 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
             if attrs._calculated_expand == 0 and fill_box_orientation then
                 log.error('rtk.Box: %s: fill=true overrides explicit expand=0: %s will be expanded', self, widget)
             end
+            -- Calculate effective alignment for this cell, which defaults to the container's
+            -- alignment unless explicitly defined.
+            attrs._halign = attrs.halign or calc.halign
+            attrs._valign = attrs.valign or calc.valign
             -- Reflow at 0,0 coords just to get the native dimensions.  Will adjust position in second pass.
             if attrs._calculated_expand == 0 then
                 if orientation == rtk.Box.HORIZONTAL then

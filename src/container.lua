@@ -144,8 +144,12 @@ rtk.Container.register{
     -- @note
     --  Cell alignment is distinct from @{rtk.Widget.halign|widget alignment} because it
     --  controls how the container positions the widget within its cell, but doesn't affect
-    --  the visual appearance of the widget itself, while widget alignment controls how
-    --  the widget displays its contents within its own box.
+    --  the visual appearance of the widget itself, while the alignment attributes defined
+    --  on child widgets controls how the child displays its contents within its own box.
+    --
+    --  When @{rtk.Widget.halign|halign} is specified as an attribute on the container widget
+    --  overall, it affects the *default* horizontal alignment of all cells.  Cells can
+    --  override this default by explicitly specifying the halign cell attribute.
     --
     -- @type alignmentconst
     halign = nil,
@@ -689,21 +693,25 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
             -- but don't overwrite the child's size.
             ww = math.max(ww, attrs.minw or wcalc.minw or 0)
             wh = math.max(wh, attrs.minh or wcalc.minh or 0)
+            -- Calculate effective alignment for this cell, which defaults to the container's
+            -- alignment unless explicitly defined.
+            attrs._halign = attrs.halign or calc.halign
+            attrs._valign = attrs.valign or calc.valign
             -- Alignment below is based on the current intrinsic size based on widget
             -- reflowed before this point (innerw/innerh), but it's also possible for
             -- widgets to overflow the container, so if that's the case we align to
             -- the smaller of the current running size and the bounding box.
-            if not attrs.halign or attrs.halign == rtk.Widget.LEFT then
+            if not attrs._halign or attrs._halign == rtk.Widget.LEFT then
                 wx = lp + clp
-            elseif attrs.halign == rtk.Widget.CENTER then
+            elseif attrs._halign == rtk.Widget.CENTER then
                 wx = math.max(0, lp + clp + (math.min(innerw, inner_maxw) - ww - clp - crp) / 2)
             else
                 -- Right-aligned ignores left cell padding
                 wx = math.max(0, lp + math.min(innerw, inner_maxw) - ww - crp)
             end
-            if not attrs.valign or attrs.valign == rtk.Widget.TOP then
+            if not attrs._valign or attrs._valign == rtk.Widget.TOP then
                 wy = tp + ctp
-            elseif attrs.valign == rtk.Widget.CENTER then
+            elseif attrs._valign == rtk.Widget.CENTER then
                 wy = math.max(0, tp + ctp + (math.min(innerh, inner_maxh) - wh - ctp - cbp) / 2)
             else
                 -- Bottom-aligned ignores top cell padding

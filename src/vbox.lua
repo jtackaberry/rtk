@@ -63,7 +63,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                 -- position depends on sibling cells because we aren't fully stretching
                 -- (in which case alignment would just depend on the bounding box which we
                 -- already know).
-                (attrs.halign and attrs.halign ~= rtk.Widget.LEFT and
+                (attrs._halign and attrs._halign ~= rtk.Widget.LEFT and
                  not attrs.fillw and
                  attrs.stretch ~= rtk.Box.STRETCH_FULL)
             )
@@ -171,15 +171,15 @@ function rtk.VBox:_align_child(widget, attrs, offx, offy, cellw, cellh, crp, cbp
     -- cell padding) and widget width (which includes widget padding) are equal,
     -- so this wouldn't apply in that case either.
     if cellh > wcalc.h then
-        if attrs.valign == rtk.Widget.BOTTOM then
+        if attrs._valign == rtk.Widget.BOTTOM then
             y = (offy - cbp) + cellh - wcalc.h - cbp
-        elseif attrs.valign == rtk.Widget.CENTER then
+        elseif attrs._valign == rtk.Widget.CENTER then
             y = offy + (cellh - wcalc.h) / 2
         end
     end
-    if attrs.halign == rtk.Widget.CENTER then
+    if attrs._halign == rtk.Widget.CENTER then
         x = (offx - crp) + (cellw - wcalc.w) / 2
-    elseif attrs.halign == rtk.Widget.RIGHT then
+    elseif attrs._halign == rtk.Widget.RIGHT then
         x = offx + cellw - wcalc.w - crp
     end
     wcalc.x = wcalc.x + x
