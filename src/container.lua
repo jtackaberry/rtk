@@ -224,7 +224,7 @@ rtk.Container.register{
 --
 -- Any positional arguments passed will be automatically added as children
 -- of the container via `add()`.   In this case, cell attributes can optionally be
--- specified via a `cellattrs` field on the child widget.
+-- specified via a `cell` field on the child widget.
 --
 -- @example
 --   local c = rtk.Container{
@@ -232,7 +232,7 @@ rtk.Container.register{
 --       padding=10,
 --       w=200,
 --       rtk.Text{'Some Random Text'},
---       rtk.Button{'I Do Nothing', cellattrs={halign='center'}},
+--       rtk.Button{'I Do Nothing', cell={halign='center'}},
 --   }
 --
 -- Which is equivalent to:
@@ -345,7 +345,7 @@ end
 --   the given widget
 function rtk.Container:add(widget, attrs)
     self:_reparent_child(widget)
-    self.children[#self.children+1] = {widget, self:_calc_cell_attrs(attrs or widget.cellattrs)}
+    self.children[#self.children+1] = {widget, self:_calc_cell_attrs(attrs or widget.cell)}
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -362,7 +362,7 @@ end
 function rtk.Container:update(widget, attrs, merge)
     local n = self:get_child_index(widget)
     assert(n, 'Widget not found in container')
-    attrs = self:_calc_cell_attrs(attrs or widget.cellattrs)
+    attrs = self:_calc_cell_attrs(attrs or widget.cell)
     if merge then
         local cellattrs = self.children[n][2]
         table.merge(cellattrs, attrs)
@@ -388,7 +388,7 @@ end
 --   the given widget
 function rtk.Container:insert(pos, widget, attrs)
     self:_reparent_child(widget)
-    table.insert(self.children, pos, {widget, self:_calc_cell_attrs(attrs or widget.cellattrs)})
+    table.insert(self.children, pos, {widget, self:_calc_cell_attrs(attrs or widget.cell)})
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -412,7 +412,7 @@ function rtk.Container:replace(index, widget, attrs)
     end
     local prev = self:_unparent_child(index)
     self:_reparent_child(widget)
-    self.children[index] = {widget, self:_calc_cell_attrs(attrs or widget.cellattrs)}
+    self.children[index] = {widget, self:_calc_cell_attrs(attrs or widget.cell)}
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
