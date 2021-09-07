@@ -426,19 +426,18 @@ end
 
 
 function rtk.Container:_calc_cell_attrs(attrs)
-    if attrs then
-        -- _calc_attr() could potentially modify the attrs table (for shorthand
-        -- attributes), so we need to need to fetch a copy of the current keys and loop
-        -- over those.
-        local keys = table.keys(attrs)
-        for n = 1, #keys do
-            local k = keys[n]
-            attrs[k] = self:_calc_attr(k, attrs[k], attrs)
-        end
-        return attrs
-    else
+    if not attrs then
         return {}
     end
+    -- _calc_attr() could potentially modify the attrs table (for shorthand
+    -- attributes), so we need to need to fetch a copy of the current keys and loop
+    -- over those.
+    local keys = table.keys(attrs)
+    for n = 1, #keys do
+        local k = keys[n]
+        attrs[k] = self:_calc_attr(k, attrs[k], attrs)
+    end
+    return attrs
 end
 
 --- Moves an existing child widget to a new index, shifting surrounding
