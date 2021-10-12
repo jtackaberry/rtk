@@ -528,7 +528,7 @@ calculated as a red, green, blue and alpha 4-tuple, this means colors can be ani
 
 ```lua
 local b = box:add(rtk.Button{'Click me for a surprise'})
-b.onclick() = function()
+b.onclick = function()
     -- Slowly fades the button out to fully transparent over the
     -- course of 2 seconds
     b:animate{'alpha', dst=0, duration=2}
@@ -541,7 +541,7 @@ above button's `onclick()` handler with one that animates consecutively toward
 red, green, blue, and finally back to the default button color:
 
 ```lua
-b.onclick() = function()
+b.onclick = function()
     b:animate{'color', dst='red'}
         :after(function()
             return b:animate{'color', dst='green'}
