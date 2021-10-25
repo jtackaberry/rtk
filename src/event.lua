@@ -229,8 +229,8 @@ end
 -- The main purpose of this method is tracking which widgets should be
 -- @{rtk.Widget.debug|debugged} but may have other purposes in future.
 function rtk.Event:set_widget_mouseover(widget)
-    if rtk.debug and not event.debug then
-        event.debug = widget
+    if rtk.debug and not self.debug then
+        self.debug = widget
     end
     if widget.tooltip and not rtk._mouseover_widget and self.type == rtk.Event.MOUSEMOVE and not self.simulated then
         rtk._mouseover_widget = widget
