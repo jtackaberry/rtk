@@ -504,7 +504,7 @@ function string.hash(s)
 end
 
 
-local function val_to_str(v)
+local function val_to_str(v, seen)
     if "string" == type(v) then
         v = string.gsub(v, "\n", "\\n")
         if string.match(string.gsub(v,"[^'\"]",""), '^"+$') then
@@ -512,16 +512,39 @@ local function val_to_str(v)
         end
         return '"' .. string.gsub(v, '"', '\\"') .. '"'
     else
-        return "table" == type(v) and table.tostring(v) or tostring(v)
+        if type(v) == 'table' and not v.__tostring then
+            return seen[tostring(v)] and '<recursed>' or table.tostring(v, seen)
+        else
+            return tostring(v)
+        end
+        return "table" == type(v) and table.tostring(v, seen) or tostring(v)
     end
 end
 
-local function key_to_str(k)
+local function key_to_str(k, seen)
     if "string" == type(k) and string.match(k, "^[_%a][_%a%d]*$") then
         return k
     else
-        return "[" .. val_to_str(k) .. "]"
+        return "[" .. val_to_str(k, seen) .. "]"
     end
+end
+
+local function _table_tostring(tbl, seen)
+    local result, done = {}, {}
+    seen = seen or {}
+    local id = tostring(tbl)
+    seen[id] = 1
+    for k, v in ipairs(tbl) do
+        table.insert(result, val_to_str(v, seen))
+        done[k] = true
+    end
+    for k, v in pairs(tbl) do
+        if not done[k] then
+            table.insert(result, key_to_str(k, seen) .. "=" .. val_to_str(v, seen))
+        end
+    end
+    seen[id] = nil
+    return "{" .. table.concat( result, "," ) .. "}"
 end
 
 --- Converts a table to a printable string.
@@ -535,17 +558,7 @@ end
 -- @tparam table tbl the table to stringify
 -- @treturn string the stringified table, e.g. `{1, 2, foo='bar', [5]=42}`
 function table.tostring(tbl)
-    local result, done = {}, {}
-    for k, v in ipairs(tbl) do
-        table.insert(result, val_to_str(v))
-        done[k] = true
-    end
-    for k, v in pairs(tbl) do
-        if not done[k] then
-            table.insert(result, key_to_str(k) .. "=" .. val_to_str(v))
-        end
-    end
-    return "{" .. table.concat( result, "," ) .. "}"
+    return _table_tostring(tbl)
 end
 
 --- Parses a stringified table into an actual Lua table.
