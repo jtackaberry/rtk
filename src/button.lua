@@ -634,7 +634,6 @@ function rtk.Button:_realize_geometry()
         lx=lx, ly=ly, lw=lw, lh=lh,
         tagx=tagx, tagw=tagw,
         surx=surx, sury=sury, surw=surw or 0, surh=surh or 0,
-        draw_surface=draw_surface or calc.tagged,
         clipw=clipw, cliph=cliph,
     }
 end
@@ -683,15 +682,15 @@ function rtk.Button:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clt
     self:_handle_draw(offx, offy, alpha, event)
 end
 
-function rtk.Button:_is_mouse_over(offx, offy, event)
+function rtk.Button:_is_mouse_over(clparentx, clparenty, event)
     local calc = self.calc
     if calc.circular then
-        local x = calc.x + offx + self._radius
-        local y = calc.y + offy + self._radius
+        local x = calc.x + clparentx + self._radius
+        local y = calc.y + clparenty + self._radius
         return self.window and self.window.in_window and
                rtk.point_in_circle(event.x, event.y, x, y, self._radius)
     else
-        return rtk.Widget._is_mouse_over(self, offx, offy, event)
+        return rtk.Widget._is_mouse_over(self, clparentx, clparenty, event)
     end
 end
 
