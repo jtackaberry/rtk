@@ -329,6 +329,7 @@ function rtk.Entry:_realize_geometry()
 end
 
 function rtk.Entry:_unrealize()
+    rtk.Widget._unrealize(self)
     self._backingstore = nil
 end
 

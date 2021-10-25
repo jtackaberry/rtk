@@ -813,9 +813,10 @@ function rtk.Container:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, 
 end
 
 function rtk.Container:_unrealize()
+    rtk.Widget._unrealize(self)
     for i = 1, #self.children do
         local widget = self.children[i][1]
-        if widget and widget.visible then
+        if widget and widget.realized then
             widget:_unrealize()
         end
     end

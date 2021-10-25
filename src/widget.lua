@@ -2610,6 +2610,7 @@ end
 -- Subclasses should use this to release resources that aren't needed when the
 -- widget isn't being rendered, such as image buffers.
 function rtk.Widget:_unrealize()
+    self.realized = false
 end
 
 
@@ -2698,15 +2699,15 @@ function rtk.Widget:_handle_attr(attr, value, oldval, trigger, reflow)
             self:queue_reflow(reflow)
         end
         if attr == 'visible' then
+            if not value then
+                self:_unrealize()
+            end
             -- As we have changed visibility, set realized to false in case show() has
             -- been called from within a draw() handler for another widget earlier in the
             -- scene graph.  We need to make sure that this widget isn't drawn until it
             -- has a chance to reflow.
             self.realized = false
             self.drawn = false
-            if not value then
-                self:_unrealize()
-            end
         elseif attr == 'ref' then
             assert(not oldval, 'ref cannot be changed')
             self.refs[self.ref] = self
