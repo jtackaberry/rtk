@@ -1713,10 +1713,14 @@ function rtk.Window:_handle_window_event(event, now)
                 if event.time - when >= tthresh and (dx > dthresh or dy > dthresh) then
                     local arg, droppable = widget:_handle_dragstart(event, ex, ey, when)
                     if arg then
+                        -- Widget has accepted the dragstart. For touchscrolling, emit the
+                        -- deferred mousedown now using the original coordinates from the
+                        -- mousedown.
+                        widget:_deferred_mousedown(event, ex, ey)
                         rtk.dnd.dragging = widget
                         rtk.dnd.arg = arg
                         rtk.dnd.droppable = droppable ~= false and true or false
-                        rtk.dnd.buttons = event.button
+                        rtk.dnd.buttons = event.buttons
                         widget:_handle_dragmousemove(event, arg)
                         break
                     elseif event.handled then

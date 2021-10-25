@@ -2420,7 +2420,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     self.window:request_mouse_cursor(calc.cursor)
                 end
             else
-                -- In here, mouseover event with self.hovering true
+                -- In here, mousemove event with self.hovering true.
                 if event.handled then
                     -- We were and technically still are hovering, but another widget has handled this
                     -- event.  One scenario is a a higher z-index container that's partially obstructing
@@ -2490,19 +2490,11 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
             end
         elseif event.type == rtk.Event.MOUSEUP and not calc.disabled then
             if not event.handled then
-                local mousedown_handled = event:get_button_state('mousedown-handled')
-                if not dnd.dragging and not mousedown_handled and
-                   event:is_widget_pressed(self) and not event:get_button_state(self) then
+                if not dnd.dragging then
                     -- Mousedown had occurred over us, but the button wasn't pressed long enough
                     -- to exeed the threshold to trigger onmousedown originally, so we simulate a
                     -- mousedown now just prior to the real mouseup event.
-                    local downevent = event:clone{type=rtk.Event.MOUSEDOWN, simulated=true}
-                    if self:_handle_mousedown(downevent) then
-                        -- It's intentional that we handle the original mouseup event here, because we
-                        -- want to prevent propagation of the mouseup if a widget responded to the
-                        -- simulated mousedown.
-                        event:set_handled(self)
-                    end
+                    self:_deferred_mousedown(event)
                 end
                 if self:_handle_mouseup(event) then
                     event:set_handled(self)
@@ -2602,6 +2594,21 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     end
     -- Indicates we listened to the event.
     return true
+end
+
+function rtk.Widget:_deferred_mousedown(event, x, y)
+    local mousedown_handled = event:get_button_state('mousedown-handled')
+    if not mousedown_handled and event:is_widget_pressed(self) and not event:get_button_state(self) then
+        local downevent = event:clone{type=rtk.Event.MOUSEDOWN, simulated=true, x=x, y=y}
+        if self:_handle_mousedown(downevent) then
+            -- Ensure mouseup gets handled so the window doesn't blur us.
+            event:set_button_state('mousedown-handled', self)
+            -- It's intentional that we handle the original event here, because we want to
+            -- prevent propagation of e.g. mouseup if a widget responded to the simulated
+            -- mousedown.
+            event:set_handled(self)
+        end
+    end
 end
 
 --- Called when the widget (or one of its ancestors) is hidden.
