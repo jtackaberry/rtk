@@ -178,6 +178,7 @@ local rtk = {
     _last_error = nil,
     -- If rtk.quit() was called, which prevents any further deferred calls.
     _quit = false,
+    _refs = {},
 }
 
 --- rtk.dnd.
@@ -279,7 +280,6 @@ else
         return cursor
     end
 end
-xxx_load_cursor = _load_cursor
 
 --- rtk.mouse.cursors.
 --

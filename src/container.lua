@@ -309,6 +309,25 @@ function rtk.Container:_draw_debug_box(offx, offy, event)
     end
 end
 
+-- Adds or removes refs from the given child to/from our own refs.  Additions are
+-- propagated upward, while removals are not as it shouldn't affect correctness and
+-- is faster (and refs are weak anyway)
+function rtk.Container:_sync_child_refs(child, action)
+    if child.refs and not child.refs.__empty then
+        if action == 'add' then
+            local w = self
+            while w do
+                table.merge(w.refs, child.refs)
+                w = w.parent
+            end
+        else
+            for k in pairs(child.refs) do
+                self.refs[k] = nil
+            end
+        end
+    end
+end
+
 function rtk.Container:_validate_child(child)
     assert(rtk.isa(child, rtk.Widget), 'object being added to container is not subclassed from rtk.Widget')
 end
@@ -324,6 +343,7 @@ function rtk.Container:_reparent_child(child)
     -- Set the window immediately in case some attribute is subsequently
     -- changed so it is able to request a reflow from the window.
     child.window = self.window
+    self:_sync_child_refs(child, 'add')
 end
 
 function rtk.Container:_unparent_child(pos)
@@ -334,6 +354,7 @@ function rtk.Container:_unparent_child(pos)
         end
         child.parent = nil
         child.window = nil
+        self:_sync_child_refs(child, 'remove')
         return child
     end
 end

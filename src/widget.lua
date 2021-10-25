@@ -847,6 +847,65 @@ rtk.Widget.register{
     -- @meta read-only
     -- @type number
     id = nil,
+
+    --- A name for this widget that can be accessed via the `refs` table (default nil).
+    --
+    -- Note that once the `ref` name is set it cannot be changed.
+    -- @meta read/write-once
+    -- @type string
+    ref = nil,
+
+    --- A table through which widget `ref` names can be dynamically accessed.
+    --
+    -- `ref` names are resolved based on fellow children (or grandchildren) of the
+    -- widget's parent container(s).  For example, given `self.refs.foo`, whichever child
+    -- (however nested) of the `parent` container has the `ref` name `foo` will be
+    -- returned.  If there's no match, the parent's parent is consulted, and so on up
+    -- the widget hierarchy.
+    --
+    -- @code
+    --    local box = rtk.HBox{
+    --        valign='center', spacing=10,
+    --        -- Use the ref name 'label' for later access
+    --        rtk.Text{w=40, ref='label'},
+    --        rtk.Slider{
+    --            onchange=function(self)
+    --                -- Fetch the label via its ref name in order to update it.
+    --                self.refs.label:attr('text', self.value)
+    --            end
+    --        },
+    --    }
+    --    window:add(box)
+    --
+    -- Ref names don't need to be globally unique: the context of which widget's `refs`
+    -- table is being accessed dicates how the name is resolved.  If you try to access an
+    -- ambiguous ref name -- that is, the nearest parent container which knows about the
+    -- ref name actually has multiple child descendents with the same ref name -- you
+    -- can't be sure which widget you'll get (and in fact you may not get any at all).
+    -- The specific behavior in this case is undefined. So just make sure that when you
+    -- access a ref name via a widget's `refs` table, there is a level at or above the
+    -- widget where there is only one such ref name.
+    --
+    -- Resolving references generally requires both the widget whose `refs` table is being
+    -- accessed *and* the widget being looked up to be nested under the same container.  It
+    -- *is* possible to resolve an unparented reference as there is a last-ditch global
+    -- lookup table that's consulted, but in this case global uniqueness of the `ref` name
+    -- is required.
+    --
+    -- Because accessing fields on this table involves an upward traversal of the widget's
+    -- parent hierarchy, there is a cost in accessing distant refs compared to standard
+    -- Lua table accesses. Consequently, if repeatedly accessing a distant ref, you may
+    -- want to assign it to a temporary local variable first.
+    --
+    -- Refs are weak, which means that in order to access a widget by its `ref` name there
+    -- must be some other reference to the widget object in Lua.  Any widget added to a
+    -- container widget is covered (provided a reference to the container itself exists,
+    -- of course). Once the Lua garbage collector frees a widget, it can no longer be
+    -- accessed by its `ref` name.
+    --
+    -- @meta read-only
+    -- @type table
+    refs = nil,
 }
 
 
@@ -863,7 +922,20 @@ rtk.Widget.static.last_index = 0
 -- Not documenting widget constructor as it's not intended to be invoked
 -- directly.  Use subclasses instead.
 function rtk.Widget:initialize(attrs,...)
-    -- Initialize
+    -- Create refs table, which proxies to _ref() when accessing an element not in
+    -- the refs table, and which sets __empty to false when something is added.
+    -- The __empty flag is checked by container implementations in order to avoid
+    -- upward propagation of an empty table when we are parented.
+    self.refs = {__empty=true}
+    setmetatable(self.refs, {
+        __mode='v',
+        __index=function(table, key) return self:_ref(table, key) end,
+        __newindex=function (table, key, value)
+            rawset(table, key, value)
+            table.__empty=false
+        end
+    })
+    -- Table of calculated attributes.
     self.calc = {
         border_uniform = true
     }
@@ -897,6 +969,10 @@ function rtk.Widget:initialize(attrs,...)
         end
         -- Now we can merge the user-supplied attributes on top of the defaults.
         table.merge(merged, attrs)
+        if attrs.ref then
+            rtk._refs[attrs.ref] = self
+            self.refs[attrs.ref] = self
+        end
     end
 
     -- Do this after setting attributes in case the user gets cheeky and adds
@@ -954,6 +1030,23 @@ function rtk.Widget:_setattrs(attrs)
         if v ~= nil then
             calc[k] = self:_calc_attr(k, v)
         end
+    end
+end
+
+-- Called (via metatable __index method) when a ref name is accessed that doesn't already
+-- exist in the refs table.  If it exists, it's either because we're a container with a
+-- child with that ref name, or it's our own ref name.  In either case, this method won't
+-- be invoked.
+--
+-- So this is only invoked when we need to search up the widget hierarchy.
+function rtk.Widget:_ref(table, key)
+    if self.parent then
+        return self.parent.refs[key]
+    else
+        -- We either aren't parented or we're a root widget, so look in the global refs
+        -- table as a last resort. This allows accessing unparented widgets by ref,
+        -- although collisions are going to be more commonnplace.
+        return rtk._refs[key]
     end
 end
 
@@ -2543,6 +2636,14 @@ function rtk.Widget:_handle_attr(attr, value, oldval, trigger, reflow)
             self.drawn = false
             if not value then
                 self:_unrealize()
+            end
+        elseif attr == 'ref' then
+            assert(not oldval, 'ref cannot be changed')
+            self.refs[self.ref] = self
+            rtk._refs[self.ref] = self
+            if self.parent then
+                -- A bit lame, but forces propagation of the ref up through the ancestors.
+                self.parent:_sync_child_refs(self, 'add')
             end
         end
     end

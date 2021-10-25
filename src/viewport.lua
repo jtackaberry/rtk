@@ -230,15 +230,20 @@ function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow)
     end
     if attr == 'child' then
         if oldval then
+            -- This is basically what rtk.Container:_unparent_child() does, reproduced
+            -- here as rtk.Viewport doesn't subclass rtk.Container.
             oldval:_unrealize()
             oldval.viewport = nil
             oldval.parent = nil
             oldval.window = nil
+            self:_sync_child_refs(oldval, 'remove')
         end
         if value then
+            -- Similar to rtk.Container:_reparent_child()
             value.viewport = self
             value.parent = self
             value.window = self.window
+            self:_sync_child_refs(value, 'add')
         end
     elseif attr == 'bg' then
         -- If no bg is specified, use the window background.  It's not guaranteed
@@ -261,6 +266,13 @@ function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow)
     end
     return true
 end
+
+function rtk.Viewport:_sync_child_refs(child, action)
+    -- Hijack the rtk.Container implementation, which doesn't depend on anything not
+    -- already available in rtk.Viewport.
+    return rtk.Container._sync_child_refs(self, child, action)
+end
+
 
 function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
     local calc = self.calc
