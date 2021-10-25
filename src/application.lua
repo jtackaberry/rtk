@@ -162,8 +162,9 @@ end
 --
 -- The given `screen` is a Lua table comprised of the following fields:
 --   * **init**: a function that will be invoked immediately, which receives two
---     parameters: the `rtk.Application` instance, and the screen table.  This
---     function has the opportunity to initialize the `widget` field.
+--     parameters: the `rtk.Application` instance, and the screen table.  Any non-nil
+--     value returned by this function will be stored in the `widget` field.  (Alternatively,
+--     you are free to set `screen.widget` directly.)
 --   * **update** *(optional)*: a function that is invoked when the screen becomes
 --     visible (by either `push_screen()` or `replace_screen()` and which receives
 --     the same arguments as screen.init().
@@ -195,7 +196,7 @@ end
 --           for i = 1, 100 do
 --               box:add(rtk.Text{string.format('Line %d', i)})
 --           end
---           screen.widget = rtk.Viewport{box}
+--           return rtk.Viewport{box}
 --       end
 --   }
 --
@@ -211,8 +212,13 @@ function rtk.Application:add_screen(screen, name)
     assert(name, 'screen is missing name')
     assert(not self.screens[name], string.format('screen "%s" was already added', name))
 
-    screen.init(self, screen)
-    assert(rtk.isa(screen.widget, rtk.Widget), 'screen must contain a "widget" field of type rtk.Widget')
+    local widget = screen.init(self, screen)
+    if widget then
+        assert(rtk.isa(widget, rtk.Widget), 'the return value from screen.init() must be type rtk.Widget (or nil)')
+        screen.widget = widget
+    else
+        assert(rtk.isa(screen.widget, rtk.Widget), 'screen must contain a "widget" field of type rtk.Widget')
+    end
     screen.name = name
     self.screens[name] = screen
     if not screen.toolbar then
