@@ -69,11 +69,14 @@ rtk.Event.register{
     -- @type rtk.Widget|nil
     handled = nil,
     --- The mouse button that was the cause of the event, whether pressed or released,
-    -- according to the @{rtk.mouse|mouse button constants}
+    -- according to the @{rtk.mouse|mouse button constants}.  For `MOUSEMOVE` events,
+    -- this will be the last pressed button (or 0 if no button is currently pressed).
     -- @meta read-only
     -- @type number
     button = 0,
-    --- A bitmap of all @{rtk.mouse|mouse buttons} currently pressed
+    --- A bitmap of all @{rtk.mouse|mouse buttons} currently pressed.  Note that
+    -- for `MOUSEUP` events this may be 0, if there are no more buttons pressed.
+    -- To determine which button was released, use the `button` field.
     -- @meta read-only
     -- @type number
     buttons = 0,

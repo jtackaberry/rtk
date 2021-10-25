@@ -1139,7 +1139,7 @@ function rtk.Window:_get_mousemove_event(simulated)
     -- Event x/y attributes also reset according to current gfx context.
     local event = self._event:reset(rtk.Event.MOUSEMOVE)
     event.simulated = simulated
-    event:set_modifiers(gfx.mouse_cap, gfx.mouse_cap)
+    event:set_modifiers(gfx.mouse_cap, rtk.mouse.state.latest or 0)
     return event
 end
 
