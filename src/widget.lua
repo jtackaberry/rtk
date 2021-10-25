@@ -3041,7 +3041,7 @@ end
 --   and `ondrop*` handlers as `dragarg`.
 -- @treturn bool|nil if false, the widget will not be droppable and
 --   the `ondrop*` handlers of widgets this one hovers over will not be triggered,
---   while with any the value (including nil), `ondrop*` handlers will be called
+--   while with any other value (including nil), `ondrop*` handlers will be called
 --   on widgets we hover over.
 function rtk.Widget:ondragstart(event, x, y, t) end
 
