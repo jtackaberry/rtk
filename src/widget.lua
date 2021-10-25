@@ -1381,9 +1381,9 @@ end
 
 --- Begin an animation against one of the widget's attributes.
 --
--- All numeric attributes can be animated, as well as tables containing numeric
--- values with 1-4 elements.  This means that colors can be animated, as colors
--- are @{calc|calculated} as their 4-element rgba values.
+-- All numeric attributes can be animated, as well as tables containing numeric values.
+-- This means that colors can be animated, as colors are @{calc|calculated} as their
+-- 4-element rgba values.
 --
 -- All other attributes are animatable only where indicated.
 --

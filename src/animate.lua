@@ -204,19 +204,22 @@ local function _resolve(x, src, dst)
     return src + x*(dst-src)
 end
 
+-- Step functions for tables containing strictly numeric elements.  Here we include
+-- unrolled functions for tables 1-4 elements as these are the most common, plus
+-- a slow version that supports arbitrary sized tables by looping.
 local _table_stepfuncs = {
-    [1] = function (widget, anim)
+    [1] = function(widget, anim)
         local x = anim.easingfunc(anim.pct)
         return {_resolve(x, anim.src[1], anim.dst[1])}
     end,
-    [2] = function (widget, anim)
+    [2] = function(widget, anim)
         local x = anim.easingfunc(anim.pct)
         local src, dst = anim.src, anim.dst
         local f1 = _resolve(x, src[1], dst[1])
         local f2 = _resolve(x, src[2], dst[2])
         return {f1, f2}
     end,
-    [3] = function (widget, anim)
+    [3] = function(widget, anim)
         local x = anim.easingfunc(anim.pct)
         local src, dst = anim.src, anim.dst
         local f1 = _resolve(x, src[1], dst[1])
@@ -224,7 +227,7 @@ local _table_stepfuncs = {
         local f3 = _resolve(x, src[3], dst[3])
         return {f1, f2, f3}
     end,
-    [4] = function (widget, anim)
+    [4] = function(widget, anim)
         local x = anim.easingfunc(anim.pct)
         local src, dst = anim.src, anim.dst
         local f1 = _resolve(x, src[1], dst[1])
@@ -233,6 +236,15 @@ local _table_stepfuncs = {
         local f4 = _resolve(x, src[4], dst[4])
         return {f1, f2, f3, f4}
     end,
+    any = function(widget, anim)
+        local x = anim.easingfunc(anim.pct)
+        local src, dst = anim.src, anim.dst
+        local result = {}
+        for i=1, #src do
+            result[i] = _resolve(x, src[i], dst[i])
+        end
+        return result
+    end
 }
 
 -- Execute the next step of all queued animations.
@@ -407,7 +419,11 @@ function rtk.queue_animation(kwargs)
                 assert(type(kwargs.src[i]) == 'number', 'animation src value table must not have non-numeric elements')
             end
             kwargs.stepfunc = _table_stepfuncs[sz]
-            assert(kwargs.stepfunc, 'only tables with 1 to 4 elements are supported by native step functions')
+            if not kwargs.stepfunc then
+                -- Table has more than 4 elements, so need to use the slower
+                -- looping step function.
+                kwargs.stepfunc = _table_stepfuncs.any
+            end
         else
             assert(tp == 'number', string.format('animation src value %s is invalid', kwargs.src))
         end
