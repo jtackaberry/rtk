@@ -919,6 +919,11 @@ rtk.Widget.register{
 -- The last unique id assigned to a widget object
 rtk.Widget.static.last_index = 0
 
+function rtk.Widget:__allocate()
+    self.__id = rtk.Widget.static.last_index
+    rtk.Widget.static.last_index = rtk.Widget.static.last_index + 1
+end
+
 -- Not documenting widget constructor as it's not intended to be invoked
 -- directly.  Use subclasses instead.
 function rtk.Widget:initialize(attrs,...)
@@ -977,8 +982,7 @@ function rtk.Widget:initialize(attrs,...)
 
     -- Do this after setting attributes in case the user gets cheeky and adds
     -- an id attribute, which will break so many things.
-    self.id = rtk.Widget.static.last_index
-    rtk.Widget.static.last_index = rtk.Widget.static.last_index + 1
+    self.id = self.__id
     self:_setattrs(merged)
 
     -- These fields are internal only, not part of the API, and so not
@@ -989,10 +993,16 @@ function rtk.Widget:initialize(attrs,...)
 end
 
 function rtk.Widget:__tostring()
+    local clsname = self.class.name:gsub('rtk.', '')
+    if not self.calc then
+        -- allocate() was explicitly called() and we're stringifying
+        -- before initialize().
+        return string.format('<%s (uninitialized)>', clsname)
+    end
     local info = self:__tostring_info()
     info = info and string.format('<%s>', info) or ''
     return string.format('%s%s[%s] (%s,%s %sx%s)',
-        self.class.name:gsub('rtk.', ''), info, self.id,
+        clsname, info, self.id,
         self.calc.x, self.calc.y, self.calc.w, self.calc.h
     )
 end

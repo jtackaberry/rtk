@@ -136,7 +136,12 @@ local DefaultMixin = {
   static = {
     allocate = function(self)
       assert(type(self) == 'table', "Make sure that you are using 'Class:allocate' instead of 'Class.allocate'")
-      return setmetatable({ class = self }, self.__instanceDict)
+      -- XXX: customization by tack, not in upstream
+      local instance = setmetatable({ class = self }, self.__instanceDict)
+      if instance.__allocate then
+        instance:__allocate()
+      end
+      return instance
     end,
 
     new = function(self, ...)
