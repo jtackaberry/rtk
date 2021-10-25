@@ -1421,7 +1421,11 @@ end
 -- You can also cancel a running animation by calling @{rtk.Future:cancel|cancel()} on
 -- the `rtk.Future`.
 --
--- If there is an existing animation for the given attribute, it will be replaced.
+-- If there is an existing animation for the given attribute, it will be
+-- replaced only if the `dst` value has changed, in which case the animation
+-- will be restarted from its current mid-animation value toward the new `dst`
+-- value.  If the `dst` is the same, then the in-flight animation will continue
+-- to run without interruption.
 --
 -- @code
 --   -- This example causes the button width to animate back and forth between
@@ -1446,11 +1450,28 @@ end
 -- @see rtk.queue_animation
 function rtk.Widget:animate(kwargs)
     assert(kwargs and (kwargs.attr or #kwargs > 0), 'missing animation arguments')
+    local calc = self.calc
     local attr = kwargs.attr or kwargs[1]
     local meta = self.class.attributes.get(attr)
+    local key = string.format('%s.%s', self.id, attr)
+    -- Current animation (if any)
+    local curanim = rtk._animations[key]
+    -- Current destination value (if in-flight animation) or current calculated value
+    -- for this attribute.
+    local curdst = curanim and curanim.dst or self.calc[attr]
+
+    -- Fast path: when we already know the new dst value at this point, don't queue animation
+    -- if there is already an active animation with this dst value, or if the current
+    -- calculated value for this attribute is already set to dst.
+    if curdst == kwargs.dst and not meta.calculate and attr ~= 'w' and attr ~= 'h' then
+        -- If there's a current animation, return the Future from that, otherwise
+        -- in order to maintain a consistent API, craft a pre-resolved Future.
+        return curanim and curanim.future or rtk.Future():resolve(self)
+    end
+
     -- Assign in case attr was passed as a positional argument.
     kwargs.attr = attr
-    kwargs.key = string.format('%s.%s', self.id, attr)
+    kwargs.key = key
     kwargs.widget = self
     kwargs.attrmeta = meta
     kwargs.stepfunc = meta.animate
@@ -1467,10 +1488,9 @@ function rtk.Widget:animate(kwargs)
     -- to ensure that once the animation is complete, the attribute will be
     -- reset from the explicit calculated value back to nil, so it will continue
     -- to reflow with its intrinsic size after the animation is done.
-    kwargs.doneval = kwargs.dst
+    kwargs.doneval = kwargs.doneval or kwargs.dst
 
     if attr == 'w' or attr == 'h' then
-        local calc = self.calc
         -- If src value is nil or fractional and we're animating one of the
         -- dimensions, set the animation src to the current calculated size.
         if not kwargs.src or kwargs.src <= 1.0 then
@@ -1507,8 +1527,17 @@ function rtk.Widget:animate(kwargs)
             kwargs.dst = kwargs.calculate(self, attr, kwargs.dst, {})
         end
     end
+    -- As earlier, but the slow path: now that we've calculated the dst value,
+    -- avoid scheduling a new animation with the same dst.
+    if curdst == kwargs.dst then
+        return curanim and curanim.future or rtk.Future():resolve(self)
+    end
+
     if not kwargs.src then
-        kwargs.src = meta.get and meta.get(self, attr, self.calc) or self.calc[attr]
+        -- Fetch the point-in-time calculated value -- if the attribute is animating we
+        -- want to start from the current mid-animation value, not the current animation's
+        -- dst value.
+        kwargs.src = self:calc(attr, true)
     elseif kwargs.calculate then
         kwargs.src = kwargs.calculate(self, attr, kwargs.src, {})
     end

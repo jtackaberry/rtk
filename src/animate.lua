@@ -358,6 +358,24 @@ function rtk._do_animations(now)
     end
 end
 
+local function _is_equal(a, b)
+    local ta = type(a)
+    if ta ~= type(b) then
+        return false
+    elseif ta == 'table' then
+        if #a ~= #b then
+            return false
+        end
+        for i = 1, #a do
+            if a[i] ~= b[i] then
+                return false
+            end
+        end
+        return true
+    end
+    return a == b
+end
+
 --- Low level function to begin an animation.
 --
 -- @warning
@@ -404,17 +422,26 @@ function rtk.queue_animation(kwargs)
     local key = kwargs.key
     local anim = rtk._animations[key]
     if anim then
-        -- We are replacing an existing animation, so cancel it.
-        anim.future:cancel()
+        -- There's an existing animation.  If the destination value is the same, return
+        -- the existing animatin's Future.
+        if _is_equal(anim.dst, kwargs.dst) then
+            return anim.future
+        else
+            -- New destination value for this attribute, so we'll replace the current
+            -- animation.  Cancel it first.
+            anim.future:cancel()
+        end
     end
+    if _is_equal(kwargs.src, kwargs.dst) then
+        -- There's nothing to animate.
+        future:resolve()
+        return future
+    end
+    -- Add callback to clean up animation state table if the Future is cancelled.
     future:cancelled(function()
         rtk._animations[key] = nil
         rtk._animations_len = rtk._animations_len - 1
     end)
-    if kwargs.src == kwargs.dst then
-        future:resolve()
-        return future
-    end
 
     local duration = kwargs.duration or 0.5
     local easingfunc = rtk.easing[kwargs.easing or 'linear']
