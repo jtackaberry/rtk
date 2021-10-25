@@ -720,15 +720,17 @@ end
 function rtk.Viewport:_scrollto(x, y, smooth, animx, animy)
     local calc = self.calc
     if not smooth or not self.realized then
-        if x == self.scroll_left and y == self.scroll_top then
+        x = x or self.scroll_left
+        y = y or self.scroll_top
+        if x == calc.scroll_left and y == calc.scroll_top then
             return
         end
         -- We blindly accept the provided positions as the child hasn't been reflowed so
         -- we can't sanity check the bounds.  Instead, the offsets will be clamped on next
         -- draw or event.
         self._needs_clamping = true
-        calc.scroll_left = x or self.scroll_left
-        calc.scroll_top = y or self.scroll_top
+        calc.scroll_left = x
+        calc.scroll_top = y
         -- Sync to user-facing attributes.
         self.scroll_left = calc.scroll_left
         self.scroll_top = calc.scroll_top
