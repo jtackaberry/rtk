@@ -207,7 +207,7 @@ end
 local _table_stepfuncs = {
     [1] = function (widget, anim)
         local x = anim.easingfunc(anim.pct)
-        return {_resolve(x, anim.src[1], anim.dst[2])}
+        return {_resolve(x, anim.src[1], anim.dst[1])}
     end,
     [2] = function (widget, anim)
         local x = anim.easingfunc(anim.pct)
