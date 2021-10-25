@@ -274,23 +274,27 @@ function rtk._do_animations(now)
         local done = nil
         for key, anim in pairs(rtk._animations) do
             local widget = anim.widget
+            local target = anim.target or anim.widget
             local attr = anim.attr
             local finished = anim.pct >= 1.0
             local elapsed = now - anim._start_time
             local newval
             if anim.stepfunc then
-                newval = anim.stepfunc(widget, anim)
+                newval = anim.stepfunc(target, anim)
             else
                 newval = anim.resolve(anim.easingfunc(anim.pct))
             end
             anim.frames = anim.frames + 1
             if not finished and elapsed > anim.duration*1.5 then
-                log.warning('animation: %s %s - failed to complete within 1.5x of duration', widget, attr)
+                log.warning('animation: %s %s - failed to complete within 1.5x of duration', target, attr)
                 finished = true
             end
-            if anim.func then
-                anim.func(attr, newval)
-            elseif widget then
+            if anim.update then
+                -- Per-frame user-custom callback.  Can be used for animations against things
+                -- other than widget attributes.
+                anim.update(finished and anim.doneval or newval, target, attr)
+            end
+            if widget then
                 if not finished then
                     -- widget:attr(attr, newval) is more correct but much slower (about
                     -- 4x) due to all the indirect callbacks and event handlers.  Set the
@@ -318,7 +322,7 @@ function rtk._do_animations(now)
                 -- so in the name of performance.
                 local reflow = anim.reflow or (anim.attrmeta and anim.attrmeta.reflow) or rtk.Widget.REFLOW_PARTIAL
                 if reflow and reflow ~= rtk.Widget.REFLOW_NONE then
-                        widget:queue_reflow(reflow)
+                    widget:queue_reflow(reflow)
                 end
                 -- And likewise for window attributes that require window sync.
                 if anim.attrmeta and anim.attrmeta.window_sync then
@@ -333,20 +337,20 @@ function rtk._do_animations(now)
                     done = {}
                 end
                 done[#done + 1] = anim
-                local took = reaper.time_precise() - anim._start_time
-                local missed = took - anim.duration
-                log.log(
-                    math.abs(missed) > 0.05 and log.DEBUG or log.DEBUG2,
-                    'animation: done %s: %s -> %s on %s frames=%s fps=%s took=%.1f (missed by %.3f)',
-                    attr, anim.src, anim.dst, widget, anim.frames, rtk.fps, took, missed
-                )
             else
                 anim.pct = anim.pct + anim.pctstep
             end
         end
         if done then
             for _, anim in ipairs(done) do
-                anim.future:resolve(anim.widget)
+                anim.future:resolve(anim.widget or anim.target)
+                local took = reaper.time_precise() - anim._start_time
+                local missed = took - anim.duration
+                log.log(
+                    math.abs(missed) > 0.05 and log.DEBUG or log.DEBUG2,
+                    'animation: done %s: %s -> %s on %s frames=%s fps=%s took=%.1f (missed by %.3f)',
+                    anim.attr, anim.src, anim.dst, anim.target or anim.widget, anim.frames, rtk.fps, took, missed
+                )
             end
         end
         -- True indicates animations were performed
@@ -363,12 +367,19 @@ end
 -- The arguments are the same as `rtk.Widget:animate()`, plus:
 --
 --   * `key`: a globally unique string that identifies this animation
---   * `widget`: an `rtk.Widget` to act upon
+--   * `widget`: an `rtk.Widget` to act upon.  If defined, the `attr` field defines
+--      a widget attribute to animate.  If nil, you'll probably want to specify `update`.
+--   * `update`: an optional function that's invoked on each step of the animation,
+--      and which receives as arguments (value, target, attr).  This is useful when you
+--      want to animate something other than a widget attribute.
+--   * `target`: the target table against which the animation is occurring.  This defaults
+--      to `widget` if nil.
 --   * `stepfunc`: a function invoked to calculate the next step of the animation,
 --      which is manditory when src/dst are not numbers, or 1, 2, 3, or 4 element tables.
---      The function takes two arguments `(widget, anim)` where `widget` is the `rtk.Widget`
---      being animated, and `anim` is a table holding the animation state (see below). The
---      function must return the attribute value for the next frame in the animation.
+--      The function takes two arguments `(target, anim)` where `target` corresponds to
+--      the `target` field in the animation table (described above), and `anim` is a table
+--      holding the animation state (see below). The function must return the attribute value
+--      for the next frame in the animation.
 --
 -- The animation state table passed to `stepfunc` is also the same table returned here and
 -- by `rtk.Widget:get_animation()`.  It contains all user-supplied fields, fully resolved
@@ -388,7 +399,7 @@ end
 -- @tparam table kwargs of attributes describing the animation
 -- @treturn rtk.Future a Future object tracking the state of the asynchronous animation
 function rtk.queue_animation(kwargs)
-    assert(kwargs and kwargs.key)
+    assert(kwargs and kwargs.key, 'animation table missing key field')
     local future = rtk.Future()
     local key = kwargs.key
     local anim = rtk._animations[key]
@@ -438,6 +449,7 @@ function rtk.queue_animation(kwargs)
         -- If no step function is provided, we can default src to 0 if nil.
         src = kwargs.src or (not kwargs.stepfunc and 0 or nil),
         dst = kwargs.dst or 0,
+        doneval = kwargs.doneval or kwargs.dst,
         pct = step,
         pctstep = step,
         duration = duration,
