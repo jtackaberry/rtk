@@ -251,7 +251,7 @@ function rtk.Event:set_widget_pressed(widget)
 end
 
 function rtk.Event:is_widget_pressed(widget)
-    return rtk._pressed_widgets and rtk._pressed_widgets[widget.id]
+    return rtk._pressed_widgets and rtk._pressed_widgets[widget.id] and true or false
 end
 
 function rtk.Event:set_button_state(key, value)
