@@ -398,13 +398,16 @@ end
 --      the `target` field in the animation table (described above), and `anim` is a table
 --      holding the animation state (see below). The function must return the attribute value
 --      for the next frame in the animation.
+--   * `doneval`: when the animation is finished, the target attribute will be set to this
+--     final value.  Defaults to `dst` if not specified.
 --
 -- The animation state table passed to `stepfunc` is also the same table returned here and
 -- by `rtk.Widget:get_animation()`.  It contains all user-supplied fields, fully resolved
 -- `src` and `dst` values, as well as these fields:
 --
 --   * `pct`: the percentage of the next step in the animation (from 0.0 to 1.0)
---   * `pctstep`: the percentage increase for each step in the animation (from 0.0 to 1.0)
+--   * `pctstep`: the percentage increase for each step in the animation (from 0.0 to 1.0).
+--     This is adaptive based on the value of `rtk.fps` at the time the animation is started.
 --   * `easingfunc`: the easing function that the `easing` name resolved to
 --   * `future`: an `rtk.Future` representing the state of the running animation
 --   * `resolve`: a convenience function that can be used by custom step functions to
