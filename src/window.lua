@@ -1389,7 +1389,20 @@ function rtk.Window:_update()
            -- scroll.
            (rtk.dnd.dragging and buttons_down) then
             event = self:_get_mousemove_event(not mouse_moved)
-        elseif rtk.mouse.down ~= 0 then
+            if buttons_down and rtk.touchscroll and not rtk.dnd.dragging then
+                -- With touch scrolling, button down may be delayed.  Hold off issuing
+                -- mousemove events with button down until we have had a chance to fire
+                -- mousedown first.
+                local mousedown_handled = event:get_button_state('mousedown-handled')
+                if not mousedown_handled then
+                    -- Actual values saved for use later in _handle_window_event().
+                    event._actual_buttons = event.buttons
+                    event._actual_button = event.button
+                    event.buttons = 0
+                    event.button = 0
+                end
+            end
+        elseif rtk.mouse.down ~= 0 and not mouse_button_changed then
             -- Continuously generated mousedown events for the last-pressed button for onlongpress()
             -- and for time-deferred onmousedown() (for touch-scrolling).  We only need to keep
             -- firing these simulated events for as long as rtk.long_press_delay or
@@ -1423,6 +1436,8 @@ function rtk.Window:_update()
         -- MOUSEMOVE events for each button.  Rather, event.buttons will contain the
         -- mask and we pick an event.button based on an order in priority from left,
         -- right, and middle.
+        --
+        -- _get_mouse_button_event() also updates rtk.mouse.down
         event = self:_get_mouse_button_event(rtk.mouse.BUTTON_LEFT)
         if not event then
             event = self:_get_mouse_button_event(rtk.mouse.BUTTON_RIGHT)
@@ -1625,6 +1640,17 @@ function rtk.Window:_handle_window_event(event, now)
     end
     event.time = now
     rtk.Container._handle_event(self, 0, 0, event, false, rtk._modal == nil)
+
+    if event._actual_buttons then
+        -- This is a MOUSEMOVE event that occurred when a) touch scrolling is enabled,
+        -- b) the deferred mousedown did not yet fire, and c) no dragging is currently
+        -- taking place, so the event we sent to the widgets had artificially zeroed
+        -- buttons.  Restore the original values to properly detect drag start.
+        event.buttons = event._actual_buttons
+        event.button = event._actual_button
+        event._actual_buttons = nil
+    end
+
     -- log.info('handle window: %s %s', self.title, event)
     assert(event.type ~= rtk.Event.MOUSEDOWN or event.button ~= 0)
     if event.type == rtk.Event.MOUSEUP then
