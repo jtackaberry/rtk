@@ -375,7 +375,7 @@ function rtk.Entry:_handle_blur(event, other)
 end
 
 function rtk.Entry:_blink()
-    if self.calc.blink and self:focused() and self.window.is_focused then
+    if self.calc.blink and self:focused() then
         self._blinking = true
         local ctr = self._caretctr % 16
         self._caretctr = self._caretctr + 1
@@ -903,7 +903,7 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
 
     rtk.Widget._draw(self, offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)
     local x, y = calc.x + offx, calc.y + offy
-    local focused = self:focused() and self.window.is_focused
+    local focused = self:focused()
     if (y + calc.h < 0 or y > cliph or calc.ghost) and not focused then
         -- Widget would not be visible on current drawing target
         return false

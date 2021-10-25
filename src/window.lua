@@ -1517,12 +1517,22 @@ function rtk.Window:_update()
             blitted = true
         end
 
-        -- Emit focus/blur events for the window itself.  This requires js_ReascriptAPI to
-        -- work.
+        -- Emit focus/blur events for the window itself, and handle blurring and refocusing
+        -- widgets as the window itself loses/regains focus.
+        --
+        -- This requires js_ReascriptAPI to work.
         if focus_changed then
             if self.is_focused then
+                if self._focused_saved then
+                    self._focused_saved:focus(event)
+                    self._focused_saved = nil
+                end
                 self:onfocus(event)
             else
+                if rtk.focused then
+                    self._focused_saved = rtk.focused
+                    rtk.focused:blur(event, nil)
+                end
                 self:onblur(event)
             end
         end
