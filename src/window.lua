@@ -1136,8 +1136,8 @@ function rtk.Window:_get_mouse_button_event(bit, type)
 end
 
 function rtk.Window:_get_mousemove_event(simulated)
-    event = self._event:reset(rtk.Event.MOUSEMOVE)
-    event.x, event.y = gfx.mouse_x, gfx.mouse_y
+    -- Event x/y attributes also reset according to current gfx context.
+    local event = self._event:reset(rtk.Event.MOUSEMOVE)
     event.simulated = simulated
     event:set_modifiers(gfx.mouse_cap, gfx.mouse_cap)
     return event

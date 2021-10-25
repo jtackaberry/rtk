@@ -192,6 +192,9 @@ function rtk.Event:reset(type)
     self.files = nil
     self.simulated = nil
     self.time = nil
+    self.char = nil
+    self.x = gfx.mouse_x
+    self.y = gfx.mouse_y
     return self
 end
 
