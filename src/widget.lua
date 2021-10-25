@@ -839,13 +839,17 @@ rtk.Widget.register{
     -- @meta read/write
     -- @type boolean
     debug = nil,
-    --- An automatically generated and monotonically increasing numeric
-    -- identifier of the widget.  The id is guaranteed to be unique across the
-    -- life of the program and will not be reused, and widgets will get the same
-    -- id assigned between program executions as long as the overall scene graph
+    --- An automatically generated identifier for the widget, which is guaranteed to be
+    -- unique across the life of the program and will not be reused.  Widgets will get the
+    -- same id assigned between program executions as long as the overall scene graph
     -- doesn't change.
+    --
+    -- The value currently happens to be a stringified numeric value, but this may change
+    -- in the future and should not be assumed by applications.  Treat this value as an
+    -- opaque string.
+    --
     -- @meta read-only
-    -- @type number
+    -- @type string
     id = nil,
 
     --- A name for this widget that can be accessed via the `refs` table (default nil).
@@ -920,7 +924,7 @@ rtk.Widget.register{
 rtk.Widget.static.last_index = 0
 
 function rtk.Widget:__allocate()
-    self.__id = rtk.Widget.static.last_index
+    self.__id = tostring(rtk.Widget.static.last_index)
     rtk.Widget.static.last_index = rtk.Widget.static.last_index + 1
 end
 
@@ -1063,11 +1067,11 @@ end
 function rtk.Widget:_get_debug_color()
     if not self.debug_color then
         -- Generate a debug color based on the widget id
-        function hashint(i, seed)
+        local function hashint(i, seed)
             math.randomseed(i * (seed*53))
             return math.random(40, 235) / 255.0
         end
-        local id = type(self.id) == 'string' and self.id:hash() or self.id
+        local id = self.id:hash()
         self.debug_color = {
             hashint(id, 1),
             hashint(id, 2),
