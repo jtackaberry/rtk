@@ -1022,13 +1022,15 @@ function rtk.Widget:_setattrs(attrs)
     local calc = self.calc
     -- First exclude priority attributes.
     for k, v in pairs(attrs) do
-        if not get(k).priority then
+        local meta = get(k)
+        if not meta.priority then
             -- We can only invoke the default value function for non priority attributes,
             -- as default funcs for priority attributes may depend on non-priority ones.
             if v == rtk.Attribute.FUNCTION then
                 v = self.class.attributes[k].default_func(self, k)
             end
-            calc[k] = self:_calc_attr(k, v)
+            local calculated = self:_calc_attr(k, v, nil, meta)
+            self:_set_calc_attr(k, v, calculated, self.calc, meta)
         else
             priority[#priority+1] = k
         end
@@ -1042,7 +1044,8 @@ function rtk.Widget:_setattrs(attrs)
             self[k] = v
         end
         if v ~= nil then
-            calc[k] = self:_calc_attr(k, v)
+            local calculated = self:_calc_attr(k, v)
+            self:_set_calc_attr(k, v, calculated, self.calc)
         end
     end
 end
@@ -1206,12 +1209,12 @@ function rtk.Widget:attr(attr, value, trigger, reflow)
             value = meta.default
         end
     end
-    local calculated = self:_calc_attr(attr, value)
+    local calculated = self:_calc_attr(attr, value, nil, meta)
     local oldval = self[attr]
     local replaces = self.class.attributes.get(attr).replaces
     if replaces then
         for i = 1, #replaces do
-            self[replaces[i]] = nl
+            self[replaces[i]] = nil
         end
     end
     -- If the attribute we're setting is a shorthand attribute that replaces
@@ -1220,18 +1223,24 @@ function rtk.Widget:attr(attr, value, trigger, reflow)
     -- changing the shorthand value will end up modifying a replaced attribute.
     if value ~= oldval or calculated ~= self.calc[attr] or replaces or trigger then
         self[attr] = value
-        self.calc[attr] = calculated
+        self:_set_calc_attr(attr, value, calculated, self.calc, meta)
         self:_handle_attr(attr, calculated, oldval, trigger == nil or trigger, reflow)
     end
     -- Return self to allow chaining multiple attributes
     return self
 end
 
+-- Returns the calculated version of the attribute value.
+--
 -- Subclasses generally don't need to implement this unless they're doing
 -- something fairly custom.  Use rtk.Attribute calculate instead.
-function rtk.Widget:_calc_attr(attr, value, target)
+function rtk.Widget:_calc_attr(attr, value, target, meta)
     target = target or self.calc
-    local calculate = self.class.attributes.get(attr).calculate
+    meta = meta or self.class.attributes.get(attr)
+    if meta.type then
+        value = meta.type(value)
+    end
+    local calculate = meta.calculate
     if calculate then
         local tp = type(calculate)
         if tp == 'table' then
@@ -1244,6 +1253,15 @@ function rtk.Widget:_calc_attr(attr, value, target)
         end
     end
     return value
+end
+
+function rtk.Widget:_set_calc_attr(attr, value, calculated, target, meta)
+    meta = meta or self.class.attributes.get(attr)
+    if meta.set then
+       meta.set(self, attr, value, calculated, target)
+    else
+        self.calc[attr] = calculated
+    end
 end
 
 --- Moves the widget to explicit coordinates relative to its parent.

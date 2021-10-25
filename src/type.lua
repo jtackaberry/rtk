@@ -92,6 +92,12 @@ rtk.Attribute = {
     --
     -- The function must return the calculated version of the value.
     --
+    -- @warning Beware side effects
+    --   This function will be invoked in each step of an animation against this attribute,
+    --   so be careful about side effects in this function, especially costly ones.  Define
+    --   a `set` function instead, unless you really want the side effect(s) to occur within
+    --   each animation frame.
+    --
     -- @type table|function|nil
     calculate = nil,
     --- If true, ensures that the attribute is calculated after all non-priority
@@ -140,6 +146,24 @@ rtk.Attribute = {
     -- The function then returns the current calculated value of the attribute.
     -- @type function|nil
     get = nil,
+
+    --- An optional custom function to set the current calculated value for the attribute.
+    --
+    -- By default (when not defined), the return value of `calculate()` is assigned to the
+    -- attribute's field in the widget's @{rtk.Widget.calc|calc} table, however if this function
+    -- is defined, it's invoked instead.
+    --
+    -- This function receives 3 arguments:
+    --   1. the instance of the object whose attributes are being fetched
+    --   2. the attribute name
+    --   3. the user-defined pre-calculated value for the attribute
+    --   4. the calculated version of the value (as returned by `calculate()`.
+    --   5. the target table holding calculated attributes (`rtk.Widget.calc` typically)
+    --
+    -- The function's return value has no significance.
+    --
+    -- @type function|nil
+    set = nil,
 }
 
 -- Pseudo class, but not using middleclass since we don't need the overhead.
