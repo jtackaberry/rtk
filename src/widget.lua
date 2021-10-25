@@ -260,15 +260,15 @@ rtk.Widget.register{
     -- #### Calculated Attributes
     --
     -- When you set the value of a read/write attribute, it is ultimately translated into
-    -- a low-level **calculated** value.  These calculated values are stored in the `calc`
-    -- table.  In the above code example, `button.calc.color` will be the 4-element
+    -- a low-level **calculated** value.  These calculated values can be fetched via the `calc()`
+    -- method.  In the above code example, `button:calc('color')` will return the 4-element
     -- {r,g,b,a} table holding the calculated color used internally during drawing.
     --
     -- Similarly, if you set `halign='center'` the stringified value of the alignment
-    -- constant is translated to `rtk.Widget.CENTER`, stored in `widget.calc.halign`.  Or,
-    -- suppose you set `w=0.5` to assign a 50% relative width to the widget (more on that
-    -- later), then once the widget reflows `widget.calc.w` will contain the calculated
-    -- width in pixels.
+    -- constant is translated to `rtk.Widget.CENTER`, which would be returned by
+    -- `widget:calc('halign')`.  Or, suppose you set `w=0.5` to assign a 50% relative
+    -- width to the widget (more on that later), then once the widget reflows
+    -- `widget:calc('w')` will return the calculated width in pixels.
     --
     -- In almost all cases, the value you store in the attribute remains the way you set it,
     -- and rtk internally uses the calculated variants.  There are some cases where the
@@ -794,46 +794,6 @@ rtk.Widget.register{
     --
     -- @section other
 
-    --- A table holding calculated variants of read/write attributes.  Calculated attributes
-    -- have been parsed and transformed into efficient values that are used for internal
-    -- operations.
-    --
-    -- @code
-    --    local b = rtk.Button{"Don't Panic", halign='right', padding='10px 30px'}
-    --    log.info('halign=%s is calculated as %s', b.halign, b.calc.halign)
-    --    log.info('padding=%s is calculated as %s', b.padding, table.tostring(b.calc.padding))
-    --    b:attr('color', 'indigo')
-    --    log.info('color=%s is calculated as %s', b.color, table.tostring(b.calc.color))
-    --
-    -- The above example outputs something along these lines:
-    --
-    -- ```
-    -- 17:32:30.292 [INFO]  halign=right is calculated as 2
-    -- 17:32:30.292 [INFO]  padding=10px 30px is calculated as {10,30,10,30}
-    -- 17:32:30.292 [INFO]  color=indigo is calculated as {0.29411764705882,0.0,0.50980392156863,1}
-    -- ```
-    --
-    -- @warning Calculated Geometry
-    --   In the example above, the calculated attributes were all available immediately after
-    --   setting, but most attributes related to @{geometry} first require a `reflow()` before
-    --   they're available.  Consider:
-    --
-    --     @code
-    --        local text = rtk.Text{"They've gone to plaid!", wrap=true}
-    --        -- What should this output?
-    --        log.info('calculated width is %s', text.calc.w)
-    --
-    --   Here the size of the `rtk.Text` widget depends on its bounding box, but it hasn't
-    --   been added to a container yet, and even if it were, that container may not yet have
-    --   been added to its own container yet, and so on, until this `rtk.Text` widget ultimately
-    --   descends from `rtk.Window`.  So widget geometry is not calculated until reflow has
-    --   occurred.  It is always safe to access in @{ondraw|drawing handlers}, however.
-    --
-    -- More on attributes @{widget.attributes|here}.
-    -- @meta read-only
-    -- @type table
-    calc = nil,
-
     --- If true, a translucent box will be drawn over the widget visually indicating the
     -- widget's geometry and padding, which is useful for debugging layout (default false).
     -- @meta read/write
@@ -944,10 +904,15 @@ function rtk.Widget:initialize(attrs,...)
             table.__empty=false
         end
     })
-    -- Table of calculated attributes.
+    -- Table of calculated attributes.  See also _calc().
     self.calc = {
         border_uniform = true
     }
+    setmetatable(self.calc, {
+        __call=function(_, _, attr, instant)
+            return self:_calc(attr, instant)
+        end
+    })
     local tables = {self.class.attributes.defaults, ...}
     local merged = {}
     for n = 1, #tables do
@@ -1168,7 +1133,7 @@ end
 --
 -- This method is the proper way to dynamically modify any of the widget's fields to
 -- ensure they are properly reflected. In most cases the value is immediately calculated
--- and the calculated form is accessible via the `calc` field. (The exception is attributes
+-- and the calculated form is accessible via the `calc()` method. (The exception is attributes
 -- that depend on parent geometry, in which case the value will not be calculated until
 -- next reflow.)
 --
@@ -1261,6 +1226,77 @@ function rtk.Widget:_set_calc_attr(attr, value, calculated, target, meta)
        meta.set(self, attr, value, calculated, target)
     else
         self.calc[attr] = calculated
+    end
+end
+
+--- Returns the calculated value of the given attribute.
+--
+-- @rename calc
+--
+-- Calculated attributes have been parsed and transformed into efficient values that are
+-- used for internal operations.
+--
+-- @code
+--    local b = rtk.Button{"Don't Panic", halign='right', padding='10px 30px'}
+--    log.info('halign=%s is calculated as %s', b.halign, b:calc('halign'))
+--    log.info('padding=%s is calculated as %s', b.padding, table.tostring(b:calc('padding')))
+--    b:attr('color', 'indigo')
+--    log.info('color=%s is calculated as %s', b.color, table.tostring(b:calc('color')))
+--
+-- The above example outputs something along these lines:
+--
+-- ```
+-- 17:32:30.292 [INFO]  halign=right is calculated as 2
+-- 17:32:30.292 [INFO]  padding=10px 30px is calculated as {10,30,10,30}
+-- 17:32:30.292 [INFO]  color=indigo is calculated as {0.29411764705882,0.0,0.50980392156863,1}
+-- ```
+--
+-- @warning Calculated Geometry
+--   In the example above, the calculated attributes were all available immediately after
+--   setting, but most attributes related to @{geometry} first require a `reflow()` before
+--   they're available.  Consider:
+--
+--     @code
+--        local text = rtk.Text{"They've gone to plaid!", wrap=true}
+--        -- What should this output?
+--        log.info('calculated width is %s', text:calc('w'))
+--
+--   Here the size of the `rtk.Text` widget depends on its bounding box, but it hasn't
+--   been added to a container yet, and even if it were, that container may not yet have
+--   been added to its own container yet, and so on, until this `rtk.Text` widget ultimately
+--   descends from `rtk.Window`.  So widget geometry is not calculated until reflow has
+--   occurred.  It is always safe to access in @{ondraw|drawing handlers}, however.
+--
+-- More on attributes @{widget.attributes|here}.
+--
+-- Note that `calc` can also be accessed as a table.  For example, instead of
+-- `widget:calc('attr')` you can access `widget.calc.attr`.  This means of access is
+-- much faster as it bypasses the abstractions provided when invoking as a method,
+-- but is also more limited: @{rtk.Attribute.get|attribute getters} are not taken into
+-- account, and the table value is *always* the current point-in-time value of an
+-- attribute being animated.
+--
+-- Due to the significant performance benefit which can be useful in certain cases, table
+-- access is a supported API, but be aware of its limitations.  When in doubt, invoke
+-- `calc()` as a method.
+--
+-- @tparam string attr the name of the attribute whose calculated value to return
+-- @tparam bool|nil instant if true, the point-in-time calculated value of the attribute
+--   is returned even if it's in the middle of an animation.  False (or nil) will return
+--   the ultimate target value of the attribute if it's animating.
+-- @treturn any the target value of the attribute if animationg, or current value otherwise
+function rtk.Widget:_calc(attr, instant)
+    if not instant then
+        local anim = self:get_animation(attr)
+        if anim and anim.dst then
+            return anim.dst
+        end
+    end
+    local meta = self.class.attributes.get(attr)
+    if meta.get then
+        return meta.get(self, attr, self.calc)
+    else
+        return self.calc[attr]
     end
 end
 
@@ -1699,7 +1735,9 @@ end
 --   it's a table containing the current animation state, which includes everything
 --  passed to `animate()` (including any user-custom keys).
 function rtk.Widget:get_animation(attr)
-    local key = string.format('%d.%s', self.id, attr)
+    -- Faster than string.format().  This method is called from calc() so small
+    -- optimizations are useful.
+    local key = self.id .. '.' .. attr
     return rtk._animations[key]
 end
 
