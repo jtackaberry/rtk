@@ -526,15 +526,17 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
     -- modal.  At that point we want to be able to hide the scrollbar.
     if event.type == rtk.Event.MOUSEMOVE then
         local vscroll_in_gutter = false
-        if listen and is_child_dragging and dragging.show_scrollbar_on_drag then
+        if listen and is_child_dragging and dragging.scroll_on_drag then
             if event.y - 20 < y then
                 self:scrollby(0, -math.max(5, math.abs(y - event.y)), false)
             elseif event.y + 20 > y + calc.h then
                 self:scrollby(0, math.max(5, math.abs(y + calc.h - event.y)), false)
             end
-            -- Show scrollbar when we have a child dragging.
-            self._vscrolla.target = self._scrollbar_alpha_proximity
-            self._vscrolla.delta = 0.03
+            if dragging.show_scrollbar_on_drag then
+                -- Show scrollbar when we have a child dragging.
+                self._vscrolla.target = self._scrollbar_alpha_proximity
+                self._vscrolla.delta = 0.03
+            end
         elseif listen and not dragging and not event.handled and hovering then
             if calc.vscrollbar ~= rtk.Viewport.SCROLLBAR_NEVER and self._vscrollh > 0 then
                 local gutterx = self._vscrollx + clparentx - calc.vscrollbar_gutter
@@ -645,7 +647,6 @@ function rtk.Viewport:_handle_dragstart(event, x, y, t)
             -- indicates we are not droppable
             return {true, y - self:_get_vscrollbar_client_pos(), nil, false}, false
         elseif rtk.touchscroll and event.buttons & rtk.mouse.BUTTON_LEFT ~= 0 and self._vscrollh > 0 then
-            -- return {true, y, {{x, y, t}, {event.x, event.y, event.time}}, true}, false
             self.window:_set_touch_scrolling(self, true)
             return {true, y, {{x, y, t}}, true}, false
         end

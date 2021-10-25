@@ -732,7 +732,13 @@ rtk.Widget.register{
             return value and {rtk.color.rgba(value)}
         end,
     },
-    --- If true, dragging widgets will cause the parent `rtk.Viewport` (if any)
+    --- If true, dragging this widget will cause the parent `rtk.Viewport` (if any)
+    -- to scroll when the mouse is click-dragged against the viewport's edge
+    -- (default `true`).
+    -- @meta read/write
+    -- @type boolean
+    scroll_on_drag = true,
+    --- If true, dragging this widget will cause the parent `rtk.Viewport` (if any)
     -- to display the scrollbar while the child is @{ondragstart|dragging}
     -- (default `true`)
     -- @meta read/write
@@ -3070,8 +3076,12 @@ function rtk.Widget:_handle_dragend(event, dragarg)
 end
 
 
---- Called on a dragging widget when the mouse is moved while the button is
--- being held.
+--- Called on a dragging widget while the button is being held.
+--
+-- In order to support `scroll_on_drag`, this event is fired periodically
+-- on a dragging widget even if the mouse didn't actually move.  When this
+-- happens, the @{rtk.Event.simulated|simulated} field on the event will be
+-- true.
 --
 -- The default implementation does nothing.
 --
