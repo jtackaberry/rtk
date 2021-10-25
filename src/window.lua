@@ -168,6 +168,7 @@ rtk.Window.register{
     -- @type number
     w = rtk.Attribute{
         default=800,
+        type='number',
         window_sync=true,
         calculate=function(self, attr, value, target)
             return math.max(self.minw or 100, value or 0)

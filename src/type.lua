@@ -77,6 +77,12 @@ rtk.Attribute = {
     --   2. the attribute name
     -- @type any|function
     default = nil,
+    --- Optional type used to coerce values to the given type without the need for an
+    -- explicit `calculate` function.  One of `number`, `string`, or `boolean`.  If
+    -- nil (default), then no automatic coersion is done.
+    --
+    -- @type string|nil
+    type = nil,
     --- Allows attribute values to be arbitrarily translated as part of the generation
     -- of the attribute's calculated value.
     --
@@ -174,6 +180,28 @@ setmetatable(rtk.Attribute, {
     end
 })
 
+-- For value coersion based on type field.
+local falsemap = {
+    [false]=true,
+    [0]=true,
+    ['0']=true,
+    ['false']=true,
+    ['False']=true,
+    ['FALSE']=true
+}
+
+local typemaps = {
+    number=tonumber,
+    string=tostring,
+    boolean=function(v)
+        if falsemap[v] then
+            return false
+        elseif v then
+            return true
+        end
+    end,
+}
+
 --- References the `rtk.Attribute` field from another attribute in the class or its
 -- superclasses.
 --
@@ -242,9 +270,16 @@ local function register(cls, attrs)
                     refs[#refs+1] = {attrtable, field, v.attr}
                 end
             end
-            if type(attrtable.default) == 'function' then
+            local deftype = type(attrtable.default)
+            if deftype == 'function' then
                 attrtable.default_func = attrtable.default
                 attrtable.default = rtk.Attribute.FUNCTION
+            end
+            -- Convert type string to coerce function.  If default is specified and
+            -- there's no calculate function then we infer the type from the default
+            -- value, which covers most cases.
+            if (not attrtable.type and not attrtable.calculate) or type(attrtable.type) == 'string' then
+                attrtable.type = typemaps[attrtable.type or deftype]
             end
         end
         attributes[attr] = attrtable

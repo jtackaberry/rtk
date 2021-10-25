@@ -374,6 +374,7 @@ rtk.Widget.register{
     -- @meta read/write
     -- @type number|nil
     w = rtk.Attribute{
+        type='number',
         reflow=rtk.Widget.REFLOW_FULL,
         animate=function(self, anim)
             -- Ensure if we are animating towards a non-fractional width that we
@@ -387,6 +388,7 @@ rtk.Widget.register{
     -- @meta read/write
     -- @type number|nil
     h = rtk.Attribute{
+        type='number',
         reflow=rtk.Widget.REFLOW_FULL,
         animate=rtk.Reference('w'),
     },
@@ -396,7 +398,7 @@ rtk.Widget.register{
     -- their events will be handled *before* lower z-index widgets.
     -- @meta read/write
     -- @type number
-    z = rtk.Attribute{reflow=rtk.Widget.REFLOW_FULL},
+    z = rtk.Attribute{default=0, reflow=rtk.Widget.REFLOW_FULL},
 
     --- The minimum width in pixels the widget is allowed to have, or nil for no minimum
     -- (default `nil`).  When this is specified, the widget will disregard any bounding
@@ -405,11 +407,11 @@ rtk.Widget.register{
     -- an `rtk.Viewport`.
     -- @meta read/write
     -- @type number|nil
-    minw = rtk.Attribute{reflow=rtk.Widget.REFLOW_FULL},
+    minw = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
     --- Like `minw` but for height (default `nil`)
     -- @meta read/write
     -- @type number|nil
-    minh = rtk.Attribute{reflow=rtk.Widget.REFLOW_FULL},
+    minh = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
     --- The maximum width in pixels the widget is allowed to have, or nil for no maximum
     -- (default nil).  This will constrain a widget's width if it is added to a container
     -- with the @{rtk.Container.fillw|fillw}=true cell attribute, or if the widget has
@@ -417,11 +419,11 @@ rtk.Widget.register{
     -- `maxw`.
     -- @meta read/write
     -- @type number|nil
-    maxw = rtk.Attribute{reflow=rtk.Widget.REFLOW_FULL},
+    maxw = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
     --- Like `maxw` but for height (default `nil`)
     -- @meta read/write
     -- @type number|nil
-    maxh = rtk.Attribute{reflow=rtk.Widget.REFLOW_FULL},
+    maxh = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
 
     --- Horizontal alignment of contents within the widget's calculated width
     -- (default `LEFT`).  See @{alignmentconst|alignment constants}.
