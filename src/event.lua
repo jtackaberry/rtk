@@ -166,7 +166,7 @@ end
 function rtk.Event:__tostring()
     local custom
     if self.type >= 1 and self.type <= 3 then
-        custom = string.format(' but=%s', self.buttons)
+        custom = string.format(' button=%s buttons=%s', self.button, self.buttons)
     elseif self.type == 4 then
         custom = string.format(' wheel=%s,%s', self.hwheel, self.wheel)
     elseif self.type == 5 then
