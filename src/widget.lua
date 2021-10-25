@@ -2371,8 +2371,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
         if event.type == rtk.Event.MOUSEMOVE and not calc.disabled then
             if dnd.dragging == self then
                 self:_handle_dragmousemove(event, dnd.arg)
-            end
-            if self.hovering == false then
+            elseif self.hovering == false then
                 -- Mousemove event over a widget that's not currently marked as hovering.
                 if event.buttons == 0 or self:focused() then
                     -- No mouse buttons pressed or the widget currently has focus.  We set
