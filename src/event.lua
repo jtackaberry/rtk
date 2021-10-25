@@ -153,11 +153,14 @@ rtk.Event.register{
 
 --- Creates a new event.
 --
--- @tparam typeconst type the type of event
+-- @tparam table|nil attrs optional table of attributes to initialize the event with
 -- @treturn rtk.Event the newly constructed event
 -- @display rtk.Event
-function rtk.Event:initialize(type)
-    self:reset(type)
+function rtk.Event:initialize(attrs)
+    self:reset()
+    if attrs then
+        table.merge(self, attrs)
+    end
 end
 
 function rtk.Event:__tostring()
