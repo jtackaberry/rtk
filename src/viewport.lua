@@ -655,7 +655,7 @@ end
 
 function rtk.Viewport:_handle_dragmousemove(event, arg)
     local ok = rtk.Widget._handle_dragmousemove(self, event)
-    if ok == false then
+    if ok == false or event.simulated then
         return ok
     end
     local vscrollbar, lasty, samples, natural = table.unpack(arg)
