@@ -2296,6 +2296,12 @@ function rtk.Widget:_get_touch_activate_delay(event)
     if not rtk.touchscroll then
         return self.touch_activate_delay or 0
     else
+        if not self.viewport or not self.viewport:scrollable() then
+            -- Either no viewport or the child within the viewport is smaller
+            -- than the viewport itself, so we don't need to delay the mousedown
+            -- for touch scrolling.
+            return 0
+        end
         return (not self:focused() and event.button == rtk.mouse.BUTTON_LEFT) and
                self.touch_activate_delay or rtk.touch_activate_delay
     end
