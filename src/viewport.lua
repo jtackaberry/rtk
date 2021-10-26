@@ -677,7 +677,9 @@ function rtk.Viewport:_handle_dragmousemove(event, arg)
 end
 
 function rtk.Viewport:_reset_touch_scroll()
-    self.window:_set_touch_scrolling(self, false)
+    if self.window then
+        self.window:_set_touch_scrolling(self, false)
+    end
 end
 
 function rtk.Viewport:_handle_dragend(event, arg)
@@ -811,6 +813,20 @@ function rtk.Viewport:scrollby(offx, offy, smooth)
     self:_scrollto(x, y, smooth, animx, animy)
 end
 
+--- Returns true if the viewport's child has at least one dimension greater
+-- than the viewport's own bounding box such that scrolling would be necessary
+-- to see the entire child.
+--
+-- @treturn boolean true if the viewport's child is larger than the viewport,
+--   false otherwise.
+function rtk.Viewport:scrollable()
+    if not self.child then
+        return false
+    end
+    local vcalc = self.calc
+    local ccalc = self.child.calc
+    return ccalc.w > vcalc.w or ccalc.h > vcalc.h
+end
 
 -- Clamp viewport position to fit child's current dimensions.  Caller must ensure child
 -- has been realized.
