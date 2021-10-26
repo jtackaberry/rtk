@@ -75,7 +75,8 @@ function rtk.Future:initialize()
     -- @meta read-only
     -- @type futurestateconst
     self.state = rtk.Future.PENDING
-    --- The result returned by the asynchronous task as passed to `resolve()`.
+    --- The result returned by the asynchronous task as passed to either `resolve()`
+    -- or `cancel()`.
     -- @meta read-only
     -- @type any
     self.result = nil
@@ -84,23 +85,6 @@ function rtk.Future:initialize()
     -- @meta read-only
     -- @type boolean
     self.cancellable = false
-end
-
---- Register a callback to be invoked when the Future is cancelled.
---
--- Multiple callbacks can be registered and will be invoked in the order
--- they were added.
---
--- @tparam function func the function that's invoked when `cancel()` is
---   called, and which receives as an argument the value passed to `cancel()`.
--- @treturn rtk.Future returns self for method chaining
-function rtk.Future:cancelled(func)
-    if not self._cancelled then
-        self._cancelled = {func}
-    else
-        self._cancelled[#self._cancelled+1] = func
-    end
-    return self
 end
 
 --- Register a callback to be invoked after the current task completes, but
@@ -112,11 +96,17 @@ end
 -- If the callback returns another `rtk.Future` then that Future is chained
 -- to this one, such that the new Future must complete before any subsequent
 -- `after` callbacks registered against this Future will be invoked (and likewise
--- for `done`).
+-- for `done`).  If a dependent Future is in-flight and this one is @{cancel|cancelled},
+-- then the dependent Future will also be cancelled.  The reverse is not true,
+-- however: if a dependent Future is cancelled,
+--
+-- If the `rtk.Future` has already been @{resolve|resolved} before registering
+-- `func`, it will still be executed at the beginning of the next
+-- {rtk.Window.onupdate|update cycle}.
 --
 -- @tparam function func the function that's invoked after the asynchronous task
 --   completes, and which receives as an argument the return value from the asynchronous
---   task if it's the first `after` calback, or the return value of the previously
+--   task if it's the first `after` callback, or the return value of the previously
 --   invoked `after` callback.  If no value is returned by the callback, then
 --   the previous non-nil return value in the chain will be passed.
 -- @treturn rtk.Future returns self for method chaining
@@ -126,6 +116,7 @@ function rtk.Future:after(func)
     else
         self._after[#self._after+1] = func
     end
+    self:_check_defer_resolved_callbacks(rtk.Future.DONE)
     return self
 end
 
@@ -134,6 +125,10 @@ end
 --
 -- Multiple callbacks can be registered and will be invoked in the order they
 -- were added.
+--
+-- If the `rtk.Future` has already been @{resolve|resolved} before registering
+-- `func`, it will still be executed at the beginning of the next
+-- {rtk.Window.onupdate|update cycle}.
 --
 -- @tparam function func the function that's invoked after the asynchronous task
 --   completes and all `after` callbacks.  This callback receives as an argument
@@ -146,25 +141,69 @@ function rtk.Future:done(func)
     else
         self._done[#self._done+1] = func
     end
+    self:_check_defer_resolved_callbacks(rtk.Future.DONE)
     return self
 end
 
---- Cancells the Future and invokes all previously registered `cancelled` callbacks.
+--- Register a callback to be invoked when the Future is cancelled.
 --
--- The `cancelled` callbacks are invoked in order.
+-- Multiple callbacks can be registered and will be invoked in the order
+-- they were added.
+--
+-- If the `rtk.Future` has already been @{cancel|cancelled} before registering
+-- `func`, then it will be immediately invoked.
+--
+-- @tparam function func the function that's invoked when `cancel()` is
+--   called, and which receives as an argument the value passed to `cancel()`.
+-- @treturn rtk.Future returns self for method chaining
+function rtk.Future:cancelled(func)
+    self.cancellable = true
+    if self.state == rtk.Future.CANCELLED then
+        func(self.result)
+    elseif not self._cancelled then
+        self._cancelled = {func}
+    else
+        self._cancelled[#self._cancelled+1] = func
+    end
+    return self
+end
+
+--- Cancels the Future and invokes all previously registered `cancelled` callbacks.
+--
+-- The `cancelled` callbacks are immediately invoked in order.
+--
+-- It is a runtime error to `cancel()` an `rtk.Future` that has no `cancelled`
+-- callbacks.  You can check the `cancellable` attribute first to determine if
+-- the Future can be cancelled.
 --
 -- @tparam any v the arbitrary value to be passed to the registered `cancelled` callbacks.
 -- @treturn rtk.Future returns self for method chaining
 function rtk.Future:cancel(v)
     assert(self._cancelled, 'Future is not cancelleable')
+    assert(self.state == rtk.Future.PENDING, 'Future has already been resolved or cancelled')
     self.state = rtk.Future.CANCELLED
+    self.result = v
     for i = 1, #self._cancelled do
         self._cancelled[i](v)
     end
+    self._cancelled = nil
     return self
 end
 
 function rtk.Future:_resolve(value)
+    self.result = value
+    self:_invoke_resolved_callbacks(value)
+end
+
+function rtk.Future:_check_defer_resolved_callbacks(state, value)
+    if self.state == state and not self._deferred then
+        self._deferred = true
+        rtk.defer(rtk.Future._invoke_resolved_callbacks, self, value or self.value)
+    end
+end
+
+function rtk.Future:_invoke_resolved_callbacks(value)
+    self._deferred = false
     self.result = value
     local nextval = value
     if self._after then
@@ -172,7 +211,8 @@ function rtk.Future:_resolve(value)
             local func = table.remove(self._after, 1)
             nextval = func(nextval) or nextval
             if rtk.isa(nextval, rtk.Future) then
-                nextval:done(function(v) self:resolve(v) end)
+                -- Ensure continuation after dependent Future is resolved
+                nextval:done(function(v) self:_resolve(v) end)
                 self:cancelled(function(v) nextval:cancel(v) end)
                 return
             end
@@ -184,6 +224,8 @@ function rtk.Future:_resolve(value)
             self._done[i](nextval)
         end
     end
+    self._done = nil
+    self._after = nil
     return self
 end
 
@@ -193,13 +235,24 @@ end
 -- Usually this method will only be called by the originator of the asynchronous
 -- task.
 --
+-- If there have been any `after` or `done` callbacks registered, they are
+-- immediately invoked.  But if no callbacks have been attached, then they will be
+-- rechecked after one {rtk.Window.onupdate|update cycle}, allowing the opportunity
+-- for callbacks to be registered even after the `rtk.Future` is resolved.
+--
+-- The Future may not transition to the `DONE` `state` after calling this method:
+-- if any `after` callbacks return a Future, they will be chained, and this Future
+-- will not transition to `DONE` until all dependent Futures also complete.
+--
 -- @tparam any value the arbitrary value returned by the asynchronous task, and that
 --   will be passed into the `after` and `done` callbacks (unless any `after` callback
 --   returns a different non-nil value, in which case that takes precedence).
 -- @treturn rtk.Future returns self for method chaining
 function rtk.Future:resolve(value)
-    if not self._after and not self._done then
+    assert(self.state == rtk.Future.PENDING, 'Future has already been resolved or cancelled')
+    if not self._after and not self._done and not self._deferred then
         -- Nothing attached yet, defer resolution one cycle.
+        self._deferred = true
         rtk.defer(self._resolve, self, value, true)
     else
         self:_resolve(value)
