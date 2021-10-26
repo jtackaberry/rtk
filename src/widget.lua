@@ -1657,7 +1657,11 @@ function rtk.Widget:animate(kwargs)
     -- to ensure that once the animation is complete, the attribute will be
     -- reset from the explicit calculated value back to nil, so it will continue
     -- to reflow with its intrinsic size after the animation is done.
-    kwargs.doneval = kwargs.doneval or kwargs.dst
+    --
+    -- Because rtk.queue_animation() will set doneval to dst if it's nil, and
+    -- for width/height we will calculate dst, convert nil to rtk.Attribute.DEFAULT
+    -- which will be passed to attr() when the animation finishes.
+    kwargs.doneval = kwargs.doneval or kwargs.dst or rtk.Attribute.DEFAULT
 
     if attr == 'w' or attr == 'h' then
         -- If src value is nil or fractional and we're animating one of the
