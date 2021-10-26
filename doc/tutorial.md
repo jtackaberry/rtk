@@ -125,7 +125,7 @@ each widget subclass will also define its own set of attributes.
 If you're familiar with web development, widget attributes are similar to DOM object
 properties.  In fact, like the DOM, widget attributes also have *calculated* variants.
 Calculated attributes are more efficient internal representations of attributes and while
-you can't set them directly, you can read them via the @{rtk.Widget.calc|calc field}.
+you can't set them directly, you can read them via the @{rtk.Widget.calc|calc() method}.
 
 You can read more about attributes @{widget.attributes|here}.
 

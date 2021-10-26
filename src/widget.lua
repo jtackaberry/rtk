@@ -859,10 +859,10 @@ rtk.Widget.register{
     -- widget where there is only one such ref name.
     --
     -- Resolving references generally requires both the widget whose `refs` table is being
-    -- accessed *and* the widget being looked up to be nested under the same container.  It
-    -- *is* possible to resolve an unparented reference as there is a last-ditch global
-    -- lookup table that's consulted, but in this case global uniqueness of the `ref` name
-    -- is required.
+    -- accessed *and* the widget being looked up to be nested somewhere under the same
+    -- container.  It *is* possible to resolve an unparented reference as there is a
+    -- last-ditch global lookup table that's consulted, but in this case global uniqueness
+    -- of the `ref` name is required.
     --
     -- Because accessing fields on this table involves an upward traversal of the widget's
     -- parent hierarchy, there is a cost in accessing distant refs compared to standard
@@ -1035,7 +1035,7 @@ function rtk.Widget:_ref(table, key)
     else
         -- We either aren't parented or we're a root widget, so look in the global refs
         -- table as a last resort. This allows accessing unparented widgets by ref,
-        -- although collisions are going to be more commonnplace.
+        -- although collisions are going to be more commonplace.
         return rtk._refs[key]
     end
 end
@@ -1292,7 +1292,7 @@ end
 -- @tparam bool|nil instant if true, the point-in-time calculated value of the attribute
 --   is returned even if it's in the middle of an animation.  False (or nil) will return
 --   the ultimate target value of the attribute if it's animating.
--- @treturn any the target value of the attribute if animationg, or current value otherwise
+-- @treturn any the target value of the attribute if animating, or current value otherwise
 function rtk.Widget:_calc(attr, instant)
     if not instant then
         local anim = self:get_animation(attr)
@@ -1564,11 +1564,11 @@ end
 --   * **attr** (string): the name of the attribute to animate.  This can optionally
 --     be passed as the first positional argument without the need to specify the
 --     `attr` field.
---   * dst (number|nil): the destination value to animate toward. If nil,
+--   * dst (number|table|nil): the destination value to animate toward. If nil,
 --     0 is usually assumed, but if attr is `w` or `h` then the widget's
 --     intrinsic size will be calculated and animated toward.  (This also
 --     supports @{w|fractional values}.)
---   * src (number): the starting value of the attribute.  Default is the
+--   * src (number|table): the starting value of the attribute.  Default is the
 --     current attribute's calculated value as the starting value.
 --   * easing (string): the name of an @{rtk.easing|easing function} that controls
 --     the contour of the animation.
