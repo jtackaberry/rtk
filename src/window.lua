@@ -1356,8 +1356,10 @@ function rtk.Window:_update()
         end
     end
 
-
     if not event or mouse_moved then
+        -- Passed to _handle_window_event() when we don't want to propagate
+        -- the event to children.
+        local suppress = false
         -- Generate mousemove event if the mouse actually moved, or simulate one in the
         -- following circumstances:
         --   1. A draw has been queued (e.g. for an animation, or a blinking caret where
@@ -1394,14 +1396,7 @@ function rtk.Window:_update()
                 -- With touch scrolling, button down may be delayed.  Hold off issuing
                 -- mousemove events with button down until we have had a chance to fire
                 -- mousedown first.
-                local mousedown_handled = event:get_button_state('mousedown-handled')
-                if not mousedown_handled then
-                    -- Actual values saved for use later in _handle_window_event().
-                    event._actual_buttons = event.buttons
-                    event._actual_button = event.button
-                    event.buttons = 0
-                    event.button = 0
-                end
+                suppress = not event:get_button_state('mousedown-handled')
             end
         elseif rtk.mouse.down ~= 0 and not mouse_button_changed then
             -- Continuously generated mousedown events for the last-pressed button for onlongpress()
@@ -1418,7 +1413,7 @@ function rtk.Window:_update()
         end
         if event and (not event.simulated or self._touch_scrolling.count == 0 or buttons_down) then
             need_draw = need_draw or self._tooltip_widget ~= nil
-            self:_handle_window_event(event, now)
+            self:_handle_window_event(event, now, suppress)
         end
     end
 
@@ -1628,7 +1623,7 @@ function rtk.Window:_blit()
     self._backingstore:blit{mode=rtk.Image.FAST_BLIT}
 end
 
-function rtk.Window:_handle_window_event(event, now)
+function rtk.Window:_handle_window_event(event, now, suppress)
     if not self.visible then
         return
     end
@@ -1640,16 +1635,10 @@ function rtk.Window:_handle_window_event(event, now)
         self._last_mousemove_time = nil
     end
     event.time = now
-    rtk.Container._handle_event(self, 0, 0, event, false, rtk._modal == nil)
-
-    if event._actual_buttons then
-        -- This is a MOUSEMOVE event that occurred when a) touch scrolling is enabled,
-        -- b) the deferred mousedown did not yet fire, and c) no dragging is currently
-        -- taking place, so the event we sent to the widgets had artificially zeroed
-        -- buttons.  Restore the original values to properly detect drag start.
-        event.buttons = event._actual_buttons
-        event.button = event._actual_button
-        event._actual_buttons = nil
+    -- If suppress is true, it means we don't want to propagate the event to children, but
+    -- do want to execute the logic below, e.g. for drag and drop.
+    if not suppress then
+        rtk.Container._handle_event(self, 0, 0, event, false, rtk._modal == nil)
     end
 
     -- log.info('handle window: %s %s', self.title, event)
@@ -1668,9 +1657,9 @@ function rtk.Window:_handle_window_event(event, now)
             rtk.dnd.dropping:_handle_dropblur(event, rtk.dnd.dragging, rtk.dnd.arg)
             rtk.dnd.dropping = nil
         end
-        -- FIXME: we should only do this if the mouse button released was same button that
-        -- started the drag.
         if rtk.dnd.dragging and event.buttons & rtk.dnd.buttons == 0 then
+            -- All mouse buttons that initiated the drag have been released, so process
+            -- the dragend event.
             rtk.dnd.dragging:_handle_dragend(event, rtk.dnd.arg)
             rtk.dnd.dragging = nil
             rtk.dnd.arg = nil
