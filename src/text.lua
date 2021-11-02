@@ -199,9 +199,9 @@ end
 
 
 function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ret = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
-    if ret == false then
-        return ret
+    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
+    if ok == false then
+        return ok
     end
     if self._segments and (attr == 'text' or attr == 'wrap' or attr == 'textalign' or attr == 'spacing') then
         -- Force regeneration of segments on next reflow

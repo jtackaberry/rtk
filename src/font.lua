@@ -111,7 +111,7 @@ end
 function rtk.Font:_get_id()
     -- Passing true will force a GC if we've run out of ids, so if it still returns nil
     -- we can be sure all ids are claimed.
-    idx = _idmgr:next(true)
+    local idx = _idmgr:next(true)
     if idx then
         return idx
     end

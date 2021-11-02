@@ -68,7 +68,7 @@ local function _search_image_paths_list(fname, paths)
         return
     end
     -- Fast path, check first registered directory
-    path = string.format('%s/%s', paths[1], fname)
+    local path = string.format('%s/%s', paths[1], fname)
     if rtk.file.exists(path) then
         return path
     end

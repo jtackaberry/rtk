@@ -755,7 +755,7 @@ function rtk.Button:_draw_rectangular_button(x, y, hover, clicked, gradient, bri
         -- gradient can alter the overall perceived brightness of the source color.  This
         -- ensures the requested color is reached at the middle point of the button's
         -- height.
-        lmul = 1 - calc.h*d/2
+        local lmul = 1 - calc.h*d/2
         -- Surface
         local r, g, b, a = rtk.color.rgba(calc.color)
         local sr, sg, sb, sa = rtk.color.mod({r, g, b, a}, 1.0, 1.0, brightness * lmul, amul)

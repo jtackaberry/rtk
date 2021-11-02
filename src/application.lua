@@ -150,9 +150,9 @@ function rtk.Application:initialize(attrs, ...)
 end
 
 function rtk.Application:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ret = rtk.VBox._handle_attr(self, attr, value, oldval, trigger, reflow)
-    if ret == false then
-        return ret
+    local ok = rtk.VBox._handle_attr(self, attr, value, oldval, trigger, reflow)
+    if ok == false then
+        return ok
     end
     if attr == 'status' then
         -- We aren't affecting widget geometry by setting the label, so just force a partial

@@ -662,7 +662,7 @@ function rtk.Window:_sync_window_attrs(overrides)
             end
             self._resize_grip:show()
         end
-        function restyle()
+        local function restyle()
             reaper.JS_Window_SetStyle(self.hwnd, style)
             -- Although we don't call JS_Window_AttachTopmostPin() ourselves (due to the
             -- issue mentioned earlier), we want to leave it open to the user to explicitly
