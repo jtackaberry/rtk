@@ -72,7 +72,11 @@ rtk.Application.register{
     --
     -- @meta read/write
     -- @type string
-    status = nil,
+    status = rtk.Attribute{
+        -- This simply proxies to the statusbar widget, so there is no need for any
+        -- reflow.  That will happen by setting the statusbar widget text attr.
+        reflow=rtk.Widget.REFLOW_NONE
+    },
 
     --- The box that represents the status bar of the Application widget.
     --
@@ -142,7 +146,7 @@ function rtk.Application:initialize(attrs, ...)
     self._content_position = #self.children
     self:add(self.statusbar, {fillw=true})
 
-    self:_handle_attr('status', self.status)
+    self:_handle_attr('status', self.calc.status)
 end
 
 function rtk.Application:_handle_attr(attr, value, oldval, trigger, reflow)
