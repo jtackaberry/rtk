@@ -270,7 +270,7 @@ local function register(cls, attrs)
             -- everything from the referenced attribute.
             local srcattr = attrtable.attr
             attrtable = {}
-            refs[#refs+1] = {attrtable, nil, srcattr}
+            refs[#refs+1] = {attrtable, nil, srcattr, attr}
         else
             if type(attrtable) ~= 'table' or not attrtable._is_rtk_attr then
                 attrtable = {default=attrtable}
@@ -281,7 +281,7 @@ local function register(cls, attrs)
             for field, v in pairs(attrtable) do
                 if type(v) == 'table' and v._is_rtk_reference then
                     -- Attribute field is an rtk.Reference, so we queue it up to be resolved later.
-                    refs[#refs+1] = {attrtable, field, v.attr}
+                    refs[#refs+1] = {attrtable, field, v.attr, attr}
                 end
             end
             local deftype = type(attrtable.default)
@@ -301,8 +301,12 @@ local function register(cls, attrs)
     end
     -- Now resolve any references.
     for _, ref in ipairs(refs) do
-        local attrtable, field, srcattr = table.unpack(ref)
+        local attrtable, field, srcattr, dstattr = table.unpack(ref)
         local src = attributes[srcattr]
+        if not attributes.defaults[dstattr] then
+            -- New attribute is lacking default, copy from referenced source (which may be nil)
+            attributes.defaults[dstattr] = attributes.defaults[srcattr]
+        end
         if field then
             -- Single field rtk.Reference
             attrtable[field] = src[field]
