@@ -252,7 +252,7 @@ end
 function rtk.CheckBox:_draw_icon(x, y, hovering, alpha)
     rtk.Button._draw_icon(self, x, y, hovering, alpha)
     if hovering then
-        rtk.CheckBox._icon_hover:draw(x, y, alpha, rtk.scale)
+        rtk.CheckBox._icon_hover:draw(x, y, alpha, rtk.scale.value)
     end
 end
 

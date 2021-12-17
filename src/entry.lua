@@ -350,9 +350,8 @@ function rtk.Entry:_calcview()
     local curx = self._positions[calc.caret]
     local curoffset = curx - self._loffset
     local innerw = calc.w - (self._clp + self._crp)
-    local icon = calc.icon
-    if icon then
-        innerw = innerw - (icon.w * rtk.scale) - calc.spacing
+    if calc.icon then
+        innerw = innerw - (calc.icon.w * rtk.scale.value) - calc.spacing
     end
     if curoffset < 0 then
         self._loffset = curx
@@ -391,7 +390,7 @@ end
 -- the mouse down event.
 function rtk.Entry:_caret_from_mouse_event(event)
     local calc = self.calc
-    local iconw = calc.icon and (calc.icon.w*rtk.scale + calc.spacing) or 0
+    local iconw = calc.icon and (calc.icon.w * rtk.scale.value + calc.spacing) or 0
     local relx = self._loffset + event.x - self.clientx - iconw - self._clp
     for i = 2, self.value:len() + 1 do
         local pos = self._positions[i]
@@ -913,6 +912,7 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
         alpha = alpha * 0.5
     end
 
+    local scale = rtk.scale.value
     local tp, rp, bp, lp = self._ctp, self._crp, self._cbp, self._clp
 
     self:_handle_drawpre(offx, offy, alpha, event)
@@ -931,11 +931,11 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
         -- TODO: clip
         icon:draw(
             x + lp,
-            y + ((calc.h + tp - bp) - icon.h * rtk.scale) / 2,
+            y + ((calc.h + tp - bp) - icon.h * scale) / 2,
             a * amul,
-            rtk.scale
+            scale
         )
-        lp = lp + icon.w*rtk.scale + calc.spacing
+        lp = lp + icon.w*scale + calc.spacing
     end
     self._backingstore:blit{
         sx=0,

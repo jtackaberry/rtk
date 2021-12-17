@@ -27,12 +27,6 @@ local rtk = {
     -- User-settable values that control rtk's global behavior and appearance.
     --
 
-    --- Overall scale of the interface (default `1.0`).  After changing this value,
-    -- call `rtk.Window:queue_reflow()`.
-    -- @meta read/write
-    -- @type number
-    scale = 1.0,
-
     --- Set to true to enable touch scrolling, where scrolling `rtk.Viewport` is possible
     -- by click-dragging within them, which is suitable for touchscreen displays (default
     -- false).
@@ -178,8 +172,76 @@ local rtk = {
     _last_error = nil,
     -- If rtk.quit() was called, which prevents any further deferred calls.
     _quit = false,
-    _refs = {},
+    -- Ensure global refs are weak, so we don't leak orphaned widgets with a ref
+    -- attribute.
+    _refs = setmetatable({}, {__mode='v'}),
+    -- If not nil, is a list of {func, args} that should be invoked on the next
+    -- window update.  See rtk.callsoon().
+    _run_soon = nil,
+    _reactive_attr = {},
 }
+
+--- rtk.scale.
+--
+-- Controls the overall scale of the interface.
+--
+-- The fields in the `rtk.scale` table reflect the current scale values.  The `rtk.scale.user`
+-- field is how you can adjust the overall scale of the `rtk.Window`.
+--
+-- @section rtk.scale
+-- @scope rtk.scale
+-- @fullnames
+-- @compact
+
+rtk.scale = setmetatable({
+    --- User-defined scale factor (default `1.0`).  When this value is set, the window
+    -- is automatically rescaled on the next update cycle.
+    -- @type number
+    -- @meta read-write
+    user = nil,
+    -- Internal value behind the 'user' proxy
+    _user = 1.0,
+    --- Scale factor determined by the system.  On retina displays, this value will be `2.0`.
+    -- On Windows, with variable scale, this can be an arbitrary factor and updates in real
+    -- time as the system global scale is modified.  This value is only known after
+    -- `rtk.Window:open()` is called, and will be `nil` before then.
+    -- @type number
+    -- @meta read-only
+    system = nil,
+    --- REAPER's custom scale modifier that is set via the "Advanced UI/system tweaks" button on
+    -- the General settings page.  This value is only read once when `rtk.Window` is instantiated,
+    -- so the script will need to be restarted if this preference is changed.
+    -- @type number
+    -- @meta read-only
+    reaper = 1.0,
+    --- The final calculated scale factor to which all UI elements scale themselves.  This is
+    -- calculated as `user` * `system` * `reaper`.
+    --
+    -- @note
+    --  If you are implementing widgets or manually drawing, `rtk.scale.value` is the value all
+    --  coordinates and dimensions should be multiplied by.
+    --
+    -- @type number
+    -- @meta read-only
+    value = 1.0,
+}, {
+    __index=function(t, key)
+        return key == 'user' and t._user
+    end,
+    __newindex=function(t, key, value)
+        if key == 'user' then
+            if value ~= t._user then
+                t._user = value
+                t.value = value * (t.system or 1.0) * t.reaper
+                if rtk.window then
+                    rtk.window:queue_reflow()
+                end
+            end
+        else
+            rawset(t, key, value)
+        end
+    end
+})
 
 --- rtk.dnd.
 --

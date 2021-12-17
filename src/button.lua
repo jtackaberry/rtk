@@ -392,7 +392,7 @@ function rtk.Button:_reflow_get_max_label_size(boxw, boxh)
     -- Avoid re-laying out the string if nothing relevant has changed.
     local calc = self.calc
     local seg = self._segments
-    if seg and seg.boxw == boxw and seg.wrap == calc.wrap and not seg.invalid and rtk.scale == seg.scale then
+    if seg and seg.boxw == boxw and seg.wrap == calc.wrap and not seg.invalid and rtk.scale.value == seg.scale then
         return self._segments, self.lw, self.lh
     else
         return self._font:layout(calc.label, boxw, boxh, calc.wrap)
@@ -405,11 +405,13 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
 
     local icon = calc.icon
+    local scale = rtk.scale.value
+    local iscale = scale / (icon and icon.density or 1.0)
     if calc.circular then
         local iw, ih
         if calc.icon then
-            iw = icon.w * rtk.scale
-            ih = icon.h * rtk.scale
+            iw = icon.w * iscale
+            ih = icon.h * iscale
         else
             iw, ih = 0, 0
         end
@@ -441,14 +443,14 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
         if icon then
             -- Both label and icon are specified.  Determine number of pixels used for
             -- spacing based on appearance.
-            spacing = calc.spacing * rtk.scale
+            spacing = calc.spacing * scale
             if calc.tagged then
                 -- Tagged icon is spaced based on position and left/right widget padding.
                 -- Add that to the spacing amount.
                 spacing = spacing + (calc.iconpos == rtk.Widget.LEFT and lp or rp)
             end
             -- Reduce the size of the allowed label based on icon size and spacing.
-            lwmax = lwmax - ((icon.w * rtk.scale) + spacing)
+            lwmax = lwmax - ((icon.w * iscale) + spacing)
         end
 
         self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags)
@@ -463,8 +465,8 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
 
         if icon then
             -- Label and icon
-            calc.w = w or ((icon.w * rtk.scale) + spacing + self.lw)
-            calc.h = h or (math.max(icon.h * rtk.scale, self.lh))
+            calc.w = w or ((icon.w * iscale) + spacing + self.lw)
+            calc.h = h or (math.max(icon.h * iscale, self.lh))
         else
             -- Label only
             calc.w = w or self.lw
@@ -472,8 +474,8 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
         end
     elseif icon then
         -- Icon only
-        calc.w = w or (icon.w * rtk.scale)
-        calc.h = h or (icon.h * rtk.scale)
+        calc.w = w or (icon.w * iscale)
+        calc.h = h or (icon.h * iscale)
     else
         -- Neither label nor icon -- not exactly useful.
         calc.w = 0
@@ -498,7 +500,9 @@ function rtk.Button:_realize_geometry()
     local surw, surh = calc.surface and calc.w or 0, calc.h
     local label = calc.label
     local icon = calc.icon
-    local spacing = calc.spacing * rtk.scale
+    local scale = rtk.scale.value
+    local iscale = scale / (icon and icon.density or 1.0)
+    local spacing = calc.spacing * scale
 
     -- Tagged icon overlay x positionand width.
     local tagx, tagw = 0, 0
@@ -520,7 +524,7 @@ function rtk.Button:_realize_geometry()
     --
     -- So I'm preferring obviousness over terseness here.
     if icon and label then
-        local iconwidth = icon.w * rtk.scale
+        local iconwidth = icon.w * iscale
         if calc.iconpos == rtk.Widget.LEFT then
             -- Icon on the left
             if calc.tagged then
@@ -585,7 +589,7 @@ function rtk.Button:_realize_geometry()
     else
         -- Either label or icon but not both.  They are currently positioned for
         -- left align, implement the other alignments.
-        local sz = icon and (icon.w * rtk.scale) or lw
+        local sz = icon and (icon.w * iscale) or lw
         if calc.halign == rtk.Widget.CENTER then
             local offset = (calc.w - sz)/2
             lx = offset
@@ -604,10 +608,10 @@ function rtk.Button:_realize_geometry()
             iy = sury + tp
         elseif calc.valign == rtk.Widget.CENTER then
             -- Center icon vertically according to calculated height, adjusting for padding.
-            iy = sury + tp + math.max(0, calc.h - icon.h*rtk.scale - tp - bp) / 2
+            iy = sury + tp + math.max(0, calc.h - icon.h*iscale - tp - bp) / 2
         else
             -- Bottom
-            iy = sury + math.max(0, calc.h - icon.h*rtk.scale - bp)
+            iy = sury + math.max(0, calc.h - icon.h*iscale - bp)
         end
     end
     -- Vertical label position plus label clip rectangle
@@ -635,6 +639,8 @@ function rtk.Button:_realize_geometry()
         tagx=tagx, tagw=tagw,
         surx=surx, sury=sury, surw=surw or 0, surh=surh or 0,
         clipw=clipw, cliph=cliph,
+        iw=icon and (icon.w*iscale),
+        ih=icon and (icon.h*iscale),
     }
 end
 
@@ -712,8 +718,8 @@ function rtk.Button:_draw_circular_button(x, y, hover, clicked, gradient, bright
         gfx.circle(cirx, ciry, radius, 1, 1)
     end
     if icon then
-        local ix = (calc.w - (icon.w * rtk.scale))/2
-        local iy = (calc.h - (icon.h * rtk.scale))/2
+        local ix = (calc.w - (icon.w * rtk.scale.value))/2
+        local iy = (calc.h - (icon.h * rtk.scale.value))/2
         self:_draw_icon(x + ix, y + iy, hover, alpha)
     end
     if calc.border then
@@ -784,5 +790,5 @@ end
 
 function rtk.Button:_draw_icon(x, y, hovering, alpha)
     -- TODO: supporting clipping
-    self.calc.icon:draw(x, y, self.calc.alpha * alpha, rtk.scale)
+    self.calc.icon:draw(x, y, self.calc.alpha * alpha, rtk.scale.value)
 end

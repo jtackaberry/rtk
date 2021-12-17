@@ -139,9 +139,10 @@ function rtk.Font:draw(text, x, y, clipw, cliph, flags)
     if rtk.os.mac then
         -- XXX: it's unclear why we need to fudge the extra pixel on OS X but it fixes
         -- alignment.
-        y = y + 1
+        local fudge = 1 * rtk.scale.value
+        y = y + fudge
         if cliph then
-            cliph = cliph - 1
+            cliph = cliph - fudge
         end
     end
     flags = flags or 0
@@ -258,7 +259,7 @@ function rtk.Font:layout(s, boxw, boxh, wrap, align, relative, spacing, breakwor
         align = align,
         relative = relative,
         spacing = spacing,
-        scale = rtk.scale
+        scale = rtk.scale.value
     }
     align = align or rtk.Widget.LEFT
     spacing = spacing or 0
@@ -358,15 +359,17 @@ end
 --
 -- The font size will automatically be adjusted according to `rtk.scale` and
 -- `rtk.font.multiplier`.
+--
+-- @treturn bool true if the font changed, false if it remained the same
 function rtk.Font:set(name, size, scale, flags)
     scale = scale or 1
     flags = flags or 0
-    local sz = size and math.ceil(size * scale * rtk.scale * rtk.font.multiplier)
+    local sz = size and math.ceil(size * scale * rtk.scale.value * rtk.font.multiplier)
     local newfont = name and (name ~= self.name or sz ~= self.calcsize or flags ~= self.flags)
     if self._idx and self._idx > 1 then
         if not newfont then
             gfx.setfont(self._idx)
-            return
+            return false
         else
             -- Font is changing.
             self:_decref()
@@ -374,7 +377,7 @@ function rtk.Font:set(name, size, scale, flags)
     elseif self._idx == 1 then
         -- Ad hoc font.
         gfx.setfont(1, self.name, self.calcsize, self.flags)
-        return
+        return true
     end
 
     if not newfont then
@@ -404,4 +407,5 @@ function rtk.Font:set(name, size, scale, flags)
     self.flags = flags
     self.calcsize = sz
     self.texth = gfx.texth
+    return true
 end

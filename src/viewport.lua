@@ -290,12 +290,12 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     local scrollw, scrollh = 0, 0
     if calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS then
         -- Vertical scrollbar takes from width
-        scrollw = calc.scrollbar_size * rtk.scale
+        scrollw = calc.scrollbar_size * rtk.scale.value
         inner_maxw = inner_maxw - scrollw
     end
     if calc.hscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS then
         -- Horizontal scrollbar takes from height
-        scrollh = calc.scrollbar_size * rtk.scale
+        scrollh = calc.scrollbar_size * rtk.scale.value
         inner_maxh = inner_maxh - scrollh
     end
 
@@ -378,7 +378,7 @@ function rtk.Viewport:_realize_geometry()
         local innerh = self._backingstore.h
         local ch = self.child.calc.h
         if calc.vscrollbar ~= rtk.Viewport.SCROLLBAR_NEVER and ch > innerh then
-            self._vscrollx = calc.x + calc.w - calc.scrollbar_size*rtk.scale - calc.vscrollbar_offset
+            self._vscrollx = calc.x + calc.w - calc.scrollbar_size * rtk.scale.value - calc.vscrollbar_offset
             self._vscrolly = calc.y + calc.h * calc.scroll_top / ch + tp
             self._vscrollh = calc.h * innerh  / ch
         end
@@ -485,7 +485,7 @@ function rtk.Viewport:_draw_scrollbars(offx, offy, cltargetx, cltargety, alpha, 
             event.x, event.y,
             -- Add drawing target client coordinates for testing mouse position
             scrx + cltargetx, scry + cltargety,
-            calc.scrollbar_size * rtk.scale, self._vscrollh
+            calc.scrollbar_size * rtk.scale.value, self._vscrollh
         )
         if (should_handle_hovering and self._vscroll_in_gutter) or rtk.dnd.dragging == self then
             self._vscrolla.target = self._scrollbar_alpha_hover
@@ -506,7 +506,7 @@ function rtk.Viewport:_draw_scrollbars(offx, offy, cltargetx, cltargety, alpha, 
         end
         self:setcolor(self._scrollbar_color)
         gfx.a = self._vscrolla.current * alpha
-        gfx.rect(scrx, scry, calc.scrollbar_size * rtk.scale, self._vscrollh + 1, 1)
+        gfx.rect(scrx, scry, calc.scrollbar_size * rtk.scale.value, self._vscrollh + 1, 1)
     end
 end
 
@@ -543,7 +543,7 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
                 local guttery = calc.y + clparenty
                 -- Are we hovering in the scrollbar gutter?
                 if rtk.point_in_box(event.x, event.y, gutterx, guttery,
-                                    calc.vscrollbar_gutter + calc.scrollbar_size*rtk.scale, calc.h) then
+                                    calc.vscrollbar_gutter + calc.scrollbar_size*rtk.scale.value, calc.h) then
                     vscroll_in_gutter = true
                     if event.x >= self._vscrollx + clparentx then
                         event:set_handled(self)
@@ -702,7 +702,7 @@ function rtk.Viewport:_handle_dragend(event, arg)
         if t1 ~= event.time then
             v = (event.y - y1) - (event.time - t1)
         end
-        local distance = v * rtk.scale
+        local distance = v * rtk.scale.value
         local x, y = self:_get_clamped_scroll(self.calc.scroll_left, self.calc.scroll_top - distance)
         -- FIXME: duration should be a function of distance
         local duration = 1

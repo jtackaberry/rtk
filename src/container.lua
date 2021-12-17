@@ -651,7 +651,7 @@ end
 -- Returns top, right, bottom, left padding given cell attributes
 function rtk.Container:_get_cell_padding(widget, attrs)
     local calc = widget.calc
-    local scale = rtk.scale
+    local scale = rtk.scale.value
     return
         ((attrs.tpadding or 0) + (calc.tmargin or 0)) * scale,
         ((attrs.rpadding or 0) + (calc.rmargin or 0)) * scale,

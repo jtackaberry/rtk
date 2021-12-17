@@ -112,7 +112,7 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     local dstw, dsth = 0, 0
     local hpadding = lp + rp
     local vpadding = tp + bp
-    local scale = (self.scale or 1) * rtk.scale
+    local scale = (self.scale or 1) * rtk.scale.value
     local image = calc.image
     if image then
         local native_aspect = image.w / image.h

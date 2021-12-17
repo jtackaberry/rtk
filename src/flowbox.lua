@@ -74,8 +74,8 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
     clampw = clampw or w ~= nil or fillw
     clamph = clamph or h ~= nil or fillh
     local child_geometry = {}
-    local hspacing = (calc.hspacing or 0) * rtk.scale
-    local vspacing = (calc.vspacing or 0) * rtk.scale
+    local hspacing = (calc.hspacing or 0) * rtk.scale.value
+    local vspacing = (calc.vspacing or 0) * rtk.scale.value
 
     self._reflowed_children = {}
     self._child_index_by_id = {}

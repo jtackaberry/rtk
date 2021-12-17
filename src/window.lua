@@ -776,6 +776,12 @@ function rtk.Window:open(attrs)
     rtk._quit = false
     rtk.window = self
 
+    local inifile = reaper.get_ini_file()
+    local ini, err = rtk.file.read(inifile)
+    if not err then
+        rtk.scale.reaper = ini:match('uiscale=([^\n]*)') or 1.0
+    end
+
     local calc = self.calc
     self.running = true
     gfx.ext_retina = 1
@@ -1163,6 +1169,11 @@ function rtk.Window:_update()
     -- Default to false, and it will be set to true later if certain criteria are met.
     local need_draw = false
 
+    if gfx.ext_retina ~= rtk.scale.system then
+        rtk.scale.system = gfx.ext_retina
+        rtk.scale.value = rtk.scale.user * rtk.scale.system * rtk.scale.reaper
+        self:queue_reflow()
+    end
     -- Check for files being dropped over the window.  Note this must be called *before*
     -- gfx.update() which appears to clear the dropfile list.
     local files = nil
@@ -1685,12 +1696,12 @@ function rtk.Window:_handle_window_event(event, now, suppress)
         local missed = false
         -- Distance threshold required to trigger a drag operation in pixels.  This
         -- defaults based on the global scale.
-        local dthresh = math.ceil(rtk.scale)
+        local dthresh = math.ceil(rtk.scale.value ^ 1.7)
         if rtk.touchscroll and event.time - self._last_mouseup_time < 0.2 then
             -- If the mouse was recently clicked, mitigate inadvertent touch-drags on this
             -- second click by amping up the distance threshold, lest we frustrate the
             -- user's ability to double click.
-            dthresh = rtk.scale * 10
+            dthresh = rtk.scale.value * 10
         end
         for n, state in ipairs(rtk._drag_candidates) do
             local widget, offered = table.unpack(state)

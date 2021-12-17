@@ -132,7 +132,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
             end
             maxw = math.max(maxw, ww + clp + crp)
             maxh = math.max(maxh, offset)
-            spacing = (attrs.spacing or self.spacing) * rtk.scale
+            spacing = (attrs.spacing or self.spacing) * rtk.scale.value
             if not need_second_pass then
                 widget:_realize_geometry()
             end

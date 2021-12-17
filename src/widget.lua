@@ -371,6 +371,9 @@ rtk.Widget.register{
     -- This attribute is animatable, where animating toward relative sizes (0.0 - 1.0) or
     -- nil (intrinsic size) is supported.
     --
+    -- The calculated value (`widget:calc('w')`) is also adjusted to account for `rtk.scale`,
+    -- provided the `scalability` attribute is set to `FULL` (as is the default).
+    --
     -- @meta read/write
     -- @type number|nil
     w = rtk.Attribute{
@@ -442,7 +445,7 @@ rtk.Widget.register{
         calculate={top=rtk.Widget.TOP, center=rtk.Widget.CENTER, bottom=rtk.Widget.BOTTOM},
     },
     --- A bitmap of scale constants that defines how the widget will behave
-    -- with respect to `rtk.scale` (default `CONTENTS`).
+    -- with respect to `rtk.scale` (default `FULL`).
     -- See @{scaleconst|scalability constants}.
     -- @meta read/write
     -- @type scaleconst
@@ -1684,7 +1687,7 @@ function rtk.Widget:animate(kwargs)
             self[attr] = kwargs.dst
             local window = self:_slow_get_window()
             window:reflow(rtk.Widget.REFLOW_FULL)
-            kwargs.dst = calc[attr]
+            kwargs.dst = calc[attr] / rtk.scale.value
             -- Now restore original calculated dimension.  Unfortunately we need to
             -- do another full reflow, because all the other widgets in the scene
             -- would have also been reflowed around our new target geometry.
@@ -1963,11 +1966,12 @@ function rtk.Widget:_get_padding()
     -- Returns direct padding for now, but this abstraction lets us do fancier things
     -- later, like relative padding values.
     local calc = self.calc
+    local scale = rtk.scale.value
     return
-        (calc.tpadding or 0) * rtk.scale,
-        (calc.rpadding or 0) * rtk.scale,
-        (calc.bpadding or 0) * rtk.scale,
-        (calc.lpadding or 0) * rtk.scale
+        (calc.tpadding or 0) * scale,
+        (calc.rpadding or 0) * scale,
+        (calc.bpadding or 0) * scale,
+        (calc.lpadding or 0) * scale
 end
 
 --- Returns the border thickness from all 4 sides.
@@ -2007,11 +2011,16 @@ end
 -- Subclasses are expected to draw widget content relative to these coordinates, and need
 -- to explicitly account for `lpadding` and `tpadding` as offsets from these coordinates.
 function rtk.Widget:_get_box_pos(boxx, boxy)
-    return self.x + boxx, self.y + boxy
+    if self.calc.scalability & rtk.Widget.FULL == rtk.Widget.FULL then
+        local scale = rtk.scale.value
+        return scale*self.x + boxx, scale*self.y + boxy
+    else
+        return self.x + boxx, self.y + boxy
+    end
 end
 
 local function _get_content_dimension(size, bounds, padding, fill, clamp, flags, scale)
-    scale = flags & rtk.Widget.FULL == rtk.Widget.FULL and (rtk.scale * (scale or 1)) or scale or 1
+    scale = flags & rtk.Widget.FULL == rtk.Widget.FULL and (rtk.scale.value * (scale or 1)) or scale or 1
     if size then
         if bounds and size < -1 then
         -- Relative to the far edge.

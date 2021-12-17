@@ -531,7 +531,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
             elseif orientation == rtk.Box.HORIZONTAL and attrs.stretch == rtk.Box.STRETCH_FULL then
                 maxh = h
             end
-            spacing = (attrs.spacing or self.spacing) * rtk.scale
+            spacing = (attrs.spacing or self.spacing) * rtk.scale.value
             self:_add_reflowed_child(widgetattrs, attrs.z or wcalc.z or 0)
         else
             widget.realized = false
