@@ -1177,6 +1177,15 @@ end
 --   avoided.
 -- @treturn rtk.Widget returns self for method chaining
 function rtk.Widget:attr(attr, value, trigger, reflow)
+    return self:_attr(attr, value, trigger, reflow, false)
+end
+
+-- XXX: internal function for now while reactives are fleshed out
+function rtk.Widget:sync(attr, value, trigger, reflow)
+    return self:_attr(attr, value, trigger, reflow, true)
+end
+
+function rtk.Widget:_attr(attr, value, trigger, reflow, reactive)
     local meta = self.class.attributes.get(attr)
     if value == rtk.Attribute.DEFAULT then
         if meta.default == rtk.Attribute.FUNCTION then
@@ -1185,22 +1194,25 @@ function rtk.Widget:attr(attr, value, trigger, reflow)
             value = meta.default
         end
     end
-    local calculated = self:_calc_attr(attr, value, nil, meta)
     local oldval = self[attr]
+    local oldcalc = self.calc[attr]
+    -- If the attribute we're setting is a shorthand attribute that replaces
+    -- other attributes (e.g. padding), we force invocation of _handle_attr()
+    -- even if the shorthand value hasn't changed, because we don't know here if
+    -- changing the shorthand value will end up modifying a replaced attribute.
     local replaces = self.class.attributes.get(attr).replaces
     if replaces then
         for i = 1, #replaces do
             self[replaces[i]] = nil
         end
     end
-    -- If the attribute we're setting is a shorthand attribute that replaces
-    -- other attributes (e.g. padding), we force invocation of _handle_attr()
-    -- even if the shorthand value hasn't changed, because we don't know here if
-    -- changing the shorthand value will end up modifying a replaced attribute.
-    if value ~= oldval or calculated ~= self.calc[attr] or replaces or trigger then
+    local calculated = self:_calc_attr(attr, value, nil, meta)
+    -- Use rawequal here to ensure we detect replacement of a reactive when the
+    -- underlying value is the same between old and new.
+    if not rawequal(value, oldval) or calculated ~= oldcalc or replaces or trigger then
         self[attr] = value
         self:_set_calc_attr(attr, value, calculated, self.calc, meta)
-        self:_handle_attr(attr, calculated, oldval, trigger == nil or trigger, reflow)
+        self:_handle_attr(attr, calculated, oldcalc, trigger == nil or trigger, reflow)
     end
     -- Return self to allow chaining multiple attributes
     return self
