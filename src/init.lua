@@ -62,10 +62,6 @@ local function init()
     rtk.set_theme_by_bgcolor(rtk.color.get_reaper_theme_bg() or '#262626')
     -- Flag to indicate this theme was not set by explicit user call to rtk.set_theme()
     rtk.theme.default = true
-
-    -- Ensure global refs are weak, so we don't leak orphaned widgets with a ref
-    -- attribute.
-    setmetatable(rtk._refs, {__mode='v'})
 end
 
 init()

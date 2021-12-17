@@ -123,8 +123,8 @@ rtk.Widget.static.FIXED_FLOW = rtk.Widget.POSITION_INFLOW | rtk.Widget.POSITION_
 -- Used with the `scalability` field to control how the widget should respond to
 -- changes to the @{rtk.scale|global scale level}.
 --
--- Lowercase strings of these constants can be used (e.g. `'dimensions'` instead of
--- `rtk.Widget.DIMENSIONS`).  These strings are automatically converted to the appropriate
+-- Lowercase strings of these constants can be used (e.g. `'box'` instead of
+-- `rtk.Widget.BOX`).  These strings are automatically converted to the appropriate
 -- numeric constants.
 --
 -- @section scaleconst

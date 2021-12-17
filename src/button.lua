@@ -752,7 +752,6 @@ function rtk.Button:_draw_rectangular_button(x, y, hover, clicked, gradient, bri
     if calc.tagged and calc.flat == rtk.Button.LABEL and calc.surface and not hover then
         surx = tagx
         surw = pre.tagw
-        tagw = 0
     end
 
     if surw > 0 and surh > 0 and draw_surface then

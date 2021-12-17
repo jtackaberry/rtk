@@ -63,7 +63,7 @@ local log = require('rtk.log')
 --  end
 --
 -- The window will of course also close when the user clicks on the window's OS-native
--- close button (for non-`borderless` windows), or when programmatically when you call
+-- close button (for non-`borderless` windows), or programmatically when you call
 -- `rtk.Window:close()`.
 --
 -- @class rtk.Window
@@ -126,6 +126,11 @@ end
 --- Class API.
 -- @section api
 rtk.Window.register{
+    -- XXX: on geometry: x/y attributes are synced to real window coordinates, but are
+    -- always calculated as 0 because those calculcated attributes are used for
+    -- positioning children within the window.  Similarly w/h is synced based on real
+    -- window size, but the calculcated versions include a reduction for any padding.
+
     --- The x screen coordinate of the window when undocked (default 0).  When this attribute
     -- is @{rtk.Widget.attr|set} the window will be moved only if it's undocked, but when
     -- an undocked window is moved by the user, this attribute is also updated to reflect
@@ -134,10 +139,12 @@ rtk.Window.register{
     -- Setting after `open()` is called requires the js_ReaScriptAPI extension.
     --
     -- Tip: you can call @{rtk.Widget.move|move}() to set both `x` and `y` at the same time.
+    --
     -- @meta read/write
     -- @type number
     x = rtk.Attribute{
         -- Unlike normal x/y coords for widgets, window position doesn't affect layout
+        type='number',
         reflow=rtk.Widget.REFLOW_NONE,
         window_sync=true,
     },
@@ -148,6 +155,7 @@ rtk.Window.register{
     -- @meta read/write
     -- @type number
     y = rtk.Attribute{
+        type='number',
         reflow=rtk.Widget.REFLOW_NONE,
         window_sync=true,
     },
@@ -804,7 +812,7 @@ function rtk.Window:open(attrs)
 
     -- Initialize dock state.
     dockstate, _, _ = gfx.dock(-1, true, true)
-    -- After _handle_dock_change(), self.hwnd will be set.
+    -- After _handle_dock_change(), self.hwnd will be set, and window attrs will be synced.
     self:_handle_dock_change(dockstate)
     -- Update immediately to clear canvas to background color to avoid (or reduce, anyway)
     -- ugly flicker.  Unfortunately, gfx.clear isn't sufficient.
@@ -863,6 +871,7 @@ function rtk.Window:_setup_borderless()
     move.ondragmousemove = function(this, event)
         local _, wx, wy, _, _ = reaper.JS_Window_GetClientRect(self.hwnd)
         local x = wx + (event.x - this._drag_start_ex)
+        local y
         if rtk.os.mac then
             y = (wy - this._drag_start_wh) - (event.y - this._drag_start_ey)
         else
@@ -1262,7 +1271,6 @@ function rtk.Window:_update()
         self:reflow()
         need_draw = true
     end
-
 
     -- Now go hunting for events.  Initialize to nil now, and it'll be set to an
     -- rtk.Event if something happened.

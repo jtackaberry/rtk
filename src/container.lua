@@ -508,7 +508,7 @@ end
 function rtk.Container:reorder(widget, targetidx)
     local srcidx = self:get_child_index(widget)
     if srcidx ~= nil and srcidx ~= targetidx and (targetidx <= srcidx or targetidx - 1 ~= srcidx) then
-        widgetattrs = table.remove(self.children, srcidx)
+        local widgetattrs = table.remove(self.children, srcidx)
         local org = targetidx
         if targetidx > srcidx then
             targetidx = targetidx - 1
@@ -640,7 +640,7 @@ function rtk.Container:_add_reflowed_child(widgetattrs, z)
 end
 
 function rtk.Container:_determine_zorders()
-    zs = {}
+    local zs = {}
     for z in pairs(self._reflowed_children) do
         zs[#zs+1] = z
     end

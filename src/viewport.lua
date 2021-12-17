@@ -677,6 +677,9 @@ function rtk.Viewport:_handle_dragmousemove(event, arg)
 end
 
 function rtk.Viewport:_reset_touch_scroll()
+    -- Verify self.window is valid because if viewport was unparented or hidden while in
+    -- the middle of a kinetic scroll, when the animation finishes this gets called, but
+    -- self.window may be nil at that point.
     if self.window then
         self.window:_set_touch_scrolling(self, false)
     end
