@@ -108,7 +108,7 @@ rtk.Entry.register{
         end
     },
     --- The opacity of `icon` (default 0.6).
-    -- @meta read/wr4ite
+    -- @meta read/write
     -- @type number
     icon_alpha = 0.6,
 
