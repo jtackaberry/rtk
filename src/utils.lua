@@ -434,7 +434,7 @@ math.inf = 1/0
 -- @tparam number n the value to round
 -- @treturn number the rounded value
 function math.round(n)
-    return n % 1 >= 0.5 and math.ceil(n) or math.floor(n)
+    return n and (n % 1 >= 0.5 and math.ceil(n) or math.floor(n))
 end
 
 
