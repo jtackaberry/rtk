@@ -214,7 +214,7 @@ rtk.Box.register{
     --   is subject to change in future, so it's recommended not to rely on it.
     --
     -- @type number|nil
-    expand = nil,
+    expand = rtk.Attribute{type='number'},
 
     --- Controls how the child will fill its width within the cell (default false).  If
     -- true, the child widget will fill the full width of the cell.  Otherwise, if false,
@@ -280,6 +280,8 @@ rtk.Box.register{
             full=rtk.Box.STRETCH_FULL,
             siblings=rtk.Box.STRETCH_TO_SIBLINGS,
             -- Parallels with fill
+            ['true']=rtk.Box.STRETCH_FULL,
+            ['false']=rtk.Box.STRETCH_NONE,
             [true]=rtk.Box.STRETCH_FULL,
             [false]=rtk.Box.STRETCH_NONE,
             [rtk.Attribute.NIL]=rtk.Box.STRETCH_NONE,
@@ -363,8 +365,8 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, v
     -- _get_content_size() returns the correct value.  If that's the case, force
     -- fill to be enabled so our final calculated w/h below uses the resolved
     -- values.
-    fillw = fillw or (self.w and self.w < 1.0)
-    fillh = fillh or (self.h and self.h < 1.0)
+    fillw = fillw or (self.w and tonumber(self.w) < 1.0)
+    fillh = fillh or (self.h and tonumber(self.h) < 1.0)
     -- Our children may have ignored the bounding box we imposed on them, causing the
     -- inner dimension to exceed either our own bounding box or our own explicitly defined
     -- size.  Here we report our explicitly defined size if specified, and if not then

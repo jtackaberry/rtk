@@ -196,7 +196,16 @@ local falsemap = {
 }
 
 local typemaps = {
-    number=tonumber,
+    number=function(v)
+        local n = tonumber(v)
+        if n then
+            return n
+        elseif v == 'true' or v == true then
+            return 1
+        elseif v == 'false' or v == false then
+            return 0
+        end
+    end,
     string=tostring,
     boolean=function(v)
         if falsemap[v] then
