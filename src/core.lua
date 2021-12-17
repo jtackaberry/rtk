@@ -1154,12 +1154,57 @@ end
 --
 -- @tparam function func the function to invoke
 -- @tparam any ... one or more arguments to pass to `func`
+-- @see rtk.callsoon
 function rtk.defer(func, ...)
     local args = table.pack(...)
     reaper.defer(function()
         rtk.call(func, table.unpack(args, 1, args.n))
     end)
 end
+
+--- Registers a function (with arguments) to be invoked within the next
+-- `rtk.Window` update.
+--
+-- This is similar to but subtly different than `rtk.defer()`.  `rtk.defer()` asks REAPER
+-- itself to schedule the function, which happens at the start of the *next* tick of the
+-- REAPER script, and so there may be a slight delay (usually around 30ms).  Meanwhile,
+-- `rtk.callsoon()` functions are invoked at select points witihn the `rtk.Window` update loop.
+--
+-- One such point is just after event handlers have executed, but before any pending
+-- reflow or draw.  This allows event handlers to schedule a function to be invoked after
+-- all other handlers have completed but can still update the UI without any delay.
+--
+-- If there is no `rtk.Window` currently @{rtk.Window.running|running} then `rtk.defer()`
+-- will be used as a fallback.
+--
+-- @tparam function func the function to invoke
+-- @tparam any ... one or more arguments to pass to `func`
+-- @see rtk.defer
+function rtk.callsoon(func, ...)
+    if not rtk.window or not rtk.window.running then
+        -- No window running, use normal defer instead.
+        return rtk.defer(func, ...)
+    end
+    local funcs = rtk._soon_funcs
+    if not funcs then
+        funcs = {}
+        rtk._soon_funcs = funcs
+    end
+    funcs[#funcs+1] = {func, table.pack(...)}
+end
+
+function rtk._run_soon()
+    local funcs = rtk._soon_funcs
+    -- Reset now, in case one of the functions we're about to execute ends up
+    -- calling rtk.callsoon().
+    rtk._soon_funcs = nil
+    for i = 1, #funcs do
+        local func, args = table.unpack(funcs[i])
+        func(table.unpack(args, 1, args.n))
+    end
+
+end
+
 
 --- Calls a function (with arguments) after the specified duration.
 --

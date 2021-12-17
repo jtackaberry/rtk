@@ -1204,6 +1204,10 @@ function rtk.Window:_update()
     -- Now sync gfx variables, which also clears the dropfile list.
     gfx.update()
 
+    if rtk._soon_funcs then
+        rtk._run_soon()
+    end
+
     -- Check current window focus.  Ensure focused_hwnd is updated *before* calling
     -- onupdate() handler.
     local focus_changed = false
@@ -1502,7 +1506,9 @@ function rtk.Window:_update()
             log.warning('rtk: no event for mousecap=%s which indicates an internal rtk bug', gfx.mouse_cap)
         end
     end
-
+    if rtk._soon_funcs then
+        rtk._run_soon()
+    end
     local blitted = false
     if event and self.visible then
         if self._reflow_queued and not self._sync_window_attrs_on_update then
