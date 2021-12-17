@@ -968,8 +968,8 @@ function rtk.Widget:initialize(attrs,...)
     -- These fields are internal only, not part of the API, and so not
     -- documented above.
     --
-    -- Time of last click time (for measuring double clicks)
-    self._last_click_time = 0
+    -- Time of last mouse down time (for measuring double clicks)
+    self._last_mousedown_time = 0
 end
 
 function rtk.Widget:__tostring()
@@ -1495,9 +1495,6 @@ end
 -- `rtk.Entry` it means that the widget will render an accented border, the cursor
 -- will blink, and keyboard events will be captured by the widget.
 --
--- Focused widgets are eligible to receive `onclick()`, `ondoubleclick()`, and
--- `onlongpress()` events, while non-focused widgets are not.
---
 -- If another widget currently has focus, `blur()` will be called on it.  If that
 -- widget's `onblur()` handler returns false, it will block the focus, in which
 -- case this function will return false.  This condition is fairly rare but it
@@ -1667,6 +1664,7 @@ function rtk.Widget:animate(kwargs)
             kwargs.dst = meta.default
         end
     end
+
     -- Set the done value to the supplied destination value.  We may override
     -- the dst val later if it's width/height set to nil, in which case we want
     -- to ensure that once the animation is complete, the attribute will be
@@ -2490,34 +2488,42 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                 event:set_widget_pressed(self)
             end
             if not event.handled then
-                local triggered = event:get_button_state(self)
+                -- State is a bitmap with the following bits:
+                --     bit 0 (1): mousedown was dispatched
+                --     bit 1 (2): mousedown was accepted
+                --     bit 2 (4): doubleclick detected
+                --     bit 3 (8): longpress dispatched
+                --     bit 4 (16): longpress accepted
+                local state = event:get_button_state(self) or 0
                 -- If touch scrolling, apply the widget's mousedown delay unless it's already
                 -- focused, in which case we send the mousedown immediately.
                 local threshold = self:_get_touch_activate_delay(event)
-                if duration >= threshold and not triggered and event:is_widget_pressed(self) then
+                if duration >= threshold and state == 0 and event:is_widget_pressed(self) then
                     -- Indicate that onmousedown() has been dispatched for this button on this widget.
-                    event:set_button_state(self, true)
+                    event:set_button_state(self, 1)
                     if self:_handle_mousedown(event) then
-                        -- Track the fact that mousedown was handled by this widget.  We use this to
-                        -- prevent generating a simulated deferred mousedown on mouseup later.
-                        event:set_button_state('mousedown-handled', self)
-                        event:set_handled(self)
-                        self:queue_draw()
+                        -- This will set the mousedown-handled button state to track the
+                        -- fact that mousedown was handled by this widget.  We use this to
+                        -- prevent generating a simulated deferred mousedown on mouseup
+                        -- later.
+                        self:_accept_mousedown(event, duration, state)
                     end
-                elseif self:focused() then
-                    if triggered == true and duration >= rtk.long_press_delay then
-                        event:set_button_state(self, 1)
+                elseif state & 8 == 0 then
+                    if duration >= rtk.long_press_delay then
                         if self:_handle_longpress(event) then
                             self:queue_draw()
-                            -- This flag prevents onclick() from firing later, as the contract says
-                            -- onclick() will not fire if onlongpress() was handled.
-                            event:set_button_state(self, 2)
+                            -- This flag prevents onclick() from firing later during
+                            -- mouseup, as the contract says onclick() will not fire if
+                            -- onlongpress() was handled.
+                            event:set_button_state(self, state | 8 | 16)
                         else
                             -- Invoked but not handled, so just set a flag now to prevent
                             -- us from refiring onlongpress.
-                            event:set_button_state(self, 1)
+                            event:set_button_state(self, state | 8)
                         end
                     end
+                end
+                if self:focused() then
                     -- This is a refired (simulated) mousedown event and as we were
                     -- previously focused we'll hold onto the focus by marking the event
                     -- as handled.
@@ -2539,27 +2545,28 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     event:set_handled(self)
                     self:queue_draw()
                 end
-                local state = event:get_button_state(self)
-                if state or event:is_widget_pressed(self) then
-                    local time = event.time
+                local state = event:get_button_state(self) or 0
+                if state > 0 or event:is_widget_pressed(self) then
                     -- Don't fire an onclick() if we had already experienced a *handled*
                     -- onlongpress (where the mouse button state for this widget will be
-                    -- set to 2).
-                    if state ~= 2 and not dnd.dragging then
+                    -- have bit 4 set).
+                    if state & 16 == 0 and not dnd.dragging then
                         if self:_handle_click(event) then
                             event:set_handled(self)
                             self:queue_draw()
                         end
-                        if event.time - self._last_click_time <= rtk.double_click_delay then
+                        if state & 4 ~= 0 then
+                            -- If state has bit 2 set, then it means the mousedown handler
+                            -- determined this is a double click.  Now that the button has
+                            -- been released, let's fire the event handler.
                             if self:_handle_doubleclick(event) then
                                 event:set_handled(self)
                                 self:queue_draw()
                             end
-                            -- Double click fired, so reset the timer.
-                            time = 0
+                            -- Double click finished, reset the timer.
+                            self._last_mousedown_time = 0
                         end
                     end
-                    self._last_click_time = time
                 end
                 if self.mouseover and calc.cursor then
                     self.window:request_mouse_cursor(calc.cursor)
@@ -2638,16 +2645,31 @@ end
 function rtk.Widget:_deferred_mousedown(event, x, y)
     local mousedown_handled = event:get_button_state('mousedown-handled')
     if not mousedown_handled and event:is_widget_pressed(self) and not event:get_button_state(self) then
-        local downevent = event:clone{type=rtk.Event.MOUSEDOWN, simulated=true, x=x, y=y}
+        local downevent = event:clone{type=rtk.Event.MOUSEDOWN, simulated=true, x=x or event.x, y=y or event.y}
         if self:_handle_mousedown(downevent) then
-            -- Ensure mouseup gets handled so the window doesn't blur us.
-            event:set_button_state('mousedown-handled', self)
-            -- It's intentional that we handle the original event here, because we want to
-            -- prevent propagation of e.g. mouseup if a widget responded to the simulated
+            -- Ensure mouseup gets handled so the window doesn't blur us. It's intentional
+            -- that we handle the original event here, because we want to prevent
+            -- propagation of e.g. mouseup if a widget responded to the simulated
             -- mousedown.
-            event:set_handled(self)
+            self:_accept_mousedown(event)
         end
     end
+end
+
+function rtk.Widget:_accept_mousedown(event, duration, state)
+    -- Track the fact that mousedown was handled by this widget.  When touch scrolling is
+    -- enabled, this will prevent generating a simulated deferred mousedown on mouseup
+    -- later.
+    event:set_button_state('mousedown-handled', self)
+    event:set_handled(self)
+    if not event.simulated and event.time - self._last_mousedown_time <= rtk.double_click_delay then
+        -- Bit 2 indicates a doubleclick occurred, which is checked during mouseup.
+        event:set_button_state(self, (state or 0) | 4)
+        self._last_mousedown_time = 0
+    else
+        self._last_mousedown_time = event.time
+    end
+    self:queue_draw()
 end
 
 --- Called when the widget (or one of its ancestors) is hidden.
@@ -2818,9 +2840,8 @@ end
 -- The default implementation focuses the widget if `autofocus` is true and returns true
 -- if the focus was accepted to indicate the event is considered handled.
 --
--- It is also necessary for implementations to return true in order for
--- `onclick()` to be eligible to fire (if the mouse is released while also
--- over the widget).
+-- It is also necessary for implementations to return true in order for `onclick()`,
+-- `ondoubleclick()` and `onlongpress()` to be eligible to fire.
 --
 -- @tparam rtk.Event event a `rtk.Event.MOUSEDOWN` event, where
 --   `rtk.Event.button` will indicate which mouse button was pressed.
@@ -2879,14 +2900,15 @@ function rtk.Widget:_handle_mousewheel(event)
 end
 
 
---- Called when the mouse button is pressed and subsequently released over a
--- `focused` widget quickly enough that it's not considered a
--- @{onlongpress|long press}.
+--- Called when the mouse button is pressed and subsequently released over a widget quickly
+-- enough that it's not considered a @{onlongpress|long press}.
 --
 -- The default implementation does nothing.
 --
--- This event will not fire if the widget is not `focused`.  In other words, either
--- `onmousedown()` will have to have had returned true, or `focus()` explicitly called.
+-- This event will not fire if the handler for `onmousedown()` did not return true.
+-- The default `onmousedown()` behavior returns true if `autofocus` is true, but
+-- without `autofocus` enabled you would need to explicitly add a handler that
+-- returns true in order for `onclick()` to be emitted.
 --
 -- @tparam rtk.Event event an `rtk.Event.MOUSEUP` event, where
 --   `rtk.Event.button` will indicate which mouse button was pressed.
@@ -2900,13 +2922,11 @@ end
 
 
 --- Called after two successive `onclick` events occur within `rtk.double_click_delay`
--- over a `focused` widget.
+-- over a widget.
 --
 -- The default implementation does nothing.
 --
--- Like `onclick()`, this event will not fire if the widget is not `focused`.  In other
--- words, either `onmousedown()` will have to have had returned true, or `focus()`
--- explicitly called.
+-- Like `onclick()`, this event will not fire if `onmousedown()` did not return true.
 --
 -- @tparam rtk.Event event the `rtk.Event.MOUSEUP` event that triggered the double click
 -- @treturn bool|nil returning true indicates the event is to be marked as handled
@@ -2918,14 +2938,12 @@ function rtk.Widget:_handle_doubleclick(event)
 end
 
 
---- Called after the mouse has consistently been held down for
--- `rtk.long_press_delay` over a `focused` widget.
+--- Called after the mouse has been consistently held down for `rtk.long_press_delay` over
+-- a widget.
 --
 -- The default implementation does nothing.
 --
--- Like `onclick()`, this event will not fire if the widget is not `focused`.  In other
--- words, either `onmousedown()` will have to have had returned true, or `focus()`
--- explicitly called.
+-- Like `onclick()`, this event will not fire if `onmousedown()` did not return true.
 --
 -- @tparam rtk.Event event an `rtk.Event.MOUSEDOWN` event that triggered the long press
 -- @treturn bool|nil returning true indicates the event is to be marked as handled
@@ -3111,6 +3129,8 @@ end
 function rtk.Widget:ondragend(event, dragarg) end
 
 function rtk.Widget:_handle_dragend(event, dragarg)
+    -- Reset double click timer
+   self._last_mousedown_time  = 0
     return self:ondragend(event, dragarg)
 end
 
