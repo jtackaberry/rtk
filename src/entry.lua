@@ -66,6 +66,7 @@ rtk.Entry.register{
     -- @type string
     value = rtk.Attribute{
         default='',
+        reflow=rtk.Widget.REFLOW_NONE,
         calculate=function(self, attr, value, target)
             -- Ensure value is always a string.
             return value and tostring(value) or ''
@@ -174,7 +175,19 @@ rtk.Entry.register{
     -- character defined by this index (default 1).
     -- @type number
     -- @meta read/write
-    caret = 1,
+    caret = rtk.Attribute{
+        type='number',
+        default=1,
+        -- Priority ensures this gets calculated after value, as the caret bounds depends
+        -- on the current value.
+        priority=true,
+        reflow=rtk.Widget.REFLOW_NONE,
+        -- We don't need to reflow, but we do need to redraw.
+        redraw=true,
+        calculate=function(self, attr, value, target)
+            return rtk.clamp(value, 1, #(target.value or '') + 1)
+        end,
+    },
 
     --- The name of the font face (e.g. `'Calibri`'), which uses the @{rtk.themes.entry_font|global
     -- text entry default} if nil (default nil).
@@ -247,9 +260,20 @@ function rtk.Entry:initialize(attrs, ...)
     -- Character position where where selection ends (which may be less than or
     -- greater than the anchor)
     self._selend = nil
+    -- The left offset in pixels of the rendered text.  If this value is e.g. 50,
+    -- it means that the left edge of the backing store corresponds to 50px
+    -- inside the text.
     self._loffset = 0
     self._blinking = false
-    self._dirty = false
+    -- If true, the backingstore will be rendered on next _draw()
+    self._dirty_text = false
+    -- If not nil, is the index of the current value attribute that we need to start
+    -- recalculate character positions on next _draw()
+    self._dirty_positions = nil
+    -- If true, we need to run _calcview() on next draw, which may in turn set
+    -- _dirty_text to true if _loffset has changed.
+    self._dirty_view = false
+
     -- A table of prior states for ctrl-z undo.  Each entry is is an array
     -- of {text, caret, selstart, selend}
     self._history = nil
@@ -259,27 +283,41 @@ end
 
 function rtk.Entry:_handle_attr(attr, value, oldval, trigger, reflow)
     local calc = self.calc
-    -- Calling superclass here will queue reflow, which in turn will automatically dirty
-    -- rendered text and _calcview().
     local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
     if ok == false then
         return ok
     end
     if attr == 'value' then
-        -- Ensure we store the calculated value
-        self.value = value
+        self._dirty_text = true
+        if not self._dirty_positions then
+            -- If this was already set, it's because sync() was called internally and an
+            -- intelligent value was set first. Otherwise, if we're here, the new value
+            -- came from the user. Given the cost of calculating character positions,
+            -- it's worth the effort to loop through the old and new strings to find the
+            -- first difference.
+            local diff = math.min(#value, #oldval)
+            for i = 1, diff do
+                if value:sub(i, i) ~= oldval:sub(i, i) then
+                    diff = i
+                    break
+                end
+            end
+            self._dirty_positions = diff
+        end
+        -- Updating the text clears selection
         self._selstart = nil
         -- After setting value, ensure caret does not extend past end of value.
-        if calc.caret >= value:len() then
-            calc.caret = value:len() + 1
+        local caret = rtk.clamp(calc.caret, 1, #value + 1)
+        if caret ~= calc.caret then
+            self:sync('caret', caret)
         end
         if trigger then
-            self:onchange()
+            self:_handle_change()
         end
     elseif attr == 'caret' then
-        calc.caret = rtk.clamp(value, 1, self.value:len() + 1)
-        -- Reflect new value back to user-facing attribute
-        self.caret = calc.caret
+        -- Ensure we recalculate offset on next draw, which will rerender text
+        -- if necessary.
+        self._dirty_view = true
     elseif attr == 'bg' and type(self.icon) == 'string' then
         -- We're (potentially) changing the color but, because the user-provided attribute
         -- is a string it means we loaded the icon based on its name.  Recalculate the icon
@@ -293,7 +331,10 @@ end
 function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
     local calc = self.calc
     local maxw, maxh = nil, nil
-    self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags)
+    if self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags) then
+        -- Font changed, so ensure we recalculate all character positions.
+        self._dirty_positions = 1
+    end
 
     if calc.textwidth and not self.w then
         -- Compute dimensions based on font and given textwidth.  Choose a character
@@ -320,12 +361,7 @@ function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
         self._backingstore = rtk.Image()
     end
     self._backingstore:resize(calc.w, calc.h, false)
-    self._dirty = true
-end
-
-function rtk.Entry:_realize_geometry()
-    self:_calcpositions()
-    self:_calcview()
+    self._dirty_text = true
 end
 
 function rtk.Entry:_unrealize()
@@ -336,41 +372,63 @@ end
 -- Measure the x position of each character in the string.  This allows us to support
 -- proportional fonts.
 function rtk.Entry:_calcpositions(startfrom)
+    startfrom = startfrom or 1
+    local value = self.calc.value
     self._font:set()
     -- Ok, this isn't exactly efficient, but it should be fine for sensibly sized strings.
-    for i = (startfrom or 1), self.value:len() do
-        local w, _ = gfx.measurestr(self.value:sub(1, i))
+    for i = startfrom, #value + 1 do
+        local w, _ = gfx.measurestr(value:sub(1, i))
         self._positions[i + 1] = w
     end
+    self._dirty_positions = nil
 end
 
 function rtk.Entry:_calcview()
     local calc = self.calc
-    -- TODO: handle case where text is deleted from end, we want to keep the text right justified
     local curx = self._positions[calc.caret]
     local curoffset = curx - self._loffset
     local innerw = calc.w - (self._clp + self._crp)
     if calc.icon then
         innerw = innerw - (calc.icon.w * rtk.scale.value) - calc.spacing
     end
+    local loffset = self._loffset
     if curoffset < 0 then
-        self._loffset = curx
+        loffset = curx
     elseif curoffset > innerw then
-        self._loffset = curx - innerw
+        loffset = curx - innerw
     end
+    local last = self._positions[#calc.value+1]
+    if last > innerw then
+        -- The rendered value doesn't fit within our inner width.  Ensure we aren't leaving
+        -- any gap on the right of the caret to keep the text right justified.
+        local gap = innerw - (last - loffset)
+        if gap > 0 then
+            loffset = loffset - gap
+        end
+    else
+        -- Last character in value finishes rendering within our inner width, so there's
+        -- no reason we should have any left offset at all.
+        loffset = 0
+    end
+    -- If the offset changed we need to rerender the backing store.
+    if loffset ~= self._loffset then
+        self._dirty_text = true
+        self._loffset = loffset
+    end
+    self._dirty_view = false
 end
 
-function rtk.Entry:_handle_focus(event, other)
-    local ok = rtk.Widget._handle_focus(self, event, other)
+function rtk.Entry:_handle_focus(event, context)
+    local ok = rtk.Widget._handle_focus(self, event, context)
     -- Force a redraw if there is a selection
-    self._dirty = self._dirty or (ok and self._selstart)
+    self._dirty_text = self._dirty_text or (ok and self._selstart)
     return ok
 end
 
 function rtk.Entry:_handle_blur(event, other)
     local ok = rtk.Widget._handle_blur(self, event, other)
     -- Force a redraw if there is a selection
-    self._dirty = self._dirty or (ok and self._selstart)
+    self._dirty_text = self._dirty_text or (ok and self._selstart)
     return ok
 end
 
@@ -392,37 +450,39 @@ function rtk.Entry:_caret_from_mouse_event(event)
     local calc = self.calc
     local iconw = calc.icon and (calc.icon.w * rtk.scale.value + calc.spacing) or 0
     local relx = self._loffset + event.x - self.clientx - iconw - self._clp
-    for i = 2, self.value:len() + 1 do
+    for i = 2, calc.value:len() + 1 do
         local pos = self._positions[i]
         local width = pos - self._positions[i-1]
         if relx <= self._positions[i] - width/2 then
             return i - 1
         end
     end
-    return self.value:len() + 1
+    return calc.value:len() + 1
 end
 
 function rtk.Entry:_get_word_left(spaces)
+    local value = self.calc.value
     local caret = self.calc.caret
     if spaces then
-        while caret > 1 and self.value:sub(caret - 1, caret - 1) == ' ' do
+        while caret > 1 and value:sub(caret - 1, caret - 1) == ' ' do
             caret = caret - 1
         end
     end
-    while caret > 1 and self.value:sub(caret - 1, caret - 1) ~= ' ' do
+    while caret > 1 and value:sub(caret - 1, caret - 1) ~= ' ' do
         caret = caret - 1
     end
     return caret
 end
 
 function rtk.Entry:_get_word_right(spaces)
+    local value = self.calc.value
     local caret = self.calc.caret
-    local len = self.value:len()
-    while caret <= len and self.value:sub(caret, caret) ~= ' ' do
+    local len = value:len()
+    while caret <= len and value:sub(caret, caret) ~= ' ' do
         caret = caret + 1
     end
     if spaces then
-        while caret <= len and self.value:sub(caret, caret) == ' ' do
+        while caret <= len and value:sub(caret, caret) == ' ' do
             caret = caret + 1
         end
     end
@@ -433,8 +493,8 @@ end
 --- Selects all text.
 function rtk.Entry:select_all()
     self._selstart = 1
-    self._selend = self.value:len() + 1
-    self._dirty = true
+    self._selend = self.calc.value:len() + 1
+    self._dirty_text = true
     self:queue_draw()
 end
 
@@ -452,7 +512,7 @@ end
 -- @tparam number b the ending character index (inclusive within the region), or negative to
 --   slice from the end of the string, where -1 will extend to the end of `value`.
 function rtk.Entry:select_range(a, b)
-    local len = #self.value
+    local len = #self.calc.value
     if len == 0 or not a then
         -- Regardless of what was asked, there is nothing to select.
         self._selstart = nil
@@ -461,7 +521,7 @@ function rtk.Entry:select_range(a, b)
         self._selstart = math.max(1, a)
         self._selend = b > 0 and math.min(len + 1, b + 1) or math.max(self._selstart, len+b+2)
     end
-    self._dirty = true
+    self._dirty_text = true
     self:queue_draw()
 end
 
@@ -477,9 +537,36 @@ function rtk.Entry:get_selection_range()
     end
 end
 
-function rtk.Entry:_delete_range(a, b)
-    self.value = self.value:sub(1, a - 1) .. self.value:sub(b + 1)
-    self._dirty = true
+function rtk.Entry:_edit(insert, delete_selection, dela, delb, caret)
+    local calc = self.calc
+    local value = calc.value
+    if delete_selection then
+        dela, delb = self:get_selection_range()
+        if dela and delb then
+            local ndeleted = delb - dela
+            caret = rtk.clamp((caret or calc.caret) - ndeleted, 1, #value)
+        end
+    end
+    caret = caret or calc.caret
+    if dela and delb then
+        dela = rtk.clamp(dela, 1, #value)
+        delb = rtk.clamp(delb, 1, #value+1)
+        value = value:sub(1, dela - 1) .. value:sub(delb+1)
+        self._dirty_positions = math.min(dela - 1, self._dirty_positions or math.inf)
+    end
+    if insert then
+        self._dirty_positions = math.min(caret - 1, self._dirty_positions or math.inf)
+        value = value:sub(0, caret - 1) .. insert .. value:sub(caret)
+        caret = caret + insert:len()
+    end
+    if value ~= calc.value then
+        caret = rtk.clamp(caret, 1, #value + 1)
+        self:sync('value', value)
+        if caret ~= calc.caret then
+            self:sync('caret', caret)
+        end
+        self._dirty_view = true
+    end
 end
 
 --- Deletes a specific range from the text entry.
@@ -490,30 +577,8 @@ end
 -- @tparam number b the ending character index (inclusive within the region)
 function rtk.Entry:delete_range(a, b)
     self:push_undo()
-    self:_delete_range(a, b)
-    self.calc.caret = rtk.clamp(self.calc.caret, 1, #self.value)
-    self.caret = self.calc.caret
-    self:queue_draw()
-    self:onchange()
+    self:_edit(nil, nil, a, b)
 end
-
-function rtk.Entry:_delete()
-    local calc = self.calc
-    if self._selstart then
-        local a, b = self:get_selection_range()
-        self:_delete_range(a, b - 1)
-        if calc.caret > self._selstart then
-            calc.caret = math.max(1, calc.caret - (b-a))
-            -- Reflect new value back to user-facing attribute
-            self.caret = calc.caret
-        end
-        self._selstart = nil
-        self:queue_draw()
-        return b-a
-    end
-    return 0
-end
-
 
 --- Deletes the current selected range from `value` and resets the selection.
 --
@@ -525,9 +590,7 @@ function rtk.Entry:delete()
     if self._selstart then
         self:push_undo()
     end
-    if self:_delete() > 0 then
-        self:onchange()
-    end
+    self:_edit(nil, true)
 end
 
 
@@ -536,9 +599,9 @@ end
 -- This is different from directly setting the `value` attribute to the empty string
 -- in that it also pushes the current value onto the undo history.
 function rtk.Entry:clear()
-    if self.value ~= '' then
+    if self.calc.value ~= '' then
         self:push_undo()
-        self:attr('value', '')
+        self:sync('value', '')
     end
 end
 
@@ -553,7 +616,7 @@ end
 function rtk.Entry:copy()
     if self._selstart then
         local a, b = self:get_selection_range()
-        local text = self.value:sub(a, b - 1)
+        local text = self.calc.value:sub(a, b - 1)
         if rtk.clipboard.set(text) then
             return text
         end
@@ -572,7 +635,6 @@ function rtk.Entry:cut()
     local copied = self:copy()
     if copied then
         self:delete()
-        self:onchange()
     end
     return copied
 end
@@ -587,25 +649,10 @@ function rtk.Entry:paste()
     local str = rtk.clipboard.get()
     if str and str ~= '' then
         self:push_undo()
-        self:_delete()
-        self:_insert(str)
-        self:onchange()
+        self:_edit(str, true)
         return str
     end
 end
-
-function rtk.Entry:_insert(text)
-    local calc = self.calc
-    -- FIXME: honor self.max based on current len and size of text
-    self.value = self.value:sub(0, calc.caret - 1) .. text .. self.value:sub(calc.caret)
-    self:_calcpositions(calc.caret)
-    calc.caret = calc.caret + text:len()
-    -- Reflect new value back to user-facing attribute
-    self.caret = calc.caret
-    self._dirty = true
-    self:queue_draw()
-end
-
 
 --- Inserts the given text at the current `caret` position.
 --
@@ -614,8 +661,7 @@ end
 -- @tparam string text the text to insert at `caret`
 function rtk.Entry:insert(text)
     self:push_undo()
-    self:_insert(text)
-    self:onchange()
+    self:_edit(text)
 end
 
 --- Reverts to the last state in the undo history.
@@ -630,13 +676,10 @@ function rtk.Entry:undo()
     local calc = self.calc
     if self._history and #self._history > 0 then
         local state = table.remove(self._history, #self._history)
-        self.value, calc.caret, self._selstart, self._selend = table.unpack(state)
-        -- Reflect new value back to user-facing attribute
-        self.caret = calc.caret
-        self._dirty = true
-        self:_calcpositions()
-        self:queue_draw()
-        self:onchange()
+        local value, caret
+        value, caret, self._selstart, self._selend = table.unpack(state)
+        self:sync('value', value)
+        self:sync('caret', caret)
         return true
     else
         return false
@@ -648,7 +691,8 @@ function rtk.Entry:push_undo()
     if not self._history then
         self._history = {}
     end
-    self._history[#self._history + 1] = {self.value, self.calc.caret, self._selstart, self._selend}
+    local calc = self.calc
+    self._history[#self._history + 1] = {calc.value, calc.caret, self._selstart, self._selend}
 end
 
 function rtk.Entry:_handle_mousedown(event)
@@ -657,9 +701,11 @@ function rtk.Entry:_handle_mousedown(event)
         return ok
     end
     if event.button == rtk.mouse.BUTTON_LEFT then
-        self.calc.caret = self:_caret_from_mouse_event(event)
-        -- Reflect new value back to user-facing attribute
-        self.caret = self.calc.caret
+        local caret = self:_caret_from_mouse_event(event)
+        self._selstart = nil
+        self._dirty_text = true
+        self:sync('caret', caret)
+        self:queue_draw()
     elseif event.button == rtk.mouse.BUTTON_RIGHT then
         if not self._popup then
             self._popup = rtk.NativeMenu(rtk.Entry.contextmenu)
@@ -670,7 +716,7 @@ function rtk.Entry:_handle_mousedown(event)
         self._popup:item('copy').disabled = not self._selstart
         self._popup:item('delete').disabled = not self._selstart
         self._popup:item('paste').disabled = not clipboard or clipboard == ''
-        self._popup:item('select_all').disabled = #self.value == 0
+        self._popup:item('select_all').disabled = #self.calc.value == 0
         self._popup:open_at_mouse():done(function(item)
             if item then
                 -- We named menu item ids after method names, so this is a simple dispatcher.
@@ -686,39 +732,42 @@ function rtk.Entry:_handle_keypress(event)
     if ok == false then
         return ok
     end
-    local len = self.value:len()
     local calc = self.calc
+    local newcaret = nil
+    local len = calc.value:len()
     local orig_caret = calc.caret
     local selecting = event.shift
     if event.keycode == rtk.keycodes.LEFT then
-        if event.ctrl then
-            calc.caret = self:_get_word_left(true)
+        if not selecting and self._selstart then
+            newcaret = self._selstart
+        elseif event.ctrl then
+            newcaret = self:_get_word_left(true)
         else
-            calc.caret = math.max(1, calc.caret - 1)
+            newcaret = math.max(1, calc.caret - 1)
         end
     elseif event.keycode == rtk.keycodes.RIGHT then
-        if event.ctrl then
-            calc.caret = self:_get_word_right(true)
+        if not selecting and self._selstart then
+            newcaret = self._selend
+        elseif event.ctrl then
+            newcaret = self:_get_word_right(true)
         else
-            calc.caret = math.min(calc.caret + 1, len + 1)
+            newcaret = math.min(calc.caret + 1, len + 1)
         end
     elseif event.keycode == rtk.keycodes.HOME then
-        calc.caret = 1
+        newcaret = 1
     elseif event.keycode == rtk.keycodes.END then
-        calc.caret = self.value:len() + 1
+        newcaret = calc.value:len() + 1
     elseif event.keycode == rtk.keycodes.DELETE then
         if self._selstart then
             self:delete()
         else
             if event.ctrl then
                 self:push_undo()
-                self:_delete_range(calc.caret, self:_get_word_right(true) - 1)
-            else
-                self:_delete_range(calc.caret, calc.caret)
+                self:_edit(nil, false, calc.caret, self:_get_word_right(true) - 1)
+            elseif calc.caret <= len then
+                self:_edit(nil, false, calc.caret, calc.caret)
             end
         end
-        self:_calcpositions(calc.caret)
-        self:onchange(event)
     elseif event.keycode == rtk.keycodes.BACKSPACE then
         if calc.caret >= 1 then
             if self._selstart then
@@ -726,24 +775,19 @@ function rtk.Entry:_handle_keypress(event)
             else
                 if event.ctrl then
                     self:push_undo()
-                    calc.caret = self:_get_word_left(true)
-                    self:_delete_range(calc.caret, orig_caret - 1)
-                else
-                    self:_delete_range(calc.caret - 1, calc.caret - 1)
-                    calc.caret = math.max(1, calc.caret - 1)
+                    local caret = self:_get_word_left(true)
+                    self:_edit(nil, false, caret, calc.caret, caret)
+                elseif calc.caret > 1 then
+                    local caret = calc.caret - 1
+                    self:_edit(nil, false, caret, caret, caret)
                 end
             end
-            self:_calcpositions(calc.caret)
-            self:onchange(event)
         end
     elseif event.char and not event.ctrl then
         if self._selstart then
             self:push_undo()
         end
-        self:_delete()
-        self:_insert(event.char)
-        self:onchange(event)
-        len = #self.value
+        self:_edit(event.char, true)
         selecting = false
     elseif event.ctrl and event.char and not event.shift then
         if event.char == 'a' and len > 0 then
@@ -764,20 +808,22 @@ function rtk.Entry:_handle_keypress(event)
     else
         return ok
     end
+    if newcaret then
+        self:sync('caret', newcaret)
+    end
     if selecting then
         if not self._selstart then
             self._selstart = orig_caret
         end
         self._selend = calc.caret
-    elseif selecting == false then
+        self._dirty_text = true
+    elseif selecting == false and self._selstart then
         self._selstart = nil
+        self._dirty_text = true
     end
-    -- Reflect new value back to user-facing attribute
-    self.caret = calc.caret
+
     -- Reset blinker
     self._caretctr = 0
-    self:_calcview()
-    self._dirty = true
     log.debug2(
         'keycode=%s char=%s caret=%s ctrl=%s shift=%s meta=%s alt=%s sel=%s-%s',
         event.keycode, event.char, calc.caret,
@@ -811,18 +857,10 @@ function rtk.Entry:_handle_dragmousemove(event)
         return ok
     end
     self._selend = selend
-    -- This will force a reflow of this widget.
-    self:attr('caret', selend)
-    return ok
-end
-
-function rtk.Entry:_handle_dragend(event)
-    local ok = rtk.Widget._handle_dragend(self, event)
-    if ok == false then
-        return ok
-    end
-    -- Reset double click timer
-    self._last_click_time  = 0
+    -- This will queue a redraw of the widget.
+    self:sync('caret', selend)
+    -- Ensure text is rerendered as we've changed the selection area.
+    self._dirty_text = true
     return ok
 end
 
@@ -850,10 +888,8 @@ function rtk.Entry:_handle_doubleclick(event)
     self._last_doubleclick_time = event.time
     local left = self:_get_word_left(false)
     local right = self:_get_word_right(true)
-    self.calc.caret = right
-    -- Reflect new value back to user-facing attribute
-    self.caret = right
-    self:select_range(left, right)
+    self:sync('caret', right)
+    self:select_range(left, right-1)
     return true
 end
 
@@ -884,11 +920,9 @@ function rtk.Entry:_rendertext(x, y)
         )
     end
     self:setcolor(self.calc.textcolor)
-    local s = self.value:sub(self._left_idx or 1)
-    self._font:draw(self.value, -self._loffset, 0)
+    self._font:draw(self.calc.value, -self._loffset, 0)
     self._backingstore:popdest()
-
-    self._dirty = false
+    self._dirty_text = false
 end
 
 
@@ -898,7 +932,7 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
     if offy ~= self.offy or offx ~= self.offx then
         -- If we've scrolled within a viewport since last draw, force _rendertext() to
         -- repaint the background into the Entry's local backing store.
-        self._dirty = true
+        self._dirty_text = true
     end
 
     rtk.Widget._draw(self, offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)
@@ -920,7 +954,13 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
     -- render the text over top it.
     self:_draw_bg(offx, offy, alpha, event)
 
-    if self._dirty then
+    if self._dirty_positions then
+        self:_calcpositions(self._dirty_positions)
+    end
+    if self._dirty_view or self._dirty_text then
+        self:_calcview()
+    end
+    if self._dirty_text then
         self:_rendertext(x, y)
     end
 
@@ -948,21 +988,21 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
         mode=rtk.Image.FAST_BLIT
     }
 
-    if calc.placeholder and #self.value == 0 then
+    if calc.placeholder and #calc.value == 0 then
         self._font:set()
-        -- self:setcolor(calc.textcolor, 0.5 * alpha)
         self:setcolor(rtk.theme.entry_placeholder, alpha)
         self._font:draw(calc.placeholder, x + lp, y + tp, calc.w - lp, calc.h - tp)
     end
 
     if focused then
-        if not self._blinking then
+        local showcursor = not self._selstart or (self._selend - self._selstart) == 0
+        if not self._blinking and showcursor then
             -- Run a "timer" in the background to queue a redraw when the
             -- cursor needs to blink.
             self:_blink()
         end
         self:_draw_borders(offx, offy, alpha, calc.border_focused)
-        if self._caretctr % 32 < 16 then
+        if self._caretctr % 32 < 16 and showcursor then
             -- Draw caret
             local curx = x + self._positions[calc.caret] + lp - self._loffset
             self:setcolor(calc.textcolor, alpha)
@@ -994,4 +1034,9 @@ end
 -- @tparam rtk.Event|nil event an `rtk.Event.KEY` event if available, or nil if
 --   the entry was changed programmatically.
 -- @treturn nil Return value has no significance. This is a notification event only.
-function rtk.Entry:onchange(event) end
+function rtk.Entry:onchange(event)
+end
+
+function rtk.Entry:_handle_change(event)
+    return self:onchange(event)
+end
