@@ -998,19 +998,21 @@ function rtk.Widget:_setattrs(attrs)
     local calc = self.calc
     -- First exclude priority attributes.
     for k, v in pairs(attrs) do
-        local meta = get(k)
-        if not meta.priority then
-            -- We can only invoke the default value function for non priority attributes,
-            -- as default funcs for priority attributes may depend on non-priority ones.
-            if v == rtk.Attribute.FUNCTION then
-                v = self.class.attributes[k].default_func(self, k)
+        if not tonumber(k) then
+            local meta = get(k)
+            if not meta.priority then
+                -- We can only invoke the default value function for non priority attributes,
+                -- as default funcs for priority attributes may depend on non-priority ones.
+                if v == rtk.Attribute.FUNCTION then
+                    v = self.class.attributes[k].default_func(self, k)
+                end
+                local calculated = self:_calc_attr(k, v, nil, meta)
+                self:_set_calc_attr(k, v, calculated, self.calc, meta)
+            else
+                priority[#priority+1] = k
             end
-            local calculated = self:_calc_attr(k, v, nil, meta)
-            self:_set_calc_attr(k, v, calculated, self.calc, meta)
-        else
-            priority[#priority+1] = k
+            self[k] = v
         end
-        self[k] = v
     end
     -- Now pass over all priority attributes.
     for _, k in ipairs(priority) do
