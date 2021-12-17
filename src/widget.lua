@@ -1676,8 +1676,7 @@ function rtk.Widget:animate(kwargs)
     -- Because rtk.queue_animation() will set doneval to dst if it's nil, and
     -- for width/height we will calculate dst, convert nil to rtk.Attribute.DEFAULT
     -- which will be passed to attr() when the animation finishes.
-    kwargs.doneval = kwargs.doneval or kwargs.dst or rtk.Attribute.DEFAULT
-
+    local doneval = kwargs.dst or rtk.Attribute.DEFAULT
     if attr == 'w' or attr == 'h' then
         -- If src value is nil or fractional and we're animating one of the
         -- dimensions, set the animation src to the current calculated size.
@@ -1713,12 +1712,17 @@ function rtk.Widget:animate(kwargs)
             -- are just fishing for the calculated dst value, we don't want to actually
             -- change our current calculated attributes.
             kwargs.dst = kwargs.calculate(self, attr, kwargs.dst, {})
+            -- Update doneval now that we've got a calculated value.
+            doneval = kwargs.dst or rtk.Attribute.DEFAULT
         end
     end
     -- As earlier, but the slow path: now that we've calculated the dst value,
     -- avoid scheduling a new animation with the same dst.
     if curdst == kwargs.dst then
         return curanim and curanim.future or rtk.Future():resolve(self)
+    end
+    if kwargs.doneval == nil then
+        kwargs.doneval = doneval
     end
 
     if not kwargs.src then
