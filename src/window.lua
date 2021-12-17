@@ -394,7 +394,7 @@ function rtk.Window:initialize(attrs, ...)
     self._dockstate = 0
     -- After drawing, the window contents is blitted to this backing store as an
     -- optimization for subsequent UI updates where no event has occured.
-    self._backingstore = rtk.Image(self.w, self.h)
+    self._backingstore = rtk.Image()
     -- Reusable event object
     self._event = rtk.Event()
     -- Whether a reflow is required on next update
