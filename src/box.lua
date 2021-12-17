@@ -404,21 +404,22 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
         elseif widget.visible == true then
             local ww, wh = 0, 0
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
-            -- Fill in the box direction implies expand.
-            local fill_box_orientation
-            if orientation == rtk.Box.HORIZONTAL then
-                fill_box_orientation = attrs.fillw
-            else
-                fill_box_orientation = attrs.fillh
-            end
-            attrs._calculated_expand = attrs.expand or (fill_box_orientation and 1) or 0
-            if attrs._calculated_expand == 0 and fill_box_orientation then
-                log.error('rtk.Box: %s: fill=true overrides explicit expand=0: %s will be expanded', self, widget)
-            end
             -- Calculate effective alignment for this cell, which defaults to the container's
             -- alignment unless explicitly defined.
             attrs._halign = attrs.halign or calc.halign
             attrs._valign = attrs.valign or calc.valign
+            -- Fill in the box direction implies expand.
+            local implicit_expand
+            if orientation == rtk.Box.HORIZONTAL then
+                implicit_expand = attrs.fillw
+            else
+                implicit_expand = attrs.fillh
+            end
+            attrs._calculated_expand = attrs.expand or (implicit_expand and 1) or 0
+            if attrs._calculated_expand == 0 and implicit_expand then
+                log.error('rtk.Box: %s: fill=true overrides explicit expand=0: %s will be expanded', self, widget)
+            end
+
             -- Reflow at 0,0 coords just to get the native dimensions.  Will adjust position in second pass.
             if attrs._calculated_expand == 0 then
                 if orientation == rtk.Box.HORIZONTAL then
