@@ -95,11 +95,14 @@ rtk.Viewport.register{
         default=0,
         -- Scrolling doesn't affect layout
         reflow=rtk.Widget.REFLOW_NONE,
+        calculate=function(self, attr, value, target)
+            return math.round(value)
+        end,
     },
     --- Horizontal scroll offset in pixels.  See also `scrollby()` and `scrollto()`.
     -- @meta read/write
     -- @type number
-    scroll_top = rtk.Attribute{default=0, reflow=rtk.Widget.REFLOW_NONE},
+    scroll_top=rtk.Reference('scroll_left'),
     --- Controls whether scrolling the viewport either programmatically or via the mouse wheel
     -- should animate smoothly (default nil).
     --
