@@ -618,6 +618,18 @@ function rtk.Window:_sync_window_attrs(overrides)
     local calc = self.calc
     local resized
     local dockstate = self:_get_dockstate_from_attrs()
+
+    if not rtk.has_js_reascript_api or not self.hwnd then
+        -- Limited logic when js_ReaScriptAPI is not available.  Basically we just sync
+        -- dockstate.  Geometry is synced in _update().
+        if dockstate ~= self._dockstate then
+            gfx.dock(dockstate)
+            self:_handle_dock_change(dockstate)
+        end
+        return
+    end
+
+    -- Everything below depends on js_ReaScriptAPI.
     if dockstate ~= self._dockstate then
         gfx.dock(dockstate)
         local r, w, h = reaper.JS_Window_GetClientSize(self.hwnd)
@@ -628,8 +640,6 @@ function rtk.Window:_sync_window_attrs(overrides)
         if calc.docked then
             -- But if we just docked, then let's immediately store the new docked geometry in
             -- the w/h attributes so that our next reflow has the proper size.
-            self.w, self.h = w, h
-            calc.w, calc.h = w, h
             gfx.w, gfx.h = w, h
             self:sync('w', w)
             self:sync('h', h)
@@ -823,7 +833,6 @@ function rtk.Window:open(attrs)
         rtk.color.set(rtk.theme.bg)
         gfx.rect(0, 0, w, h, 1)
     end
-    self:_sync_window_attrs()
     self._draw_queued = true
     self:_run()
 end
