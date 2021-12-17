@@ -193,9 +193,9 @@ rtk.Viewport.register{
 function rtk.Viewport:initialize(attrs, ...)
     rtk.Widget.initialize(self, attrs, self.class.attributes.defaults, ...)
     -- Force setting of child viewport/window
-    self:_handle_attr('child', self.child, nil, true)
+    self:_handle_attr('child', self.calc.child, nil, true)
     -- Force calculation of scrollbar colors based on bg color
-    self:_handle_attr('bg', self.bg)
+    self:_handle_attr('bg', self.calc.bg)
 
     self._backingstore = nil
     -- If scroll*() is called then the offset is dirtied so that it can be clamped

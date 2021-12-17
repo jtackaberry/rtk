@@ -224,7 +224,7 @@ function rtk.CheckBox:initialize(attrs, ...)
         [rtk.CheckBox.INDETERMINATE] = rtk.CheckBox._icon_intermediate
     }
     rtk.Button.initialize(self, attrs, self.class.attributes.defaults, ...)
-    self:_handle_attr('value', self.value)
+    self:_handle_attr('value', self.calc.value)
 end
 
 function rtk.CheckBox:_handle_click(event)

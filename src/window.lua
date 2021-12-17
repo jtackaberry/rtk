@@ -383,8 +383,8 @@ function rtk.Window:initialize(attrs, ...)
     if not rtk.has_js_reascript_api then
         -- Regardless of what was requested, without JS_ReascriptAPI we can't support
         -- these attributes.
-        self.borderless = false
-        self.pinned = false
+        self:sync('borderless', false)
+        self:sync('pinned', false)
     end
 
     --
@@ -631,6 +631,8 @@ function rtk.Window:_sync_window_attrs(overrides)
             self.w, self.h = w, h
             calc.w, calc.h = w, h
             gfx.w, gfx.h = w, h
+            self:sync('w', w)
+            self:sync('h', h)
             -- Force resized now as the comparisons later won't be able to tell that
             -- we did, having just replaced the w/h attrs.
             resized = 1
@@ -641,22 +643,18 @@ function rtk.Window:_sync_window_attrs(overrides)
         return
     end
 
-    if not rtk.has_js_reascript_api or not self.hwnd then
-        -- This function depends entirely on the jsReaScriptAPI.
-        return
-    end
 
     if self._resize_grip then
         self._resize_grip:hide()
     end
 
-    if not self.docked then
+    if not calc.docked then
         if not calc.visible then
             reaper.JS_Window_Show(self.hwnd, 'HIDE')
             return
         end
         local style = 'SYSMENU,DLGSTYLE,BORDER,THICKFRAME,CAPTION'
-        if self.borderless then
+        if calc.borderless then
             style = 'POPUP'
             self:_setup_borderless()
             if not self.realized then
@@ -797,10 +795,11 @@ function rtk.Window:open(attrs)
     self:_handle_attr('bg', calc.bg or rtk.theme.bg)
     attrs = self:_calc_cell_attrs(self, attrs)
     local x, y, w, h = self:_get_geometry_from_attrs(attrs)
-    -- Set current attributes based on initial geometry.  Also mark these as the
-    -- initial calculated values for size.  (Calculated position is always 0,0.)
-    self.x, self.y, self.w, self.h = x, y, w, h
-    calc.w, calc.h = w, h
+    -- Set current attributes based on initial geometry.
+    self:sync('x', x)
+    self:sync('y', y)
+    self:sync('w', w)
+    self:sync('h', h)
     local dockstate = self:_get_dockstate_from_attrs()
 
     -- Correct y coordinate for Mac
@@ -896,8 +895,9 @@ function rtk.Window:_setup_borderless()
     end
     move.ondoubleclick = function(this, event)
         local x, y, w, h = self:_get_display_resolution()
+        local calc = self.calc
         if self._unmaximized_geometry then
-            if x == self.x and y == self.y and w == self.w and h == self.h then
+            if x == self.x and y == self.y and w == calc.w and h == calc.h then
                 x, y, w, h = table.unpack(self._unmaximized_geometry)
             end
             self._unmaximized_geometry = nil
@@ -1006,7 +1006,8 @@ function rtk.Window:_handle_dock_change(dockstate)
     calc.docked = dockstate & 0x01 ~= 0
     calc.dock = (dockstate >> 8) & 0xff
     -- Also sync to user-facing attributes
-    self.dock, self.docked = calc.dock, calc.docked
+    self:sync('dock', calc.dock)
+    self:sync('docked', calc.docked)
     self._dockstate = dockstate
 
     self.hwnd = self:_get_hwnd()
@@ -1018,7 +1019,13 @@ function rtk.Window:_handle_dock_change(dockstate)
             self._undocked_geometry = {self.x, self.y, self.w, self.h}
         elseif self._undocked_geometry then
             -- We undocked, so restore the last saved geoemetry.
-            self.x, self.y, self.w, self.h = table.unpack(self._undocked_geometry)
+            local x, y, w, h = table.unpack(self._undocked_geometry)
+            self:sync('x', x)
+            self:sync('y', y)
+            self:sync('w', w)
+            self:sync('h', h)
+            gfx.w = w
+            gfx.h = h
         end
     end
     self:_sync_window_attrs()
@@ -1261,8 +1268,8 @@ function rtk.Window:_update()
     if resized and self.visible then
         -- Update both calculated and user-facing attributes for the newly discovered size.
         local last_w, last_h = calc.w, calc.h
-        self.w, self.h = gfx.w, gfx.h
-        calc.w, calc.h = gfx.w, gfx.h
+        self:sync('w', gfx.w)
+        self:sync('h', gfx.h)
         -- Helps to reduce flicker just a tiny bit when the window size expands.
         self:_clear_gdi(calc.w, calc.h)
         self:onresize(last_w, last_h)
@@ -1510,7 +1517,7 @@ function rtk.Window:_update()
         rtk._run_soon()
     end
     local blitted = false
-    if event and self.visible then
+    if event and calc.visible then
         if self._reflow_queued and not self._sync_window_attrs_on_update then
             -- One of the event handlers has requested a reflow.  It'd happen on the
             -- next update() but we do it now before drawing just to avoid potential
@@ -1649,7 +1656,7 @@ function rtk.Window:_blit()
 end
 
 function rtk.Window:_handle_window_event(event, now, suppress)
-    if not self.visible then
+    if not self.calc.visible then
         return
     end
     if not event.simulated then

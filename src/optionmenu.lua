@@ -155,8 +155,8 @@ function rtk.OptionMenu:initialize(attrs, ...)
     if not self.icon then
         -- self.calc.icon = rtk.OptionMenu.static._icon
     end
-    self:_handle_attr('menu', self.menu)
-    self:_handle_attr('icononly', self.icononly)
+    self:_handle_attr('menu', self.calc.menu)
+    self:_handle_attr('icononly', self.calc.icononly)
 end
 
 -- Return the size of the longest menu item
