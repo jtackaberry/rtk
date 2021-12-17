@@ -240,7 +240,7 @@ function rtk.CheckBox:_handle_attr(attr, value, oldval, trigger, reflow)
     local ret = rtk.Button._handle_attr(self, attr, value, oldval, trigger, reflow)
     if ret ~= false then
         if attr == 'value' then
-            self.calc.icon = self._value_map[value] or self._value_map[0]
+            self.calc.icon = self._value_map[value] or self._value_map[rtk.CheckBox.UNCHECKED]
             if trigger then
                 self:onchange()
             end
@@ -265,22 +265,28 @@ end
 -- The `value` attribute is updated after this function is called.
 -- @treturn rtk.CheckBox returns self for method chaining
 function rtk.CheckBox:toggle()
-    local value = self.value
+    local value = self.calc.value
     -- All this would be easier if the states were numeric, but we want to preserve
     -- truthiness of unchecked/checked so we're mixing booleans and numbers which
     -- makes all this a bit uglier.
+    --
+    -- Unknown values are interpreted as unchecked
     if self.calc.type == rtk.CheckBox.DUALSTATE then
-        value = (value == rtk.CheckBox.UNCHECKED) and rtk.CheckBox.CHECKED or rtk.CheckBox.UNCHECKED
-    else
-        if value == rtk.CheckBox.UNCHECKED then
-            value = rtk.CheckBox.CHECKED
-        elseif value == rtk.CheckBox.CHECKED then
-            value = rtk.CheckBox.INDETERMINATE
-        else
+        if value == rtk.CheckBox.CHECKED then
             value = rtk.CheckBox.UNCHECKED
+        else
+            value = rtk.CheckBox.CHECKED
+        end
+    else
+        if value == rtk.CheckBox.CHECKED then
+            value = rtk.CheckBox.INDETERMINATE
+        elseif value == rtk.CheckBox.INDETERMINATE then
+            value = rtk.CheckBox.UNCHECKED
+        else
+            value = rtk.CheckBox.CHECKED
         end
     end
-    self:attr('value', value)
+    self:sync('value', value)
     return self
 end
 
