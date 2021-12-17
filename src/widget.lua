@@ -1222,7 +1222,7 @@ end
 --
 -- Subclasses generally don't need to implement this unless they're doing
 -- something fairly custom.  Use rtk.Attribute calculate instead.
-function rtk.Widget:_calc_attr(attr, value, target, meta)
+function rtk.Widget:_calc_attr(attr, value, target, meta, namespace, widget)
     target = target or self.calc
     meta = meta or self.class.attributes.get(attr)
     if meta.type then
@@ -1235,9 +1235,9 @@ function rtk.Widget:_calc_attr(attr, value, target, meta)
             if value == nil then
                 value = rtk.Attribute.NIL
             end
-            return calculate[value] or value
+            value = calculate[value] or value
         elseif tp == 'function' then
-            return calculate(self, attr, value, target)
+            value = calculate(self, attr, value, target)
         end
     end
     return value

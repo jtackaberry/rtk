@@ -366,7 +366,7 @@ end
 --   the given widget
 function rtk.Container:add(widget, attrs)
     self:_reparent_child(widget)
-    self.children[#self.children+1] = {widget, self:_calc_cell_attrs(attrs or widget.cell)}
+    self.children[#self.children+1] = {widget, self:_calc_cell_attrs(widget, attrs)}
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -383,7 +383,7 @@ end
 function rtk.Container:update(widget, attrs, merge)
     local n = self:get_child_index(widget)
     assert(n, 'Widget not found in container')
-    attrs = self:_calc_cell_attrs(attrs or widget.cell)
+    attrs = self:_calc_cell_attrs(widget, attrs)
     if merge then
         local cellattrs = self.children[n][2]
         table.merge(cellattrs, attrs)
@@ -409,7 +409,7 @@ end
 --   the given widget
 function rtk.Container:insert(pos, widget, attrs)
     self:_reparent_child(widget)
-    table.insert(self.children, pos, {widget, self:_calc_cell_attrs(attrs or widget.cell)})
+    table.insert(self.children, pos, {widget, self:_calc_cell_attrs(widget, attrs)})
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -433,7 +433,7 @@ function rtk.Container:replace(index, widget, attrs)
     end
     local prev = self:_unparent_child(index)
     self:_reparent_child(widget)
-    self.children[index] = {widget, self:_calc_cell_attrs(attrs or widget.cell)}
+    self.children[index] = {widget, self:_calc_cell_attrs(widget, attrs)}
     -- Invalidate the index cache
     self._child_index_by_id = nil
     self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -482,19 +482,20 @@ function rtk.Container:remove_all()
 end
 
 
-function rtk.Container:_calc_cell_attrs(attrs)
+function rtk.Container:_calc_cell_attrs(widget, attrs)
+    attrs = attrs or widget.cell
     if not attrs then
         return {}
     end
-    -- _calc_attr() could potentially modify the attrs table (for shorthand
-    -- attributes), so we need to need to fetch a copy of the current keys and loop
-    -- over those.
+    -- _calc_attr() could potentially modify the attrs table (for shorthand attributes),
+    -- so we need to need to fetch a copy of the current keys and loop over those.
     local keys = table.keys(attrs)
+    local calculated = {}
     for n = 1, #keys do
         local k = keys[n]
-        attrs[k] = self:_calc_attr(k, attrs[k], attrs)
+        calculated[k] = self:_calc_attr(k, attrs[k], attrs, nil, 'cell', widget)
     end
-    return attrs
+    return calculated
 end
 
 --- Moves an existing child widget to a new index, shifting surrounding

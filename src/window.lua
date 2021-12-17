@@ -795,7 +795,7 @@ function rtk.Window:open(attrs)
     gfx.ext_retina = 1
     -- Initialize the gfx.clear to the right background color.
     self:_handle_attr('bg', calc.bg or rtk.theme.bg)
-    attrs = self:_calc_cell_attrs(attrs)
+    attrs = self:_calc_cell_attrs(self, attrs)
     local x, y, w, h = self:_get_geometry_from_attrs(attrs)
     -- Set current attributes based on initial geometry.  Also mark these as the
     -- initial calculated values for size.  (Calculated position is always 0,0.)
