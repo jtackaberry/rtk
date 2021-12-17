@@ -118,6 +118,11 @@ rtk.Attribute = {
     -- nil, generally `rtk.Widget.REFLOW_PARTIAL` is assumed.
     -- @type reflowconst|nil
     reflow = nil,
+    -- When `reflow` is set to `rtk.Widget.REFLOW_NONE` reflow is skipped, but so too
+    -- is a redraw.  If the widget doesn't need a reflow but *does* need to be redrawn,
+    -- you can set this to true.
+    -- @type boolean|nil
+    redraw = nil,
     --- A table of one or more attribute names that will be set to nil when this attribute
     -- is set.  Useful when setting the attribute intends to replace other attributes.
     -- For example, setting `rtk.Widget.padding` will clear any previous values for

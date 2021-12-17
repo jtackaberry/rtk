@@ -2735,13 +2735,19 @@ function rtk.Widget:_handle_attr(attr, value, oldval, trigger, reflow)
         -- reflow if the rtk.Attribute has marked it for reflow. Otherwise we just request
         -- a partial reflow specifically for ourselves under the assumption that geometry
         -- did not change.
+        local redraw
         if reflow == rtk.Widget.REFLOW_DEFAULT then
+            local meta = self.class.attributes.get(attr)
             -- No explicit reflow direction given, use the attribute defined mode, or
             -- fallback to partial if attribute doesn't specify anything.
-            reflow = self.class.attributes.get(attr).reflow or rtk.Widget.REFLOW_PARTIAL
+            reflow = meta.reflow or rtk.Widget.REFLOW_PARTIAL
+            redraw = meta.redraw
         end
         if reflow ~= rtk.Widget.REFLOW_NONE then
             self:queue_reflow(reflow)
+        elseif redraw then
+            -- No reflow for this widget, but at least queue a draw.
+            self:queue_draw()
         end
         if attr == 'visible' then
             if not value then
