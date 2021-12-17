@@ -864,6 +864,10 @@ function rtk.Window:_setup_borderless()
     -- move grip.  ondragstart() will not be invoked if a higher z-level
     -- widget handles the event.
     local move = rtk.Spacer{z=-10000, w=1.0, h=30, touch_activate_delay=0}
+    move.onmousedown = function()
+        -- Return true to ensure doubleclick fires.
+        return true
+    end
     move.ondragstart = function(this, event)
         if not calc.docked and calc.borderless then
             local _, wx, wy, _, _ = reaper.JS_Window_GetClientRect(self.hwnd)
