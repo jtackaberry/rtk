@@ -112,12 +112,12 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     local dstw, dsth = 0, 0
     local hpadding = lp + rp
     local vpadding = tp + bp
-    local scale = (self.scale or 1) * rtk.scale.value
     local image = calc.image
     if image then
         if rescale then
             image:refresh_scale()
         end
+        local scale = (self.scale or 1) * rtk.scale.value / image.density
         local native_aspect = image.w / image.h
         local aspect = calc.aspect or native_aspect
         dstw = w or (fillw and (boxw - hpadding))
@@ -133,7 +133,7 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
         elseif not dstw and dsth then
             -- Similar to above, use box height only if width isn't clamped.
             dstw = math.min(clampw and boxh or math.inf, dsth) * aspect
-        elseif not dst and not dsth then
+        elseif not dstw and not dsth then
             -- Widget does not request specific width or height so use intrinsic size.
             dstw = image.w * scale / (native_aspect / aspect)
             dsth = image.h * scale

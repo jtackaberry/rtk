@@ -410,14 +410,14 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     end
     local scale = rtk.scale.value
     local iscale = scale / (icon and icon.density or 1.0)
+    local iw, ih
+    if calc.icon then
+        iw = math.round(icon.w * iscale)
+        ih = math.round(icon.h * iscale)
+    else
+        iw, ih = 0, 0
+    end
     if calc.circular then
-        local iw, ih
-        if calc.icon then
-            iw = icon.w * iscale
-            ih = icon.h * iscale
-        else
-            iw, ih = 0, 0
-        end
         local size = math.max(iw, ih)
         if w and not h then
             calc.w = w + lp + rp
@@ -453,7 +453,7 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
                 spacing = spacing + (calc.iconpos == rtk.Widget.LEFT and lp or rp)
             end
             -- Reduce the size of the allowed label based on icon size and spacing.
-            lwmax = lwmax - ((icon.w * iscale) + spacing)
+            lwmax = lwmax - (iw + spacing)
         end
 
         self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags)
@@ -468,8 +468,8 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
 
         if icon then
             -- Label and icon
-            calc.w = w or ((icon.w * iscale) + spacing + self.lw)
-            calc.h = h or (math.max(icon.h * iscale, self.lh))
+            calc.w = w or (iw + spacing + self.lw)
+            calc.h = h or math.max(ih, self.lh)
         else
             -- Label only
             calc.w = w or self.lw
@@ -477,8 +477,8 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
         end
     elseif icon then
         -- Icon only
-        calc.w = w or (icon.w * iscale)
-        calc.h = h or (icon.h * iscale)
+        calc.w = w or iw
+        calc.h = h or ih
     else
         -- Neither label nor icon -- not exactly useful.
         calc.w = 0

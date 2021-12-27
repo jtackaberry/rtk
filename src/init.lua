@@ -22,6 +22,7 @@ require('rtk.color')
 require('rtk.font')
 require('rtk.event')
 require('rtk.image')
+require('rtk.multiimage')
 require('rtk.shadow')
 require('rtk.nativemenu')
 
