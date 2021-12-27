@@ -2414,6 +2414,9 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
         event:set_widget_mouseover(self, clparentx, clparenty)
         if event.type == rtk.Event.MOUSEMOVE and not calc.disabled then
             if dnd.dragging == self then
+                if calc.cursor then
+                    self.window:request_mouse_cursor(calc.cursor)
+                end
                 self:_handle_dragmousemove(event, dnd.arg)
             elseif self.hovering == false then
                 -- Mousemove event over a widget that's not currently marked as hovering.
