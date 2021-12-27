@@ -336,6 +336,9 @@ function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
         self._dirty_positions = 1
     end
 
+    if rescale and calc.icon then
+        calc.icon:refresh_scale()
+    end
     if calc.textwidth and not self.w then
         -- Compute dimensions based on font and given textwidth.  Choose a character
         -- that's big enough to ensure we can safely support textwidth worth of any

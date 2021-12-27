@@ -819,3 +819,10 @@ function rtk.Image:rotate(degrees)
     self._doffy = math.max(0, (dw-dh)/2)
     return self
 end
+
+--- Widgets using `rtk.Image` objects invoke this whenever `rtk.scale.value` has changed.
+-- This is a no-op with `rtk.Image` itself, but subclasses may use this to implement adaptive
+-- behaviors.  For example, `rtk.MultiImage` implements this method to switch images based on
+-- current DPI requirements.
+function rtk.Image:refresh_scale()
+end

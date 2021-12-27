@@ -405,6 +405,9 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
 
     local icon = calc.icon
+    if icon and rescale then
+        icon:refresh_scale()
+    end
     local scale = rtk.scale.value
     local iscale = scale / (icon and icon.density or 1.0)
     if calc.circular then
