@@ -317,6 +317,41 @@ you need to use `rtk.ImageBox`, which is a widget that can draw images:
 container:add(rtk.ImageBox{img})
 ```
 
+### Image Packs
+
+A more sophisticated and robust method for distributing and using images, and especially icons, is
+by using `rtk.ImagePack`.  Image packs are single images that consist of many smaller subimages,
+also called *sprites*.  This means most or all of the images/icons used by your application can be
+consolidated in a single image file for distribution.
+
+Within an image pack, you can include:
+ * Images of different dimensions
+ * Multiple variants per image to support different DPIs (e.g. high-DPI or Apple retina displays). rtk
+   calls this a @{rtk.Image.density|pixel density}, where, for example, a pixel density of 2.0 indicates
+   that the image is drawn at full scale when the UI scale is 2x, or half scale when the UI scale is 1x.
+ * Both light and dark icon styles for different themes
+
+Each subimage in the packed image is assigned a name, which is used when retrieving the
+subimage.  The retrieved image is an `rtk.MultiImage` which incorporates all the density
+variants for that image name.  This enables image adaptive resolution as the UI scales.
+
+In the example below, the file `icons.png` is defined as having two rows of icons: the
+first row has two 18x18 icons representing a pixel density of 1x, and the second row has
+two 36x36 icons for 2x density.  Both are high luminance icons when light icon styles are
+needed.
+
+```lua
+rtk.ImagePack{
+    src='icons.png',
+    register=true,
+    {w=18, h=18, names={'medium-edit', 'medium-save'}, density=1, style='light'},
+    {w=36, h=36, names={'medium-edit', 'medium-save'}, density=2, style='light'},
+}
+```
+
+The `register=true` in the example causes the image names to be registered as icons, and
+so can be used anywhere within rtk an image string name is accepted.
+
 ## Creating an Application
 
 Now that we've covered the fundamentals, let's build a simple (if admittedly contrived)
@@ -385,7 +420,10 @@ toolbar buttons later.
 
 We use the `18-arrow_back` icon here, so this assumes that you have a file in the
 registered icon path with this name (that is, `../img/icons-light/18-arrow_back.png`).
-It's up to you to provide your own icons, but
+We could have used an @{rtk.ImagePack|image pack} instead -- and would certainly prefer
+image packs for more fully featured application supporting multiple display DPIs -- but
+for this example, single icon-per-image files is more straightforward. It's up to you to
+provide your own icons, but
 [https://materialdesignicons.com/](https://materialdesignicons.com/) is a great place to
 start.
 
@@ -586,10 +624,11 @@ debugging and reasoning about the layout process, all widgets have a
 @{rtk.Widget.debug|debug} attribute that, when set to true, will paint the boundaries
 showing their content boundary and overall box (which includes padding).
 
-Perhaps more usefully, though, the global `rtk.debug` flag enables dynamic
-inspection by hovering the mouse over the widget.  Out of the box, this can be
-toggled by pressing F12 inside the `rtk.Window`, creating a kind of poor man's
-version of debug tools you might find in your web browser.
+Perhaps more usefully, though, the global `rtk.debug` flag enables dynamic inspection by
+hovering the mouse over the widget.  Out of the box, when `log.level` is `log.DEBUG` or
+less -- as it generally should be during application development -- this can be toggled by
+pressing F12 inside the `rtk.Window`, creating a kind of poor man's version of debug tools
+you might find in your web browser.
 
 ![](../img/layout-debug.gif)
 
