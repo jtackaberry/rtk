@@ -106,7 +106,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
             local minw = (attrs.minw or wcalc.minw or 0) + clp + crp
             child_maxw = math.min(math.max(child_maxw, ww, minw), inner_maxw)
             child_totalh = child_totalh + wh
-            child_geometry[#child_geometry+1] = {x=wx, y=xy, w=ww, h=wh}
+            child_geometry[#child_geometry+1] = {x=wx, y=wy, w=ww, h=wh}
         end
     end
     child_totalh = child_totalh + (#self.children - 1) * vspacing
