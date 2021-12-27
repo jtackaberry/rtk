@@ -182,7 +182,7 @@ end
 
 --- Class API
 --
--- @section api
+-- @section image.api
 
 rtk.Image.register{
     --- The x offset within the underlying REAPER image as set by `viewport()` (default 0).
@@ -203,6 +203,20 @@ rtk.Image.register{
     -- @type number|nil
     -- @meta read-only
     h = nil,
+
+    --- The pixel density factor of the image, which controls how the image is drawn relative to
+    -- `rtk.scale`.  Specifically, `rtk.scale.value` is divided by `density` when drawn,
+    -- so a pixel density of `1.0` (default) is scaled directly by `rtk.scale.value`, while
+    -- a density of `2.0` is drawn at half `rtk.scale.value`.
+    --
+    -- This can be used to define high-DPI or "retina" images.  Note that `w` and `h` are *not*
+    -- adjusted according to density and will reflect the image's true/intrinsic size.  It is
+    -- most useful when combined with `rtk.MultiImage`, which can represent many DPI variants of
+    -- the same image.
+    --
+    -- @type number
+    -- @meta read/write
+    density = 1.0,
 
     --- The image path that was passed to `load()` or nil if `load()` wasn't called (default nil).
     -- @type string|nil
@@ -231,6 +245,7 @@ rtk.Image.register{
 --
 -- @tparam number|nil w if specified, @{create|creates} a new image with the given width
 -- @tparam number|nil h if specified, @{create|creates} a new image with the given height
+-- @tparam number|nil density the image's pixel `density` (defaults to `1.0` if nil)
 -- @treturn rtk.Image the new instance
 --
 -- @code
@@ -243,10 +258,10 @@ rtk.Image.register{
 --     img = rtk.Image():create(24, 24)
 --
 -- @display rtk.Image
-function rtk.Image:initialize(w, h)
+function rtk.Image:initialize(w, h, density)
     table.merge(self, self.class.attributes.defaults)
     if h then
-        self:create(w, h)
+        self:create(w, h, density)
     end
 end
 
@@ -259,6 +274,14 @@ function rtk.Image:finalize()
     end
 end
 
+function rtk.Image:__tostring()
+    local clsname = self.class.name:gsub('rtk.', '')
+    return string.format(
+        '<%s %s,%s %sx%s id=%s density=%s path=%s ref=%s>',
+        clsname, self.x, self.y, self.w, self.h, self.id, self.density, self.path, self._ref
+    )
+end
+
 --- Assigns a new image buffer with the specified dimensions.
 --
 -- After this method returneds, a new `id` will be assigned to the image.  The alpha
@@ -266,9 +289,10 @@ end
 --
 -- @tparam number w the width of the image buffer in pixels
 -- @tparam number h the height of the image buffer in pixels
+-- @tparam number|nil density the image's pixel `density` (defaults to `1.0` if nil)
 -- @treturn rtk.Image Returns self for method chaining. A new rtk.Image object is
 --  not created here, rather the existing object is updated to use a new buffer.
-function rtk.Image:create(w, h)
+function rtk.Image:create(w, h, density)
     if not self.id then
         -- Passing true will force a GC if we've run out of ids.  Any pending rtk.Image
         -- garbage will be collected and their ids freed up for reuse.  If this call
@@ -283,6 +307,7 @@ function rtk.Image:create(w, h)
         -- to have resize() do it.
         self:resize(w, h, false)
     end
+    self.density = density or 1.0
     return self
 end
 
@@ -330,6 +355,7 @@ function rtk.Image:load(path)
         self.id = id
         self.path = found
         self.w, self.h = gfx.getimgdim(self.id)
+        self.density = density or 1.0
         return self
     else
         rtk.Image.static.ids:release(id)
@@ -371,6 +397,7 @@ function rtk.Image:clone()
     if self.id then
         newimg:blit{src=self, sx=self.x, sy=self.y}
     end
+    newimg.density = self.density
     return newimg
 end
 
@@ -409,15 +436,17 @@ end
 --- Returns a *new image* with the current image scaled to the given resolution.
 --
 -- @example
---   local scaled = rtk.Image.make_icon('32-delete'):scale(18)
+--   local scaled = rtk.Image.icon('32-delete'):scale(18)
 --
 -- @tparam number|nil w the target width in pixels, or nil to use the h parameter and
 --   preserve aspect
 -- @tparam number|nil h the target height in pixels, or nil to use the w parameter and
 --   preserve aspect
--- @tparam modeconst|nil mode the drawing mode used to blit the scaled image (default is
---   `DEFAULT`).
-function rtk.Image:scale(w, h, mode)
+-- @tparam modeconst|nil mode the drawing mode used to blit the scaled image (default when
+--   nil is `DEFAULT`).
+-- @tparam number|nil density the pixel density of the new scaled image, or nil to retain
+--   the source image's `density`
+function rtk.Image:scale(w, h, mode, density)
     assert(w or h, 'one or both of w or h parameters must be specified')
     if not self.id then
         -- Current image not loaded, so we "scale" an empty image just by
@@ -429,6 +458,7 @@ function rtk.Image:scale(w, h, mode)
     h = h or (w * aspect)
     local newimg = rtk.Image(w, h)
     newimg:blit{src=self, sx=self.x, sy=self.y, sw=self.w, sh=self.h, dw=newimg.w, dh=newimg.h, mode=mode}
+    newimg.density = density or self.density
     return newimg
 end
 
@@ -478,10 +508,13 @@ end
 -- @tparam number|nil y the y offset within the source image (nil is 0)
 -- @tparam number|nil w the width of new image (nil extends to the right edge of the source)
 -- @tparam number|nil h the height of the new image (nil extends to the bottom edge of the source)
+-- @tparam number|nil density the pixel density the new image (defaults to current image's `density` if nil)
 -- @treturn rtk.Widget a new image object that represents the slice within the source image
-function rtk.Image:viewport(x, y, w, h)
+function rtk.Image:viewport(x, y, w, h, density)
     local new = rtk.Image()
     new.id = self.id
+    new.density = density or self.density
+    new.path = self.path
     new.x = x or 0
     new.y = y or 0
     new.w = w or (self.w - new.x)
@@ -586,7 +619,7 @@ function rtk.Image:blit(attrs)
     if src then
         self:pushdest()
     end
-    local scale = attrs.scale or 1.0
+    local scale = (attrs.scale or 1.0) / self.density
     local sx = attrs.sx or self.x
     local sy = attrs.sy or self.y
     local sw = attrs.sw or self.w
