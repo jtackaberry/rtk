@@ -2752,8 +2752,8 @@ end
 -- is preserved depending on which attribute was updated.
 --
 -- @tparam string attr the name of the changed attribute
--- @tparam any value the attribute's new value
--- @tparam any oldval the attribute's previous value
+-- @tparam any value the attribute's new calculated value
+-- @tparam any oldval the attribute's previous calculated value
 -- @tparam bool trigger if true, we are expected to emit any other
 --   `on*()` handlers even if the value did not actually change.
 -- @treturn bool|nil if false, suppresses the default behavior. Any other
