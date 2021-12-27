@@ -70,10 +70,9 @@ rtk.Button.register{
     -- @meta read/write
     label = rtk.Attribute{reflow=rtk.Widget.REFLOW_FULL},
 
-    --- Optional icon for the button (default nil).  If a string is provided, it refers to
-    -- an icon name (without file extension) in an icon path registered with
-    -- `rtk.add_image_search_path()`. See `rtk.Image.make_icon()` for more details.
-    -- Otherwise an `rtk.Image` object can be used directly.
+    --- Optional icon for the button (default nil).  If a string is provided,
+    -- `rtk.Image.icon()` will be called to fetch the image, otherwise an
+    -- `rtk.Image` object can be used directly.
     --
     -- ![](../img/button-icon-only.png)
     --
@@ -102,7 +101,7 @@ rtk.Button.register{
                     -- Style didn't change
                     return self.icon
                 end
-                local img = rtk.Image.make_icon(value, style)
+                local img = rtk.Image.icon(value, style)
                 if not img then
                     img = rtk.Image.make_placeholder_icon(24, 24, style)
                 end

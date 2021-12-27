@@ -27,6 +27,9 @@ local log = require('rtk.log')
 -- @class rtk.Image
 rtk.Image = rtk.class('rtk.Image')
 
+-- Global table of icons registered by rtk.ImagePack:register().
+rtk.Image.static._icons = {}
+
 --- Drawing Mode Constants.
 --
 -- These constants are used with the `mode` arguments in the various drawing methods.
@@ -87,7 +90,7 @@ end
 -- the given icon style if defined.  Returns the discovered path and
 -- a bool to indicate whether the icon was found in the given iconstyle
 -- path or the other one (such that the image will need to be recolored).
-local function _search_image_paths(fname, style)
+function rtk.Image.static._search_image_paths(fname, style)
     if not style then
         local path = _search_image_paths_list(fname, rtk._image_paths)
         if path then
@@ -110,14 +113,19 @@ local function _search_image_paths(fname, style)
 end
 
 
---- Create a new `rtk.Image` from a png image located in a previously registered icon path
--- via `rtk.add_image_search_path()`.
+--- Create a new image either from an `rtk.ImagePack` image name that was
+-- @{rtk.ImagePack.register|registered}, or, if not found, search for a png file located
+-- in any of the image paths added via `rtk.add_image_search_path()`.
 --
--- If only one or the other (light or dark) icon styles were registered with
--- `rtk.add_image_search_path()`, or if the the icon specified by `name` is available in
--- one path but not the other, it's still possible to request a specific `style`. In this
--- case, the icon will be filtered to be black if `style` is `dark` or white if `style` is
--- `light`.  But note in this case colored icons will be turned monochromatic.
+-- The `style` argument dictates the requested icon luminance (namely, `dark` or `light`).
+-- Icons registered via an `rtk.ImagePack` can be assigned a style, and likewise image
+-- paths added with `rtk.add_image_search_path()` can indicate the icon style found in
+-- that path.
+--
+-- If no icon is found for the requested `style`, then the other style will be searched
+-- as a fallback method.  In this case, the icon will be recolored to be black if `style`
+-- is `dark`, or white if `style` is light.  But note in this case colored icons will be
+-- turned monochromatic.
 --
 -- If ultimately no suitable icon can be located, an error is logged and nil is
 -- returned.  The caller can choose to use `make_placeholder_icon()` in a pinch.
@@ -128,7 +136,7 @@ end
 --   implicit modification, use `rtk.Image:load()`.
 --
 -- @example
---    local img = rtk.Image.make_icon('18-undo', 'light')
+--    local img = rtk.Image.icon('medium-undo', 'light')
 --
 -- @tparam string name Filename of the icon without the extension
 -- @tparam string|nil style Either `dark` or `light` indicating the icon luminance.  If
@@ -136,10 +144,20 @@ end
 -- @treturn rtk.Image|nil newly loaded image, or nil if icon could not be found (in which case
 --   an error is logged to the console)
 -- @meta static
-function rtk.Image.static.make_icon(name, style)
-    local img
+function rtk.Image.static.icon(name, style)
     style = style or rtk.theme.iconstyle
-    local path, matched = _search_image_paths(name .. '.png', style)
+    local img
+    local pack = rtk.Image._icons[name]
+    if pack then
+        img = pack:get(name, style)
+        if img then
+            return img
+        end
+        -- If here, there was an ImagePack registered under the given name, but was not able
+        -- to convert it.  This really should never happen, but as a last resort, search the
+        -- image paths for a single image file with this name.
+    end
+    local path, matched = rtk.Image._search_image_paths(name .. '.png', style)
     if path then
         img = rtk.Image():load(path)
         if not matched then
@@ -148,10 +166,12 @@ function rtk.Image.static.make_icon(name, style)
         img.style = style
     end
     if not img then
-        log.error('rtk: rtk.Image.make_icon("%s"): icon not found in any icon path', name)
+        log.error('rtk: rtk.Image.icon("%s"): icon not found in any icon path', name)
     end
     return img
 end
+-- Preserve old API
+rtk.Image.static.make_icon=rtk.Image.static.icon
 
 --- Returns an icon with a red question mark that can be used to indicate icon
 -- load failure without aborting the program.
@@ -163,7 +183,7 @@ end
 -- @treturn rtk.Image the new image
 --
 -- @code
---    local img = rtk.Image.make_icon('18-undo', 'light')
+--    local img = rtk.Image.icon('18-undo', 'light')
 --    if not img then
 --        img = rtk.Image.make_placeholder_icon(24, 24, 'light')
 --    end
@@ -320,7 +340,7 @@ end
 -- If no file is found at the given path, it is treated as a path that's relative to the
 -- current script path or any non-icon image paths previously registered with
 -- `rtk.add_image_search_path()`, and they will be searched in that order. Unlike
--- `make_icon()`, the file extension isn't assumed to be .png -- so it's required -- and
+-- `icon()`, the file extension isn't assumed to be .png -- so it's required -- and
 -- the image will not be recolored if it's found in the icon path that doesn't correspond
 -- to the active theme.
 --
@@ -331,16 +351,17 @@ end
 --   end
 --
 -- @tparam string path the path to the image file to load
+-- @tparam number|nil density the image's pixel `density` (defaults to `1.0` if nil)
 -- @treturn rtk.Image|nil returns self if the load was successful for method chaining,
 --   otherwise if the load failed then nil is returned.
-function rtk.Image:load(path)
+function rtk.Image:load(path, density)
     local found = path
     if not rtk.file.exists(path) then
         -- Check relative to the script.  rtk.script_path always has trailing path sep.
         found  = rtk.script_path .. path
         if not rtk.file.exists(found) then
             -- Hunt for the file in registered icon paths.
-            found = _search_image_paths(path)
+            found = rtk.Image._search_image_paths(path)
         end
     end
     self._path = found

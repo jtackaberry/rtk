@@ -210,7 +210,7 @@ function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow)
     return ok
 end
 
-function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
+function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags)

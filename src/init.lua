@@ -23,6 +23,7 @@ require('rtk.font')
 require('rtk.event')
 require('rtk.image')
 require('rtk.multiimage')
+require('rtk.imagepack')
 require('rtk.shadow')
 require('rtk.nativemenu')
 
