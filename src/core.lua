@@ -875,20 +875,20 @@ local function _postprocess_theme()
 end
 
 --- Registers an image search path where images and icons can be found by
--- `rtk.Image.make_icon()` or `rtk.Image:load()`.
+-- `rtk.Image.icon()` or `rtk.Image:load()`.
 --
 -- This should be called early in program execution, at least before any rtk objects are
 -- created that would depend on this path.
 --
 -- Paths added with a non-nil iconstyle (either `light` or `dark`) are called *icon paths*
--- and will be searched by `rtk.Image.make_icon()`.  Here, `light` means light colored
+-- and will be searched by `rtk.Image.icon()`.  Here, `light` means light colored
 -- icons that are suitable for low luminance themes, while `dark` are dark colored icons
 -- appropriate for high luminance themes.
 --
 -- Paths registered *without* an icon style will be searched by `rtk.Image:load()`.
 --
 -- It is possible to register icon paths for only one icon style, in which case the
--- existing icon will be re-tinted if necessary.  See `rtk.Image.make_icon()` for more
+-- existing icon will be re-tinted if necessary.  See `rtk.Image.icon()` for more
 -- details.
 --
 -- If a non-absolute path is specified, then it will be relative to `rtk.script_path`.
@@ -896,7 +896,7 @@ end
 -- @tparam string path the fully qualified path within which to search for images
 -- @tparam string|nil iconstyle if specified, it's either `light` or `dark` to indicate
 --   which luminance the icons within the path are, and in which case path is searched
---   by `rtk.Image.make_icon()`.  If nil, the path is searched by `rtk.Image:load()`
+--   by `rtk.Image.icon()`.  If nil, the path is searched by `rtk.Image:load()`
 function rtk.add_image_search_path(path, iconstyle)
     if not path:match('^%a:') and not path:match('^[\\/]') then
         path = rtk.script_path .. path

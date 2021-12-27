@@ -44,7 +44,7 @@ rtk.ImageBox.register{
     --
     -- This is typically an `rtk.Image`, but a string can also be provided which refers to
     -- an icon name (without file extension) in an icon path previously registered with
-    -- `rtk.add_image_search_path()`. See `rtk.Image.make_icon()` for more details.
+    -- `rtk.add_image_search_path()`. See `rtk.Image.icon()` for more details.
     --
     -- This attribute may be passed as the first positional argument during initialization.
     -- (In other words, `rtk.ImageBox{img}` is equivalent to `rtk.ImageBox{image=img}`.)
