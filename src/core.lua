@@ -209,13 +209,14 @@ rtk.scale = setmetatable({
     -- @meta read-only
     system = nil,
     --- REAPER's custom scale modifier that is set via the "Advanced UI/system tweaks" button on
-    -- the General settings page.  This value is only read once when `rtk.Window` is instantiated,
+    -- the General settings page.  This value is only read once when `rtk.Window:open()` is called,
     -- so the script will need to be restarted if this preference is changed.
     -- @type number
     -- @meta read-only
     reaper = 1.0,
     --- The final calculated scale factor to which all UI elements scale themselves.  This is
-    -- calculated as `user` * `system` * `reaper`.
+    -- calculated as `user` * `system` * `reaper`.  Because `rtk.scale.system` is not known until
+    -- after the window is open, this calculated value is also therefore not valid until that time.
     --
     -- @note
     --  If you are implementing widgets or manually drawing, `rtk.scale.value` is the value all
