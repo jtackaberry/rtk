@@ -1877,6 +1877,7 @@ end
 --   implies the widget can overflow the bounding box width, usually because it is
 --   parented within an `rtk.Viewport` that allows horizontal scrolling
 -- @tparam bool clamph like `clampw`, but applies in the vertical direction
+-- @tparam bool rescale if true, indicates `rtk.scale.value` has changed since last reflow
 -- @tparam rtk.Viewport viewport the viewport the widget is rendered into
 -- @tparam rtk.Window window the window the widget is ultimately parented within
 --
@@ -1889,7 +1890,7 @@ end
 --   implies true here as well, but there are cases when fillw is false but the widget
 --   decides to use all offered space anyway (e.g. for boxes with expand=1).
 -- @treturn bool true if the widget expanded to use all of boxh
-function rtk.Widget:reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
+function rtk.Widget:reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
     -- Note that parent containers invoke this method, not the internal `_reflow()`.
     local expw, exph
     if not boxx then
@@ -1906,8 +1907,8 @@ function rtk.Widget:reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
     else
         self.viewport = viewport
         self.window = window
-        self.box = {boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window}
-        expw, exph = self:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
+        self.box = {boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window}
+        expw, exph = self:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
     end
     local calc = self.calc
     self:onreflow()
@@ -2111,7 +2112,7 @@ end
 -- not precompute any values to be used by `_draw()` that depend on geometry.  Use
 -- `_realize_geometry()` for that instead, as the parent will invoke that method after
 -- laying out the child (whether or not any modifications were made)
-function rtk.Widget:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
+function rtk.Widget:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)

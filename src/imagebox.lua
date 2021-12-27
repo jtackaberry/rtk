@@ -100,7 +100,7 @@ function rtk.ImageBox:initialize(attrs, ...)
     rtk.Widget.initialize(self, attrs, self.class.attributes.defaults, ...)
 end
 
-function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
+function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(

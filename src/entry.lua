@@ -328,7 +328,7 @@ function rtk.Entry:_handle_attr(attr, value, oldval, trigger, reflow)
     return true
 end
 
-function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
+function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
     local calc = self.calc
     local maxw, maxh = nil, nil
     if self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags) then

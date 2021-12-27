@@ -1100,8 +1100,8 @@ function rtk.Window:queue_mouse_refresh()
     self._mouse_refresh_queued = true
 end
 
-function rtk.Window:_reflow(boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, viewport, window)
-    rtk.Container._reflow(self, boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, viewport, window)
+function rtk.Window:_reflow(boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, rescale, viewport, window)
+    rtk.Container._reflow(self, boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, rescale, viewport, window)
     -- The semantics of the x, y properties are different for Windows, where they refer to
     -- the OS window coordinates rather than internal widget coordinates.  So override the
     -- calculated x/y to offset to 0.
@@ -1131,11 +1131,14 @@ function rtk.Window:reflow(mode)
             nil, nil,
             -- clamp
             true, true,
+            -- rescale
+            rtk.scale.value ~= self._last_scale_value,
             -- viewport and window
             nil, self
         )
         self:_realize_geometry()
         full = true
+        self._last_scale_value = rtk.scale.value
         -- log.debug('rtk: full reflow (%s x %s) in %.3f ms', calc.w, calc.h, (reaper.time_precise() - t0) * 1000)
     end
     local reflow_time = reaper.time_precise() - t0

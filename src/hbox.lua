@@ -39,7 +39,7 @@ end
 -- TODO: there is too much in common here with VBox:_reflow_step2().  This needs
 -- to be refactored better, by using more tables with indexes rather than unpacking
 -- to separate variables.
-function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, viewport, window, tp, rp, bp, lp)
+function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, rescale, viewport, window, tp, rp, bp, lp)
     local offset = 0
     local spacing = 0
     -- List of widgets and attrs whose height (or valign) depends on the height of siblings,
@@ -95,6 +95,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     attrs.fillh,
                     clampw,
                     clamph,
+                    rescale,
                     viewport,
                     window
                 )
@@ -155,6 +156,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     attrs.fillh,
                     clampw,
                     clamph,
+                    rescale,
                     viewport,
                     window
                 )

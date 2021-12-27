@@ -329,7 +329,7 @@ function rtk.Box:_validate_child(child)
     end
 end
 
-function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, viewport, window)
+function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
@@ -345,7 +345,11 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, v
     self._child_index_by_id = {}
 
     -- Now determine our intrinsic size based on child widgets.
-    local innerw, innerh, expand_unit_size, expw, exph = self:_reflow_step1(inner_maxw, inner_maxh, clampw, clamph, viewport, window)
+    local innerw, innerh, expand_unit_size, expw, exph = self:_reflow_step1(
+        inner_maxw, inner_maxh,
+        clampw, clamph,
+        rescale, viewport, window
+    )
     if self.orientation == rtk.Box.HORIZONTAL then
         expw = (expand_unit_size > 0) or expw
     elseif self.orientation == rtk.Box.VERTICAL then
@@ -357,7 +361,7 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, v
         innerw, innerh,
         clampw, clamph,
         expand_unit_size,
-        viewport, window,
+        rescale, viewport, window,
         tp, rp, bp, lp
     )
 
@@ -383,7 +387,7 @@ end
 
 -- First pass over non-expanded children to compute available width/height
 -- remaining to spread between expanded children.
-function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
+function rtk.Box:_reflow_step1(w, h, clampw, clamph, rescale, viewport, window)
     local calc = self.calc
     local orientation = calc.orientation
     local remaining_size = orientation == rtk.Box.HORIZONTAL and w or h
@@ -404,8 +408,6 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
             expand_units = expand_units + (attrs.expand or 1)
             spacing = 0
         elseif widget.visible == true then
-            local ww, wh = 0, 0
-            local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
             -- Calculate effective alignment for this cell, which defaults to the container's
             -- alignment unless explicitly defined.
             attrs._halign = attrs.halign or calc.halign
@@ -424,6 +426,8 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
 
             -- Reflow at 0,0 coords just to get the native dimensions.  Will adjust position in second pass.
             if attrs._calculated_expand == 0 then
+                local ww, wh = 0, 0
+                local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
                 if orientation == rtk.Box.HORIZONTAL then
                     -- Horizontal box
                     local child_maxw = rtk.clamprel(
@@ -447,6 +451,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
                         attrs.fillh and attrs.stretch ~= rtk.Box.STRETCH_TO_SIBLINGS,
                         clampw,
                         clamph,
+                        rescale,
                         viewport,
                         window
                     )
@@ -493,6 +498,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, viewport, window)
                         attrs.fillh,
                         clampw,
                         clamph,
+                        rescale,
                         viewport,
                         window
                     )
