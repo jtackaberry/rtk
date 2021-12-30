@@ -163,8 +163,10 @@ function rtk.ImagePack:initialize(attrs)
     self._img = nil
     -- Recolored versions of _img for icon styles, keyed on style name
     self._img_recolored = {}
-    -- style -> {name -> {density -> {x, y, w, h, rtk.MultiImage}}}
+    -- style -> {name -> {density -> {x, y, w, h}}}
     self._images = {}
+    -- 'style.name' -> rtk.MultiImage
+    self._cache = {}
     -- Running total of height for each add_row()
     self._height = 0
     if attrs then
@@ -238,7 +240,6 @@ function rtk.ImagePack:add_row(attrs)
             y=self._height,
             w=attrs.w,
             h=attrs.h,
-            style=attrs.style,
         }
         x = x + attrs.w
     end
@@ -288,9 +289,18 @@ end
 -- @treturn rtk.MultiImage a multi-density image encapsulating all variants of the requested
 --  subimage name and style.
 function rtk.ImagePack:get(name, style)
+    -- First check cache
+    local cachekey = string.format('%s.%s', style, name)
+    local multi = self._cache[cachekey]
+    if multi then
+        return multi
+    end
+
+    -- Not in cache, so we need to generate the rtk.MultiImage
     local imgpack = self._img
     assert(imgpack, 'rtk.ImagePack:load() has not yet been called with a valid image')
     assert(self._height > 0, 'rtk.ImagePack:add_row() has not yet been called')
+
     local densities = self:_get_densities(name, style)
     if not densities and not style then
         -- No icon style was given, but no image was found registered under the nil
@@ -298,7 +308,7 @@ function rtk.ImagePack:get(name, style)
         style = rtk.theme.iconstyle
         densities = self:_get_densities(name, style)
     end
-    if not densities then
+    if not densities and style then
         -- An icon style was given, try the other style
         local otherstyle = style == 'light' and 'dark' or 'light'
         densities = self:_get_densities(name, otherstyle)
@@ -308,25 +318,25 @@ function rtk.ImagePack:get(name, style)
             densities = self:_get_densities(name, nil)
         end
         if densities then
-            imgpack = self._img_recolored[otherstyle]
+            imgpack = self._img_recolored[style]
             if not imgpack then
+                -- Image hasn't been recolored to the requested style yet. Do that now and
+                -- store it for later.
                 imgpack = self._img:clone():recolor(style == 'light' and '#ffffff' or '#000000')
-                self._img_recolored[otherstyle] = imgpack
+                self._img_recolored[style] = imgpack
             end
         end
     end
     if not densities then
         return
     end
-    if not densities.img then
-        local multi = rtk.MultiImage()
-        for density, info in pairs(densities) do
-            multi:add(imgpack:viewport(info.x, info.y, info.w, info.h, density))
-        end
-        multi.style = style
-        densities.img = multi
+    multi = rtk.MultiImage()
+    for density, info in pairs(densities) do
+        multi:add(imgpack:viewport(info.x, info.y, info.w, info.h, density))
     end
-    return densities.img
+    multi.style = style
+    self._cache[cachekey] = multi
+    return multi
 end
 
 --- Registers all subimage names defined via `add_row()` as icon names for later use
