@@ -303,6 +303,8 @@ rtk.os = {
     windows = (_os == 'win'),
     --- true if running on Linux, false otherwise
     linux = (_os == 'lin' or _os == 'oth'),
+    --- Size of pointers in bits on the current system and REAPER version.  Either 32 or 64.
+    bits = 32,
 }
 
 --- rtk.mouse.

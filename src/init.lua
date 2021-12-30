@@ -46,12 +46,22 @@ require('rtk.optionmenu')
 require('rtk.checkbox')
 require('rtk.application')
 
+
+require('rtk.combobox')
+require('rtk.rml')
+
 -- Load other modules into the rtk namespace
 rtk.log = require('rtk.log')
 
 local function init()
     rtk.script_path = ({reaper.get_action_context()})[2]:match('^.+[\\//]')
     rtk.reaper_hwnd = reaper.GetMainHwnd()
+
+    -- Detect system architecture
+    local ver = reaper.GetAppVersion():lower()
+    if ver:find('x64') or ver:find('arm64') or ver:find('_64') or ver:find('aarch64') then
+        rtk.os.bits = 64
+    end
     -- Tweaks based on current platform
     if rtk.os.mac then
         rtk.font.multiplier = 0.8
