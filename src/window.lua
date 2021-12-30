@@ -256,7 +256,8 @@ rtk.Window.register{
     --  after it's attached, and therefore conflicts with the `borderless` attribute.
     --  You are free to call `reaper.JS_Window_AttachTopmostPin()` explicitly yourself,
     --  passing it the window's `hwnd`, just be aware that the pin will persist and
-    --  render oddly if `borderless` is subsequently set to true, at least on Windows.)
+    --  render oddly if `borderless` is subsequently set to true, at least on Windows. Also,
+    --  this will only work on 64-bit builds of REAPER.)
     --
     -- @meta read/write
     -- @type boolean
@@ -653,7 +654,6 @@ function rtk.Window:_sync_window_attrs(overrides)
         return
     end
 
-
     if self._resize_grip then
         self._resize_grip:hide()
     end
@@ -686,8 +686,13 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- WS_POPUP flag, except that this is not exposed as a style string.  ('POPUP'
             -- also implies disabling CAPTION|CHILD which isn't what we want.)  So here we
             -- explicitly add WS_POPUP to the style bitmap.
-            local n = reaper.JS_Window_GetLong(self.hwnd, 'STYLE')
-            reaper.JS_Window_SetLong(self.hwnd, 'STYLE', n | 0x80000000)
+            --
+            -- However, this does not work on 32-bit systems, because Lua numbers are signed
+            -- and the conversion back to C fails. So we only execute this on non 32-bit systems.
+            if rtk.os.bits ~= 32 then
+                local n = reaper.JS_Window_GetLong(self.hwnd, 'STYLE')
+                reaper.JS_Window_SetLong(self.hwnd, 'STYLE', n | 0x80000000)
+            end
             reaper.JS_Window_SetZOrder(self.hwnd, calc.pinned and 'TOPMOST' or 'NOTOPMOST')
         end
         -- Calling SetStyle() will implicitly show the window if it's currently hidden.  If
