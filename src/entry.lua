@@ -462,15 +462,19 @@ function rtk.Entry:_caret_from_mouse_event(event)
     return calc.value:len() + 1
 end
 
+local function is_word_break_character(value, pos)
+    return value:sub(pos, pos):match('[%c%p%s]')
+end
+
 function rtk.Entry:_get_word_left(spaces)
     local value = self.calc.value
     local caret = self.calc.caret
     if spaces then
-        while caret > 1 and value:sub(caret - 1, caret - 1) == ' ' do
+        while caret > 1 and is_word_break_character(value, caret - 1) do
             caret = caret - 1
         end
     end
-    while caret > 1 and value:sub(caret - 1, caret - 1) ~= ' ' do
+    while caret > 1 and not is_word_break_character(value, caret - 1) do
         caret = caret - 1
     end
     return caret
@@ -480,11 +484,11 @@ function rtk.Entry:_get_word_right(spaces)
     local value = self.calc.value
     local caret = self.calc.caret
     local len = value:len()
-    while caret <= len and value:sub(caret, caret) ~= ' ' do
+    while caret <= len and not is_word_break_character(value, caret) do
         caret = caret + 1
     end
     if spaces then
-        while caret <= len and value:sub(caret, caret) == ' ' do
+        while caret <= len and is_word_break_character(value, caret) do
             caret = caret + 1
         end
     end
