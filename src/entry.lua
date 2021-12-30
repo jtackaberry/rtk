@@ -550,14 +550,14 @@ function rtk.Entry:_edit(insert, delete_selection, dela, delb, caret)
         dela, delb = self:get_selection_range()
         if dela and delb then
             local ndeleted = delb - dela
-            caret = rtk.clamp((caret or calc.caret) - ndeleted, 1, #value)
+            caret = rtk.clamp(dela, 1, #value)
         end
     end
     caret = caret or calc.caret
     if dela and delb then
         dela = rtk.clamp(dela, 1, #value)
         delb = rtk.clamp(delb, 1, #value+1)
-        value = value:sub(1, dela - 1) .. value:sub(delb+1)
+        value = value:sub(1, dela - 1) .. value:sub(delb)
         self._dirty_positions = math.min(dela - 1, self._dirty_positions or math.inf)
     end
     if insert then
@@ -771,7 +771,7 @@ function rtk.Entry:_handle_keypress(event)
                 self:push_undo()
                 self:_edit(nil, false, calc.caret, self:_get_word_right(true) - 1)
             elseif calc.caret <= len then
-                self:_edit(nil, false, calc.caret, calc.caret)
+                self:_edit(nil, false, calc.caret, calc.caret+1)
             end
         end
     elseif event.keycode == rtk.keycodes.BACKSPACE then
@@ -785,7 +785,7 @@ function rtk.Entry:_handle_keypress(event)
                     self:_edit(nil, false, caret, calc.caret, caret)
                 elseif calc.caret > 1 then
                     local caret = calc.caret - 1
-                    self:_edit(nil, false, caret, caret, caret)
+                    self:_edit(nil, false, caret, caret+1, caret)
                 end
             end
         end
