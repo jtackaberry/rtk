@@ -839,6 +839,16 @@ function rtk.Entry:_handle_keypress(event)
     return true
 end
 
+function rtk.Entry:_get_touch_activate_delay(event)
+    if self:focused() then
+        -- If focused, don't delay touch activation, otherwise it frustrates drag-selections.
+        return 0
+    else
+        return rtk.Widget._get_touch_activate_delay(self, event)
+    end
+end
+
+
 function rtk.Entry:_handle_dragstart(event)
     if not self:focused() or event.button ~= rtk.mouse.BUTTON_LEFT then
         return
