@@ -233,7 +233,10 @@ rtk.scale = setmetatable({
         if key == 'user' then
             if value ~= t._user then
                 t._user = value
-                t.value = value * (t.system or 1.0) * t.reaper
+                value = value * (t.system or 1.0) * t.reaper
+                -- Clamp to units of 0.01 to avoid tiny fractional values creeping in from
+                -- floating point precision issues.
+                t.value = math.ceil(value * 100) / 100.0
                 if rtk.window then
                     rtk.window:queue_reflow()
                 end
