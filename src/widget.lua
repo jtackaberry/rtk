@@ -1644,12 +1644,15 @@ function rtk.Widget:animate(kwargs)
     local curdst = curanim and curanim.dst or self.calc[attr]
 
     -- Fast path: when we already know the new dst value at this point, don't queue animation
-    -- if there is already an active animation with this dst value, or if the current
-    -- calculated value for this attribute is already set to dst.
+    -- if there is already an active animation with this same dst value.
     if curdst == kwargs.dst and not meta.calculate and attr ~= 'w' and attr ~= 'h' then
-        -- If there's a current animation, return the Future from that, otherwise
-        -- in order to maintain a consistent API, craft a pre-resolved Future.
-        return curanim and curanim.future or rtk.Future():resolve(self)
+        if curanim then
+            return curanim.future
+        elseif not kwargs.src then
+            -- Unless there's an explicit src value, return a pre-resolved Future
+            -- to maintain a consistent API.
+            return rtk.Future():resolve(self)
+        end
     end
 
     -- Assign in case attr was passed as a positional argument.
@@ -1697,8 +1700,14 @@ function rtk.Widget:animate(kwargs)
             -- value.
             self[attr] = kwargs.dst
             local window = self:_slow_get_window()
+            if not window then
+                -- Trying to animate the geometry of a widget that's not parented
+                -- up to a window.  Treat this as a no-op by returning a pre-resolved
+                -- Future.
+                return rtk.Future():resolve(self)
+            end
             window:reflow(rtk.Widget.REFLOW_FULL)
-            kwargs.dst = calc[attr] / rtk.scale.value
+            kwargs.dst = (calc[attr] or 0) / rtk.scale.value
             -- Now restore original calculated dimension.  Unfortunately we need to
             -- do another full reflow, because all the other widgets in the scene
             -- would have also been reflowed around our new target geometry.
@@ -1719,7 +1728,11 @@ function rtk.Widget:animate(kwargs)
     -- As earlier, but the slow path: now that we've calculated the dst value,
     -- avoid scheduling a new animation with the same dst.
     if curdst == kwargs.dst then
-        return curanim and curanim.future or rtk.Future():resolve(self)
+        if curanim then
+            return curanim.future
+        elseif not kwargs.src then
+            return rtk.Future():resolve(self)
+        end
     end
     if kwargs.doneval == nil then
         kwargs.doneval = doneval
