@@ -46,10 +46,6 @@ require('rtk.optionmenu')
 require('rtk.checkbox')
 require('rtk.application')
 
-
-require('rtk.combobox')
-require('rtk.rml')
-
 -- Load other modules into the rtk namespace
 rtk.log = require('rtk.log')
 
