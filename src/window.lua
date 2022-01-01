@@ -480,6 +480,11 @@ function rtk.Window:_get_dockstate_from_attrs()
 end
 
 function rtk.Window:_get_docker_at_pos(pos)
+    if not reaper.DockGetPosition then
+        -- Reaper 5.x. We won't be able to discover docker positions, so just blindly
+        -- return 0.
+        return 0
+    end
     for i = 1, 20 do
         if reaper.DockGetPosition(i) == pos then
             return i
