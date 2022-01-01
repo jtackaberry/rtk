@@ -89,7 +89,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
         local wcalc = widget.calc
         if wcalc.visible == true and wcalc.position & rtk.Widget.POSITION_INFLOW ~= 0 then
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
-            wx, wy, ww, wh = widget:reflow(
+            local wx, wy, ww, wh = widget:reflow(
                 0,
                 0,
                 inner_maxw,
@@ -129,7 +129,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
             local need_columns = 1
             local cur_colh = 0
             for j = 1, #child_geometry do
-                wh = child_geometry[j].h
+                local wh = child_geometry[j].h
                 if cur_colh + wh > col_height then
                     need_columns = need_columns + 1
                     cur_colh = 0
@@ -171,7 +171,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
             child_maxw = (attrs.fillw and attrs.fillw ~= 0) and col_width_max or col_width
 
-            wx, wy, ww, wh = widget:reflow(
+            local wx, wy, ww, wh = widget:reflow(
                 clp,
                 ctp,
                 child_maxw - clp - crp,

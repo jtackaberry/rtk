@@ -427,6 +427,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, rescale, viewport, window)
             -- Reflow at 0,0 coords just to get the native dimensions.  Will adjust position in second pass.
             if attrs._calculated_expand == 0 then
                 local ww, wh = 0, 0
+                local wexpw, wexph
                 local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
                 if orientation == rtk.Box.HORIZONTAL then
                     -- Horizontal box
