@@ -104,9 +104,9 @@ rtk.OptionMenu.register{
     -- @type number|nil
     -- @meta read-only
     selected_index = nil,
-    --- The user-supplied id of the selected menu item, or nil if nothing is selected
-    -- (default nil). This attribute cannot be set; use the `selected` attribute to change
-    -- the selection.
+    --- The user-supplied id of the selected menu item, or nil if nothing is selected or if
+    -- the item doesn't have an user-defined id (default nil). This attribute cannot be
+    -- set; use the `selected` attribute to change the selection.
     -- @type string|nil
     -- @meta read-only
     selected_id = nil,
