@@ -970,41 +970,58 @@ function rtk.Window:_setup_borderless()
     self._resize_grip = resize
 end
 
+-- Used by _get_hwnd() to verify the given hwnd is at the specified position.
+local function verify_hwnd_coords(hwnd, x, y)
+    local _, hx, hy, _, _ = reaper.JS_Window_GetClientRect(hwnd)
+    return hx == x and hy == y
+end
+
+-- Iterates over a list of hwnd addresses, and verifies the hwnd title matches the given
+-- title (if specified), and its position matches the supplied x/y coordinates.
+local function search_hwnd_addresses(list, title, x, y)
+    for _, addr in ipairs(list) do
+        addr = tonumber(addr)
+        if addr then
+            local hwnd = reaper.JS_Window_HandleFromAddress(addr)
+            if (not title or reaper.JS_Window_GetTitle(hwnd) == title) and verify_hwnd_coords(hwnd, x, y) then
+                return hwnd
+            end
+        end
+    end
+end
+
 function rtk.Window:_get_hwnd()
     if not rtk.has_js_reascript_api then
         return
     end
-    -- Find the gfx hwnd based on window title.  First use JS_Window_Find()
-    -- which is pretty fast, and if it doesn't appear to be this gfx instance
-    -- (based on screen coordinates) then we do the much more expensive call to
-    -- JS_Window_ArrayFind().  If that only returns one result, then we go
-    -- with our original hwnd, and if not, then we find the one that matches
-    -- the screen position of this gfx.
+    -- Find the gfx hwnd based on window title.  First use JS_Window_Find() which is
+    -- pretty fast, and if what it returns doesn't appear to be this gfx instance (based
+    -- on screen coordinates) then we try a more brute force approach below.
     local x, y = gfx.clienttoscreen(0, 0)
-    local function verify_hwnd_coords(hwnd)
-        local _, hx, hy, _, _ = reaper.JS_Window_GetClientRect(hwnd)
-        return hx == x and hy == y
-    end
     local title = self.calc.title
     local hwnd = reaper.JS_Window_Find(title, true)
-    if not verify_hwnd_coords(hwnd) then
+    if hwnd and not verify_hwnd_coords(hwnd, x, y) then
+        -- What JS_Findow_Find() returned did not match the expected coordinates.  In
+        -- Reaticulate's case, this is sometimes because a JSFX instance is floating,
+        -- which shares the title.  Let's try more heavy handed approaches.
         hwnd = nil
-        -- The returned hwnd doesn't match our screen coordinates so do
-        -- a deeper search.
-        log.time_start()
-        local a = reaper.new_array({}, 10)
-        local nmatches = reaper.JS_Window_ArrayFind(title, true, a)
-        if nmatches > 1 then
-            local hwnds = a.table()
-            for n, hwndptr in ipairs(hwnds) do
-                local candidate = reaper.JS_Window_HandleFromAddress(hwndptr)
-                if verify_hwnd_coords(candidate) then
-                    hwnd = candidate
-                    break
-                end
-            end
+        if self.calc.docked then
+            -- We're docked, so we can try all child windows of the main REAPER hwnd.
+            -- This is quite fast on all platforms.
+            local _, addrs = reaper.JS_Window_ListAllChild(rtk.reaper_hwnd)
+            hwnd = search_hwnd_addresses((addrs or ''):split(','), title, x, y)
         end
-        log.time_end('rtk.Window:_get_hwnd(): needed to take slow path: title=%s', title)
+        if not hwnd then
+            -- Either we're not docked or JS_Window_ListAllChild() failed to find the
+            -- window (which isn't really expected).  Our last resort is
+            -- JS_Window_ArrayFind(), which is reasonable on OS X and Linux, but
+            -- *painfully slow* (hundreds of milliseconds) on Windows.
+            log.time_start()
+            local a = reaper.new_array({}, 50)
+            reaper.JS_Window_ArrayFind(title, true, a)
+            hwnd = search_hwnd_addresses(a.table(), nil, x, y)
+            log.time_end('rtk.Window:_get_hwnd(): needed to take slow path: title=%s', title)
+        end
     end
     if hwnd then
         -- Determine the additional w/h incurred by the OS-supplied window frame so that
@@ -1419,7 +1436,7 @@ function rtk.Window:_update()
         --   3. A widget is being dragged but the mouse isn't moving (to handle the case when
         --      dragging at the edge of a viewport
         --   4. Long press
-        if self.in_window and rtk.has_js_reascript_api then
+        if self.in_window and rtk.has_js_reascript_api and self.hwnd then
             -- The mouse is within the window boundary but we need to find out if the
             -- window is occluded by another window and whether the mouse cursor is over
             -- the occluded portion.
@@ -1644,7 +1661,7 @@ function rtk.Window:_update()
             else
                 gfx.setcursor(calc.cursor, 0)
             end
-        elseif in_window_changed and rtk.has_js_reascript_api then
+        elseif in_window_changed and self.hwnd and rtk.has_js_reascript_api then
             -- Cursor moved out of window, allow standard OS move/resize mouse cursors to
             -- take affect as mouse moves in proximity to the outside border.
             reaper.JS_WindowMessage_Release(self.hwnd, "WM_SETCURSOR")
