@@ -33,6 +33,10 @@ local _idmgr = rtk.IndexManager(2, 127)
 --  REAPER's native [gfx.setfont()](https://www.reaper.fm/sdk/reascript/reascripthelp.html#lua_gfx.setfont)
 --  is extremely expensive when done incorrectly, and this is a common mistake with script-writers.
 --
+--  However, if you  *do* call `gfx.setfont()` directly, you may use font index `1`.  This index
+--  is avoided by rtk unless all other font indexes have been used.  Font indexes above 1
+--  are reserved for rtk.
+--
 -- @class rtk.Font
 -- @compact fields
 rtk.Font = rtk.class('rtk.Font')
@@ -362,9 +366,19 @@ end
 --
 -- @treturn bool true if the font changed, false if it remained the same
 function rtk.Font:set(name, size, scale, flags)
-    scale = scale or 1
-    flags = flags or 0
-    local sz = size and math.ceil(size * scale * rtk.scale.value * rtk.font.multiplier)
+    local global_scale = rtk.scale.value
+    if not size and self._last_global_scale ~= global_scale then
+        -- If size isn't provided, check to see if the global scale has changed.  If so,
+        -- induce gfx.setfont() by ensuring the parameters aren't nil.
+        name = name or self.name
+        size = self.size
+        scale = scale or self.scale
+        flags = flags or self.flags
+    else
+        scale = scale or 1
+        flags = flags or 0
+    end
+    local sz = size and math.ceil(size * scale * global_scale * rtk.font.multiplier)
     local newfont = name and (name ~= self.name or sz ~= self.calcsize or flags ~= self.flags)
     if self._idx and self._idx > 1 then
         if not newfont then
@@ -401,6 +415,7 @@ function rtk.Font:set(name, size, scale, flags)
     gfx.setfont(idx, name, sz, flags)
     self._key = key
     self._idx = idx
+    self._last_global_scale = global_scale
     self.name = name
     self.size = size
     self.scale = scale
