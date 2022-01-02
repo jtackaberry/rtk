@@ -546,13 +546,17 @@ end
 --- Returns the widget at the given index.
 --
 -- @tparam number idx the widget position, where 1 is the first widget.
--- @treturn rtk.Widget the widget at the given index
+-- @treturn rtk.Widget|nil the widget at the given index, or nil if the index
+--   is out of range.
 function rtk.Container:get_child(idx)
     if idx < 0 then
         -- Negative indexes offset from end of children list
         idx = #self.children + idx + 1
     end
-    return self.children[idx][1]
+    local child = self.children[idx]
+    if child then
+        return child[1]
+    end
 end
 
 --- Returns the position of the given widget.
