@@ -222,7 +222,8 @@ function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow)
             end
         end
         if trigger then
-            self:onchange(item)
+            local last = self._menu:item(oldval)
+            self:onchange(item, last)
         end
     end
     return true
@@ -266,5 +267,7 @@ end
 --   or nil if selection was removed or invalid.  This can only happen if an invalid
 --   (or nil) value was programmatically assigned to the `selected` attribute, and cannot
 --   happen through user interaction.
+-- @tparam table|nil lastitem the item table for the previously selected item that has
+--   just been replaced.
 -- @treturn nil Return value has no significance. This is a notification event only.
-function rtk.OptionMenu:onchange(item) end
+function rtk.OptionMenu:onchange(item, lastitem) end
