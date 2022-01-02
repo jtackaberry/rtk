@@ -463,7 +463,9 @@ function rtk.Entry:_caret_from_mouse_event(event)
 end
 
 local function is_word_break_character(value, pos)
-    return value:sub(pos, pos):match('[%c%p%s]')
+    local c = value:sub(pos, pos)
+    -- Control characters, punctuation, and whitespace, but excluding underscores.
+    return c ~= '_' and c:match('[%c%p%s]')
 end
 
 function rtk.Entry:_get_word_left(spaces)
