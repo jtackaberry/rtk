@@ -58,6 +58,15 @@ local function init()
     if ver:find('x64') or ver:find('arm64') or ver:find('_64') or ver:find('aarch64') then
         rtk.os.bits = 64
     end
+    -- Parse out major/minor REAPER version for rtk.check_reaper_version()
+    local parts = ver:gsub('/.*', ''):split('.')
+    rtk._reaper_version_major = tonumber(parts[1])
+    local minor_parts = (parts[2] or ''):split('+')
+    local minor = tonumber(minor_parts[1]) or 0
+    -- Normalize 3-digit minor versions
+    rtk._reaper_version_minor = minor < 100 and minor or minor/10
+    rtk._reaper_version_prerelease = minor_parts[2]
+
     -- Tweaks based on current platform
     if rtk.os.mac then
         rtk.font.multiplier = 0.8

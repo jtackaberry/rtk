@@ -63,6 +63,35 @@ UNDO_STATE_FX_ARA = 256
 -- @section functions
 
 
+--- Compares the given major/minor version against the REAPER version.
+--
+-- @code
+--   if rtk.check_reaper_version(5, 975) then
+--       reaper.MB('Sorry, REAPER version 5.975 or later is required', 'Unsupported', 0)
+--   end
+--
+-- @tparam number major require at least this major version
+-- @tparam number minor require at least this minor version, provided the major version
+--   is satisfied.  3-digit minor versions are supported -- for example, this function
+--   understands that version 5.98 is greater than version 5.975.
+-- @tparam bool|nil exact if true, the given version must exactly match the current REAPER
+--   version, otherwise any REAPER version greater than or equal to the given version
+--   constraints will pass the check.
+-- @treturn bool true if the REAPER version satisfies the given version constraints,
+--   false otherwise.
+function rtk.check_reaper_version(major, minor, exact)
+    local curmaj = rtk._reaper_version_major
+    local curmin = rtk._reaper_version_minor
+    -- Normalize 3-digit minor versions
+    minor = minor < 100 and minor or minor/10
+    rtk.log.info('compare: %s %s with %s %s', curmaj, curmin, major, minor)
+    if exact then
+        return curmaj == major and curmin == minor
+    else
+        return (curmaj > major) or (curmaj == major and curmin >= minor)
+    end
+end
+
 --- Clamps a value within a range.
 --
 -- Min and max may be nil, in which case this behaves like math.min or math.max (depending
