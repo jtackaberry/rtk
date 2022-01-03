@@ -254,7 +254,8 @@ end
 -- @treturn function iterator function
 function rtk.NativeMenu:items()
     if not self._item_by_idx then
-        return nil
+        -- Empty menu, nothing to iterate over.
+        return function() end
     end
     local i = 0
     local n = #self._item_by_idx
