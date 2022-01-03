@@ -1162,6 +1162,9 @@ end
 -- @tparam any ... one or more arguments to pass to `func`
 -- @see rtk.callsoon
 function rtk.defer(func, ...)
+    if rtk._quit then
+        return
+    end
     local args = table.pack(...)
     reaper.defer(function()
         rtk.call(func, table.unpack(args, 1, args.n))
@@ -1235,6 +1238,8 @@ end
 -- Unlike `rtk.Window:close()` which can keep the a script running provided there
 -- are pending deferred calls (e.g. scheduled with `rtk.callafter()`), this function
 -- abandons any deferred calls and exits immediately.
+--
+-- If `rtk.Window:open()` is called subsequently, it will act as a no-op.
 function rtk.quit()
     if rtk.window and rtk.window.running then
         rtk.window:close()

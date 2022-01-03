@@ -796,10 +796,9 @@ end
 --
 -- @tparam table|nil attrs an optional table of placement attributes
 function rtk.Window:open(attrs)
-    if self.running then
+    if self.running or rtk._quit then
         return
     end
-    rtk._quit = false
     rtk.window = self
 
     local inifile = reaper.get_ini_file()
