@@ -21,7 +21,7 @@ jobs:
       - name: Build rtk.lua
         run: |
           mkdir -p doc/html/download
-          python3 tools/luaknit.py rtk=src/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: $(date +%Y%m%d)-${GITHUB_SHA:0:7}\nbuild: $(date)" > doc/html/download/_rtk.lua
+          python3 tools/luaknit.py rtk=rtk/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: $(date +%Y%m%d)-${GITHUB_SHA:0:7}\nbuild: $(date)" > doc/html/download/_rtk.lua
       - name: Build documentation
         run: |
           cd doc
