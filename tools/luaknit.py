@@ -45,7 +45,7 @@ def get_stripped_source(fname):
     contents = re.sub(r'[^-]--\[\[.*?\]\](--)?', '', contents, flags=re.S)
     # Strip common informational fields
     contents = re.sub(
-        r'''_(VERSION|DESCRIPTION|URL|LICENSE) *= *(\[\[.*?\]\]|'[^']*'|"[^"]*"),?''',
+        r'''_(DESCRIPTION|URL|LICENSE) *= *(\[\[.*?\]\]|'[^']*'|"[^"]*"),?''',
         '',
         contents,
         flags=re.S
