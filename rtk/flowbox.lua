@@ -62,7 +62,7 @@ function rtk.FlowBox:initialize(attrs, ...)
     rtk.Container.initialize(self, attrs, self.class.attributes.defaults, ...)
 end
 
-function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     local x, y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
@@ -97,7 +97,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
                 nil,
                 nil,
                 clampw, clamph,
-                rescale,
+                uiscale,
                 viewport,
                 window
             )
@@ -179,7 +179,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
                 attrs.fillw and attrs.fillw ~= 0,
                 attrs.fillh and attrs.fillh ~= 0,
                 clampw, clamph,
-                rescale,
+                uiscale,
                 viewport,
                 window
             )

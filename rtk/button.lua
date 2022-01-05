@@ -378,6 +378,9 @@ function rtk.Button:_handle_attr(attr, value, oldval, trigger, reflow)
         -- attr so that the light vs dark style gets recalculated based on this new new
         -- button color.
         self:attr('icon', self.icon, true)
+    elseif attr == 'icon' and value then
+        -- Ensure next reflow calls refresh_scale() on the icon.
+        self._last_reflow_scale = nil
     end
     return ret
 end
@@ -398,14 +401,15 @@ function rtk.Button:_reflow_get_max_label_size(boxw, boxh)
     end
 end
 
-function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
 
     local icon = calc.icon
-    if icon and rescale then
+    if icon and uiscale ~= self._last_reflow_scale then
         icon:refresh_scale()
+        self._last_reflow_scale = uiscale
     end
     local scale = rtk.scale.value
     local iscale = scale / (icon and icon.density or 1.0)

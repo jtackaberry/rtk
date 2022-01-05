@@ -673,7 +673,7 @@ function rtk.Container:_set_cell_box(attrs, x, y, w, h)
     }
 end
 
-function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     local x, y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, nil, nil)
@@ -710,7 +710,7 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
                 attrs.fillh,
                 clampw or attrs.maxw ~= nil,
                 clamph or attrs.maxh ~= nil,
-                rescale,
+                uiscale,
                 viewport,
                 window
             )

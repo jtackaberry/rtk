@@ -100,7 +100,20 @@ function rtk.ImageBox:initialize(attrs, ...)
     rtk.Widget.initialize(self, attrs, self.class.attributes.defaults, ...)
 end
 
-function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+
+function rtk.ImageBox:_handle_attr(attr, value, oldval, trigger, reflow)
+    local ret = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
+    if ret == false then
+        return ret
+    end
+    if attr == 'image' and value then
+        -- Ensure next reflow calls refresh_scale() on the image.
+        self._last_reflow_scale = nil
+    end
+    return ret
+end
+
+function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(
@@ -114,8 +127,9 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     local vpadding = tp + bp
     local image = calc.image
     if image then
-        if rescale then
+        if uiscale ~= self._last_reflow_scale then
             image:refresh_scale()
+            self._last_reflow_scale = uiscale
         end
         local scale = (self.scale or 1) * rtk.scale.value / image.density
         local native_aspect = image.w / image.h

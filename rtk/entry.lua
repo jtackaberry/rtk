@@ -323,11 +323,14 @@ function rtk.Entry:_handle_attr(attr, value, oldval, trigger, reflow)
         -- attr so that the light vs dark style gets recalculated based on this new
         -- background color.
         self:attr('icon', self.icon, true)
+    elseif attr == 'icon' and value then
+        -- Ensure next reflow calls refresh_scale() on the icon.
+        self._last_reflow_scale = nil
     end
     return true
 end
 
-function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     local maxw, maxh = nil, nil
     if self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags) then
@@ -335,8 +338,9 @@ function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
         self._dirty_positions = 1
     end
 
-    if rescale and calc.icon then
+    if calc.icon and uiscale ~= self._last_reflow_scale then
         calc.icon:refresh_scale()
+        self._last_reflow_scale = uiscale
     end
     if calc.textwidth and not self.w then
         -- Compute dimensions based on font and given textwidth.  Choose a character

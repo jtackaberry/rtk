@@ -277,7 +277,7 @@ function rtk.Viewport:_sync_child_refs(child, action)
 end
 
 
-function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
@@ -324,7 +324,7 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
             false, false,
             not calc.flexw,
             not calc.flexh,
-            rescale,
+            uiscale,
             -- Set the child's viewport to us
             self,
             window

@@ -35,7 +35,7 @@ end
 
 -- Second pass over all children
 -- TODO: wayyyy too much duplication here with rtk.HBox._reflow_step2().
-function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, rescale, viewport, window, tp, rp, bp, lp)
+function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, uiscale, viewport, window, tp, rp, bp, lp)
     local offset = 0
     local spacing = 0
     -- List of widgets and attrs whose height (or valign) depends on the height of siblings,
@@ -91,7 +91,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     attrs.fillh,
                     clampw,
                     clamph,
-                    rescale,
+                    uiscale,
                     viewport,
                     window
                 )
@@ -152,7 +152,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     attrs.fillh,
                     clampw,
                     clamph,
-                    rescale,
+                    uiscale,
                     viewport,
                     window
                 )

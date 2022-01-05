@@ -329,7 +329,7 @@ function rtk.Box:_validate_child(child)
     end
 end
 
-function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
@@ -348,7 +348,7 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, r
     local innerw, innerh, expand_unit_size, expw, exph = self:_reflow_step1(
         inner_maxw, inner_maxh,
         clampw, clamph,
-        rescale, viewport, window
+        uiscale, viewport, window
     )
     if self.orientation == rtk.Box.HORIZONTAL then
         expw = (expand_unit_size > 0) or expw
@@ -361,7 +361,7 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, r
         innerw, innerh,
         clampw, clamph,
         expand_unit_size,
-        rescale, viewport, window,
+        uiscale, viewport, window,
         tp, rp, bp, lp
     )
 
@@ -387,7 +387,7 @@ end
 
 -- First pass over non-expanded children to compute available width/height
 -- remaining to spread between expanded children.
-function rtk.Box:_reflow_step1(w, h, clampw, clamph, rescale, viewport, window)
+function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
     local calc = self.calc
     local orientation = calc.orientation
     local remaining_size = orientation == rtk.Box.HORIZONTAL and w or h
@@ -452,7 +452,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, rescale, viewport, window)
                         attrs.fillh and attrs.stretch ~= rtk.Box.STRETCH_TO_SIBLINGS,
                         clampw,
                         clamph,
-                        rescale,
+                        uiscale,
                         viewport,
                         window
                     )
@@ -499,7 +499,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, rescale, viewport, window)
                         attrs.fillh,
                         clampw,
                         clamph,
-                        rescale,
+                        uiscale,
                         viewport,
                         window
                     )
