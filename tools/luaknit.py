@@ -17,6 +17,7 @@ import os
 import re
 import logging
 import argparse
+import base64
 
 log = logging.getLogger('luaknit')
 logging.basicConfig(format='[%(levelname)s] %(message)s', level=logging.DEBUG)
@@ -33,6 +34,18 @@ class FullHelpParser(argparse.ArgumentParser):
 def get_global_module_name(name):
     return '__mod_' + re.sub(r'[^a-zA-Z\d_]', '_', name)
 
+def protect(match):
+    """
+    Function for re.sub() that encodes the first match as base64 to prevent any further
+    minification from taking place.  Used, for example, to protect multi-line string literals.
+    """
+    return (b'\x01\x02' + base64.b64encode(match.group(1).encode()) + b'\x01\x03').decode()
+
+def unprotect(match):
+    """
+    Reverses protect().
+    """
+    return '[[' + base64.b64decode(match.group(1)).decode() + ']]'
 
 def get_stripped_source(fname):
     """
@@ -50,6 +63,8 @@ def get_stripped_source(fname):
         contents,
         flags=re.S
     )
+    # Protected blocks are unprotected outside this function just prior to output.
+    contents = re.sub(r'\[\[(.*?)\]\]', protect, contents, flags=re.S)
     for n, line in enumerate(contents.splitlines(), 1):
         # Remove single line comments.
         line = re.sub(r'^ *--.*', '', line)
@@ -177,6 +192,7 @@ def main():
         if '=' in f:
             symbol, f = f.split('=')
             return_symbol = symbol
+            module = symbol
         else:
             symbol = get_global_module_name(module)
         aliases[symbol] = (f, module)
@@ -189,7 +205,8 @@ def main():
         out.append('return {}'.format(return_symbol))
 
     with (sys.stdout if args.output == '-' else open(args.output, 'w')) as f:
-        f.write(''.join(out) + '\n')
+        s = re.sub('\x01\x02(.*?)\x01\x03', unprotect, ''.join(out), flags=re.S)
+        f.write(s + '\n')
 
 if __name__ == '__main__':
     main()
