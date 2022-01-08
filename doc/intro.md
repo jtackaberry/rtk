@@ -46,8 +46,8 @@ Currently the widget set is a bit anemic but more are planned as the project mat
 
 ## Requirements
 
-REAPER 6 is required due to test coverage.  (rtk may work on REAPER 5 but this isn't being
-tested and isn't supported.)
+REAPER 6 is recommended due to test coverage.  REAPER 5.975 and later is expected to work,
+however the level of testing on these older versions isn't as strong as REAPER 6.
 
 The [SWS](https://www.sws-extension.org/) and
 [js_ReaScriptAPI](https://forum.cockos.com/showthread.php?t=212174) extensions are
