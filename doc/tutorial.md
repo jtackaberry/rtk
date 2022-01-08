@@ -54,9 +54,9 @@ base class `rtk.Widget` defines the common API for all widgets.  The `rtk.Widget
 class itself isn't directly useful, but all rtk widgets subclass `rtk.Widget`.
 
 Widgets have these important qualities:
- 1. **Attributes**: controls the appearance and behavior of the widget
- 2. **Methods**: changes the state of the widget
- 3. **Event Handlers**: special methods that are invoked when certain events occur,
+ 1. **Attributes** control the appearance and behavior of the widget
+ 2. **Methods** change the state of the widget
+ 3. **Event Handlers** are special methods that are invoked when certain events occur,
     such as a mouse being clicked over the widget, or a key pressed on the keyboard.
 
 When a widget is created, you can optionally pass it a table of attributes to initialize.
@@ -179,7 +179,7 @@ This should be familiar if you have web development experience: it is equivalent
 ## Containers
 
 And speaking of web development, you don't (usually) build web pages by thinking about
-what coordinates every element has on the screen, rather you position elements in relation
+the coordinates of every element on the screen, rather you position elements in relation
 to one another, influencing those relationships through things like padding and margin,
 and let the layout engine take care of absolute positioning.
 
@@ -189,7 +189,7 @@ layout each widget according to its box model.
 
 rtk calls the process of laying out widgets **reflow**.  A reflow occurs any time the
 geometry of any widget (including the window itself) changes, which could cause the
-overall layout of the GUI to change.  A reflow computes the layout out all widgets
+overall layout of the GUI to change.  A reflow computes the layout out of all widgets
 provided they are a) ultimately parented up to the `rtk.Window` and b) you have not hidden
 them (i.e. their @{rtk.Widget.visible|visible} attribute is true).
 
@@ -210,8 +210,9 @@ rtk has these container widgets:
 
 
 In order to be drawn, all widgets must eventually belong to a container of some sort whose
-root ancestor is an `rtk.Window`.  Widgets can be instantiated and modified unparented, but
-they will be inert until added to a container that ultimately parents up to an `rtk.Window`.
+root ancestor is an `rtk.Window`.  Widgets can be instantiated and modified while
+unparented, but they will be inert until added to a container that ultimately parents up
+to an `rtk.Window`.
 
 ```lua
 -- Creates a window, which is a container
