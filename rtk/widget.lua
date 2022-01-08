@@ -257,12 +257,27 @@ rtk.Widget.register{
     --      button:attr('label', "It's the only way to be sure")
     --   end)
     --
+    -- Reading back attributes that you previously set is just a matter of access the
+    -- attribute field directly on the widget.  Following the above example:
+    --
+    -- @code
+    --   -- This will display 'red' from above
+    --   log.info('Button color is: %s', button.color)
+    --   -- This will display "It's the only way to be sure" (again from above)
+    --   log.info('Button label is: %s', button.label)
+    --
+    --
     -- #### Calculated Attributes
     --
     -- When you set the value of a read/write attribute, it is ultimately translated into
     -- a low-level **calculated** value.  These calculated values can be fetched via the `calc()`
-    -- method.  In the above code example, `button:calc('color')` will return the 4-element
-    -- {r,g,b,a} table holding the calculated color used internally during drawing.
+    -- method.  In the above code example:
+    --
+    -- @code
+    --   -- This returns the 4-element {r,g,b,a} table holding the calculated color
+    --   -- used internally during drawing.
+    --   local c = button:calc('color')
+    --   log.info('Calculated color table: %s', table.tostring(c))
     --
     -- Similarly, if you set `halign='center'` the stringified value of the alignment
     -- constant is translated to `rtk.Widget.CENTER`, which would be returned by
@@ -270,11 +285,12 @@ rtk.Widget.register{
     -- width to the widget (more on that later), then once the widget reflows
     -- `widget:calc('w')` will return the calculated width in pixels.
     --
-    -- In almost all cases, the value you store in the attribute remains the way you set it,
-    -- and rtk internally uses the calculated variants.  There are some cases where the
-    -- original (non-calculated) attributes are overwritten by rtk: for example in the case
-    -- of `rtk.Window.w`, you may have set `w=500` programmatically but if the user resizes
-    -- the window, rtk will overwrite this attribute with the current width.
+    -- In most cases the value you store in the attribute remains the way you set it, and
+    -- rtk internally uses the calculated variants.  However, whenever a user interacts with
+    -- a widget in that affects an attribute, the new value is synced back to both the calculated
+    -- version *and* the attribute vield.  For example, `rtk.Entry.caret` is modified when the
+    -- user moves where the caret is positioned.  Or `rtk.Window.w` is updated when the user
+    -- resizes the width of the window.
     --
     -- @section widget.attributes
 
