@@ -1113,7 +1113,7 @@ end
 -- @tparam string traceback a multiline stack trace capturing where
 --   the error occurred
 function rtk.onerror(err, traceback)
-    log.error("rtk: %s\n%s", err, traceback)
+    log.error("fatal: %s\n%s", err, traceback)
     log.flush()
     error(err)
 end
