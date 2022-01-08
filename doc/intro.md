@@ -30,6 +30,8 @@ Some of rtk's key features are:
 
 * support for fluid layouts -- no fixed coordinates needed (although possible if desired)
 * a flexible box model that will be familiar to web developers
+* Retina/high-DPI friendly, with fully scalable UI, including support for multi-resolution
+  image packs that dynamically picks the best resolution for the current scale
 * support for touch screens with kinetic touch-scrolling
 * a rich and customizable event handling system
 * enhanced window management (using the js_ReaScriptAPI extension if available) with a
