@@ -84,7 +84,6 @@ function rtk.check_reaper_version(major, minor, exact)
     local curmin = rtk._reaper_version_minor
     -- Normalize 3-digit minor versions
     minor = minor < 100 and minor or minor/10
-    rtk.log.info('compare: %s %s with %s %s', curmaj, curmin, major, minor)
     if exact then
         return curmaj == major and curmin == minor
     else
