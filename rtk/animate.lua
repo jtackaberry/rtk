@@ -252,18 +252,17 @@ local _table_stepfuncs = {
 -- Called from rtk.Window:_update()
 function rtk._do_animations(now)
     -- Calculate frame rate (rtk.fps)
-    if not rtk._frame_time then
-        rtk._frame_time = now
-        rtk._frame_count = 0
+    if not rtk._frame_times then
+        rtk._frame_times = {now}
     else
-        local duration = now - rtk._frame_time
-        if duration > 2 then
-            rtk.fps = rtk._frame_count / duration
-            rtk._frame_time = now
-            rtk._frame_count = 0
+        local times = rtk._frame_times
+        local c = #times
+        times[c+1] = now
+        if c > 30 then
+            table.remove(times, 1)
         end
+        rtk.fps = c / (times[c] - times[1])
     end
-    rtk._frame_count = rtk._frame_count + 1
 
     -- Execute pending animations
     if rtk._animations_len > 0 then
@@ -286,7 +285,8 @@ function rtk._do_animations(now)
             end
             anim.frames = anim.frames + 1
             if not finished and elapsed > anim.duration*1.5 then
-                log.warning('animation: %s %s - failed to complete within 1.5x of duration', target, attr)
+                log.warning('animation: %s %s - failed to complete within 1.5x of duration (fps: current=%s expected=%s)',
+                            target, attr, rtk.fps, anim.startfps)
                 finished = true
             end
             if anim.update then
@@ -348,8 +348,8 @@ function rtk._do_animations(now)
                 local missed = took - anim.duration
                 log.log(
                     math.abs(missed) > 0.05 and log.DEBUG or log.DEBUG2,
-                    'animation: done %s: %s -> %s on %s frames=%s fps=%s took=%.1f (missed by %.3f)',
-                    anim.attr, anim.src, anim.dst, anim.target or anim.widget, anim.frames, rtk.fps, took, missed
+                    'animation: done %s: %s -> %s on %s frames=%s current-fps=%s expected-fps=%s took=%.1f (missed by %.3f)',
+                    anim.attr, anim.src, anim.dst, anim.target or anim.widget, anim.frames, rtk.fps, anim.startfps, took, missed
                 )
             end
         end
@@ -485,6 +485,7 @@ function rtk.queue_animation(kwargs)
         duration = duration,
         future = future,
         frames = 0,
+        startfps = rtk.fps,
         _start_time = reaper.time_precise()
     })
     anim.resolve = function(x) return _resolve(x, anim.src, anim.dst) end
