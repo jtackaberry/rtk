@@ -184,7 +184,7 @@ end
 -- @tparam boolean trigger same as `rtk.Widget:attr()`.
 -- @treturn rtk.OptionMenu returns self for method chaining
 function rtk.OptionMenu:select(value, trigger)
-    return self:attr('selected', value, trigger == nil or trigger)
+    return self:attr('selected', value, trigger)
 end
 
 function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow)
@@ -221,9 +221,15 @@ function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow)
                 self:attr('label', '')
             end
         end
-        if trigger then
-            local last = self._menu:item(oldval)
+        local last = self._menu:item(oldval)
+        -- If the value has changed, fire both onselect and onchange.
+        if value ~= oldval then
             self:onchange(item, last)
+            self:onselect(item, last)
+        elseif trigger then
+            -- But if trigger is forced, we only fire onselect.  The semantics of onchange
+            -- is that forced trigger is ignored.
+            self:onselect(item, last)
         end
     end
     return true
@@ -239,7 +245,9 @@ function rtk.OptionMenu:open()
     assert(self.menu, 'menu attribute was not set on OptionMenu')
     self._menu:open_at_widget(self):done(function(item)
         if item then
-            self:select(item.id or item.index)
+            -- Passing true will always fire onselect() but onchange() only fires if the
+            -- value actually changed.
+            self:select(item.id or item.index, true)
         end
     end)
 end
@@ -263,6 +271,10 @@ end
 
 --- Called when the selection changes.
 --
+-- This differs from `onselect()` in that this is *only* called when the current selection
+-- has changed from the previous value, and the `trigger` argument to `select()` is
+-- ignored.
+--
 -- @tparam table|nil item the table of the menu item as passed to the `menu` attribute,
 --   or nil if selection was removed or invalid.  This can only happen if an invalid
 --   (or nil) value was programmatically assigned to the `selected` attribute, and cannot
@@ -271,3 +283,22 @@ end
 --   just been replaced.
 -- @treturn nil Return value has no significance. This is a notification event only.
 function rtk.OptionMenu:onchange(item, lastitem) end
+
+
+--- Called when `select()` is called, or when the user makes a selection from the
+-- popup menu.
+--
+-- @note
+--   This differs from `onchange()` in that this handler is called even when the user's
+--   selection is the same as the last selected value.  This is useful when using an
+--   rtk.OptionMenu as a popup menu to activate commands in which the last selected
+--   item may be invoked multiple times.
+--
+-- @tparam table|nil item the table of the menu item as passed to the `menu` attribute,
+--   or nil if selection was removed or invalid.  This can only happen if an invalid
+--   (or nil) value was programmatically assigned to the `selected` attribute, and cannot
+--   happen through user interaction.
+-- @tparam table|nil lastitem the item table for the previously selected item, which
+--   may be the same as the new item if the current item was re-selected.
+-- @treturn nil Return value has no significance. This is a notification event only.
+function rtk.OptionMenu:onselect(item, lastitem) end
