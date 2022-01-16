@@ -202,8 +202,8 @@ function log._log(level, tail, fmt, ...)
     local time = log.lua_time_start + (now - log.reaper_time_start)
     local ftime = math.floor(time)
     local msecs = string.sub(time - ftime, 3, 5)
-    local label = log.level_name(level)
-    local prefix = string.format('%s.%s [%s]  ', os.date('%H:%M:%S', ftime), msecs, label)
+    local label = '[' .. log.level_name(level) .. ']'
+    local prefix = string.format('%s.%s %-9s ', os.date('%H:%M:%S', ftime), msecs, label)
     if level <= log.timer_threshold and #log.timers > 0 then
         local timer = log.timers[#log.timers]
         local total = _get_precise_duration_string((now - timer[1]) * 1000)
