@@ -208,7 +208,8 @@ function log._log(level, tail, fmt, ...)
         local timer = log.timers[#log.timers]
         local total = _get_precise_duration_string((now - timer[1]) * 1000)
         local last = _get_precise_duration_string((now - timer[2]) * 1000)
-        prefix = prefix .. string.format('(%s / %s ms)  ', last, total)
+        local name = timer[3] and string.format(' [%s]', timer[3]) or ''
+        prefix = prefix .. string.format('(%s / %s ms%s) ', last, total, name)
         timer[2] = now
     end
 
