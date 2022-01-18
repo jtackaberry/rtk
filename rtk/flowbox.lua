@@ -206,7 +206,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
                 local cvspacing = (col.h + wh < col_height) and vspacing or 0
                 offset.y = offset.y + wy + wh + cvspacing
                 col.w = math.max(col.w, child_maxw + chspacing)
-                col.h = col.h + wh + cvspacing
+                col.h = col.h + wh + cvspacing + ctp + cbp
                 inner.h = math.max(inner.h, col.h)
             end
             widget:_realize_geometry()
