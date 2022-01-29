@@ -13,7 +13,7 @@ source code and issue tracking.
 
 ## Download
 
-**👉 [Download the latest release](https://reapertoolkit.dev/download/rtk.lua).**
+**👉 [Download the latest release](https://raw.githubusercontent.com/jtackaberry/rtk/gh-pages/download/rtk.lua).**
 
 While rtk's source code is comprised of many individual files, it is released as a single
 bundled file for easier distribution by script writers.
