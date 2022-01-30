@@ -20,7 +20,7 @@ local rtk = require('rtk.core')
 -- @code
 --   -- Creates a button with an icon from the path registered by
 --   -- rtk.add_image_search_path() with the icon positioned to the right of the label.
---   local b = rtk.Button{icon='18-info', label='Hello world', iconpos='right'}
+--   local b = rtk.Button{icon='info', label='Hello world', iconpos='right'}
 --   b.onclick = function()
 --      -- Toggles between a circle and rectangular button when clicked.
 --      b:attr('circular', not b.circular)

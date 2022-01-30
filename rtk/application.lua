@@ -56,8 +56,9 @@ local rtk = require('rtk.core')
 --  -- right side of the toolbar.
 --  --
 --  -- This assumes the icon path was previously registered with
---  -- rtk.add_image_search_path() and that 18-settings.png exists there.
---  local settings = app.toolbar:add(rtk.Button{icon='18-settings', flat=true})
+--  -- rtk.add_image_search_path() and that settings.png exists there, or
+--  -- an rtk.ImagePack was registered that contains the name "settings"
+--  local settings = app.toolbar:add(rtk.Button{icon='settings', flat=true})
 --  settings.onclick = function()
 --      -- The button just opens the settings page
 --      app:push_screen('settings')

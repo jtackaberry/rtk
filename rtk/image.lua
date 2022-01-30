@@ -27,7 +27,7 @@ local log = require('rtk.log')
 -- @class rtk.Image
 rtk.Image = rtk.class('rtk.Image')
 
--- Global table of icons registered by rtk.ImagePack:register().
+-- Global table of icons registered by rtk.ImagePack:register_as_icons().
 rtk.Image.static._icons = {}
 
 --- Drawing Mode Constants.
@@ -114,8 +114,8 @@ end
 
 
 --- Create a new image either from an `rtk.ImagePack` image name that was
--- @{rtk.ImagePack.register|registered}, or, if not found, search for a png file located
--- in any of the image paths added via `rtk.add_image_search_path()`.
+-- @{rtk.ImagePack.register_as_icons|registered}, or, if not found, search for a png file
+-- located in any of the image paths added via `rtk.add_image_search_path()`.
 --
 -- The `style` argument dictates the requested icon luminance (namely, `dark` or `light`).
 -- Icons registered via an `rtk.ImagePack` can be assigned a style, and likewise image
@@ -130,13 +130,17 @@ end
 -- If ultimately no suitable icon can be located, an error is logged and nil is
 -- returned.  The caller can choose to use `make_placeholder_icon()` in a pinch.
 --
--- @note
---   The main feature of this function is the (monochromatic) icon @{recolor|recoloring}
---   to match the current theme (if it's necessary).  To load an image without any
---   implicit modification, use `rtk.Image:load()`.
+-- @note ImagePacks and size qualifiers
+--   Icons previously @{rtk.ImagePack.register_as_icons|registered} via `rtk.ImagePack`
+--   can also be accessed by this function.
+--
+--   If the `rtk.ImagePack` contains multiple size variants of the icon, you can qualify
+--   the icon name by adding a `:<size>` suffix.  For example, `error:huge` would return
+--   the huge variant of the `error` icon (assuming such a variant had been added to the
+--   ImagePack).  See `rtk.ImagePack:get()` for more details.
 --
 -- @example
---    local img = rtk.Image.icon('medium-undo', 'light')
+--    local img = rtk.Image.icon('undo', 'light')
 --
 -- @tparam string name Filename of the icon without the extension
 -- @tparam string|nil style Either `dark` or `light` indicating the icon luminance.  If
@@ -183,7 +187,7 @@ rtk.Image.static.make_icon=rtk.Image.static.icon
 -- @treturn rtk.Image the new image
 --
 -- @code
---    local img = rtk.Image.icon('18-undo', 'light')
+--    local img = rtk.Image.icon('undo', 'light')
 --    if not img then
 --        img = rtk.Image.make_placeholder_icon(24, 24, 'light')
 --    end

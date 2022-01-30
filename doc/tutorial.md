@@ -320,17 +320,19 @@ container:add(rtk.ImageBox{img})
 
 ### Image Packs
 
-A more sophisticated and robust method for distributing and using images, and especially icons, is
-by using `rtk.ImagePack`.  Image packs are single images that consist of many smaller subimages,
-also called *sprites*.  This means most or all of the images/icons used by your application can be
-consolidated in a single image file for distribution.
+A more sophisticated and robust method for distributing and using images, and especially
+icons, is by using `rtk.ImagePack`.  Image packs encapsulate one or more images that
+consist of many smaller subimages, also called *sprites*.  This means most or all of the
+images/icons used by your application can be consolidated in a single image file for
+distribution.
 
 Within an image pack, you can include:
- * Images of different dimensions
+ * Subimages of different dimensions
  * Multiple variants per image to support different DPIs (e.g. high-DPI or Apple retina displays). rtk
    calls this a @{rtk.Image.density|pixel density}, where, for example, a pixel density of 2.0 indicates
    that the image is drawn at full scale when the UI scale is 2x, or half scale when the UI scale is 1x.
  * Both light and dark icon styles for different themes
+ * all of the above spread across as many or as few files as you choose
 
 Each subimage in the packed image is assigned a name, which is used when retrieving the
 subimage.  The retrieved image is an `rtk.MultiImage` which incorporates all the density
@@ -342,16 +344,28 @@ two 36x36 icons for 2x density.  Both are high luminance icons when light icon s
 needed.
 
 ```lua
-rtk.ImagePack{
+local pack = rtk.ImagePack()
+pack:add{
+    -- This is the packed image file that contains the grid of subimages
     src='icons.png',
-    register=true,
-    {w=18, h=18, names={'medium-edit', 'medium-save'}, density=1, style='light'},
-    {w=36, h=36, names={'medium-edit', 'medium-save'}, density=2, style='light'},
+    -- These are defaults for each strip in the packed image
+    style='light',
+    names={'edit', 'save'},
+    -- And now each following tables defines two horizontal strips
+    -- in the packed image.
+    {w=18, h=18, density=1},
+    {w=36, h=36, density=2},
 }
+pack:register_as_icons()
 ```
 
-The `register=true` in the example causes the image names to be registered as icons, and
-so can be used anywhere within rtk an image string name is accepted.
+The call to @{rtk.ImagePack:register_as_icons} in the example causes the image names to be
+registered as icons, and so can be used anywhere within rtk an image string name is
+accepted.  For example:
+
+```lua
+local button = rtk.Button{'Save Project', icon='save'}
+```
 
 ## Creating an Application
 

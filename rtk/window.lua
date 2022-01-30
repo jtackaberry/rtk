@@ -1817,7 +1817,7 @@ end
 -- drag operation:
 --
 -- @code
---   local img = container:add(rtk.ImageBox{icon='18-drag-handle'})
+--   local img = container:add(rtk.ImageBox{icon='drag-handle'})
 --   img.ondragstart = function(self, event)
 --       -- Accept drags for this widget.
 --       return true

@@ -26,7 +26,7 @@ local log = require('rtk.log')
 -- user-accessible context menu.
 --
 -- @example
---   local entry = box:add(rtk.Entry{icon='18-search', placeholder='Search', textwidth=15})
+--   local entry = box:add(rtk.Entry{icon='search', placeholder='Search', textwidth=15})
 --   entry.onkeypress = function(self, event)
 --       if event.keycode == rtk.keycodes.ESCAPE then
 --           self:clear()
