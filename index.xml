@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf8"?>
+<index version="1" name="rtk" desc="REAPER Toolkit (rtk)">
+  <category name="Development">
+    <reapack name="rtk" desc="REAPER Toolkit (rtk)" type="script">
+      <metadata>
+        <description><![CDATA[{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil\fcharset2 Symbol;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1
+\pard\sa200\sl276\slmult1\sub\f0\fs72\lang9 REAPER Toolkit\par
+
+\pard\sl240\slmult1 {\fs48{\field{\*\fldinst{HYPERLINK https://reapertoolkit.dev/ }}{\fldrslt{https://reapertoolkit.dev/\ul0\cf0}}}}\f0\fs48\par
+\par
+rtk (REAPER Toolkit, but stylized as lowercase rtk) is a GUI and utility library for REAPER written in Lua.\par
+\par
+Some of rtk's key features are:\par
+
+\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl240\slmult1 support for fluid layouts -- no fixed coordinates needed (although possible if desired)\par
+{\pntext\f1\'B7\tab}a flexible box model that will be familiar to web developers\par
+{\pntext\f1\'B7\tab}Retina/high-DPI friendly, with fully scalable UI, including support for multi-resolution image packs that dynamically picks the best resolution for the current scale\par
+{\pntext\f1\'B7\tab}support for touch screens with kinetic touch-scrolling\par
+{\pntext\f1\'B7\tab}a rich and customizable event handling system\par
+{\pntext\f1\'B7\tab}enhanced window management (using the js_ReaScriptAPI extension if available) with a unified coordinate system on all platforms\par
+{\pntext\f1\'B7\tab}an animation subsystem that allows animating many different widget attributes\par
+{\pntext\f1\'B7\tab}support for light and dark themes, adapting to the user's REAPER theme\par
+{\pntext\f1\'B7\tab}a featureful logging module to improve your debugging and benchmarking experience\par
+{\pntext\f1\'B7\tab}comprehensive API documentation\par
+}
+]]></description>
+        <link rel="website">https://reapertoolkit.dev/</link>
+      </metadata>
+    </reapack>
+  </category>
+  <metadata>
+    <description><![CDATA[{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil\fcharset2 Symbol;}}
+{\colortbl ;\red0\green0\blue255;}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1
+\pard\sa200\sl276\slmult1\sub\f0\fs72\lang9 REAPER Toolkit\par
+
+\pard\sl240\slmult1 {\fs48{\field{\*\fldinst{HYPERLINK https://reapertoolkit.dev/ }}{\fldrslt{https://reapertoolkit.dev/\ul0\cf0}}}}\f0\fs48\par
+\par
+rtk (REAPER Toolkit, but stylized as lowercase rtk) is a GUI and utility library for REAPER written in Lua.\par
+\par
+Some of rtk's key features are:\par
+
+\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl240\slmult1 support for fluid layouts -- no fixed coordinates needed (although possible if desired)\par
+{\pntext\f1\'B7\tab}a flexible box model that will be familiar to web developers\par
+{\pntext\f1\'B7\tab}Retina/high-DPI friendly, with fully scalable UI, including support for multi-resolution image packs that dynamically picks the best resolution for the current scale\par
+{\pntext\f1\'B7\tab}support for touch screens with kinetic touch-scrolling\par
+{\pntext\f1\'B7\tab}a rich and customizable event handling system\par
+{\pntext\f1\'B7\tab}enhanced window management (using the js_ReaScriptAPI extension if available) with a unified coordinate system on all platforms\par
+{\pntext\f1\'B7\tab}an animation subsystem that allows animating many different widget attributes\par
+{\pntext\f1\'B7\tab}support for light and dark themes, adapting to the user's REAPER theme\par
+{\pntext\f1\'B7\tab}a featureful logging module to improve your debugging and benchmarking experience\par
+{\pntext\f1\'B7\tab}comprehensive API documentation\par
+}
+]]></description>
+    <link rel="website">https://reapertoolkit.dev/</link>
+  </metadata>
+</index>
