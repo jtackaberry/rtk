@@ -15,22 +15,22 @@ For a complete historical change log, visit https://reapertoolkit.dev/changelog
 ]]></changelog>
       </version>
       <metadata>
-        <description><![CDATA[{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil\fcharset2 Symbol;}}
-{\colortbl ;\red0\green0\blue255;}
-{\*\generator Riched20 10.0.19041}\viewkind4\uc1
-\pard\sa200\sl276\slmult1\sub\f0\fs72\lang9 REAPER Toolkit\par
+        <description><![CDATA[{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033\deflangfe2052{\fonttbl{\f0\fswiss\fprq2\fcharset0 Arial;}{\f1\fnil\fcharset2 Symbol;}}
+{\colortbl ;\red0\green0\blue0;\red0\green0\blue255;\red17\green85\blue204;}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mnaryLim0\mdispDef1\mwrapIndent1440 }\viewkind4\uc1
+\pard\keep\keepn\widctlpar\sa60\sl276\slmult1\cf1\f0\fs52 REAPER Toolkit\par
 
-\pard\sl240\slmult1 {\fs48{\field{\*\fldinst{HYPERLINK https://reapertoolkit.dev/ }}{\fldrslt{https://reapertoolkit.dev/\ul0\cf0}}}}\f0\fs48\par
+\pard\widctlpar\sl276\slmult1 {\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul https}}}}{\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul ://}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul reapertoolkit}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul .}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul dev}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul /}}}}\cf1\ulnone\f0\fs22\par
 \par
 rtk (REAPER Toolkit, but stylized as lowercase rtk) is a GUI and utility library for REAPER written in Lua.\par
 \par
 Some of rtk's key features are:\par
 
-\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl240\slmult1 support for fluid layouts -- no fixed coordinates needed (although possible if desired)\par
-{\pntext\f1\'B7\tab}a flexible box model that will be familiar to web developers\par
-{\pntext\f1\'B7\tab}Retina/high-DPI friendly, with fully scalable UI, including support for multi-resolution image packs that dynamically picks the best resolution for the current scale\par
-{\pntext\f1\'B7\tab}support for touch screens with kinetic touch-scrolling\par
-{\pntext\f1\'B7\tab}a rich and customizable event handling system\par
+\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent360{\pntxtb\'B7}}\widctlpar\fi-360\li1080\sl276\slmult1\tx360\tx1080 support for fluid layouts -- no fixed coordinates needed (although possible if desired)\par
+{\pntext\f1\'B7\tab} flexible box model that will be familiar to web developers\par
+{\pntext\f1\'B7\tab}/high-DPI friendly, with fully scalable UI, including support for multi-resolution image packs that dynamically picks the best resolution for the current scale\par
+{\pntext\f1\'B7\tab} for touch screens with kinetic touch-scrolling\par
+{\pntext\f1\'B7\tab} rich and customizable event handling system\par
 {\pntext\f1\'B7\tab}enhanced window management (using the js_ReaScriptAPI extension if available) with a unified coordinate system on all platforms\par
 {\pntext\f1\'B7\tab}an animation subsystem that allows animating many different widget attributes\par
 {\pntext\f1\'B7\tab}support for light and dark themes, adapting to the user's REAPER theme\par
@@ -43,22 +43,22 @@ Some of rtk's key features are:\par
     </reapack>
   </category>
   <metadata>
-    <description><![CDATA[{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil\fcharset2 Symbol;}}
-{\colortbl ;\red0\green0\blue255;}
-{\*\generator Riched20 10.0.19041}\viewkind4\uc1
-\pard\sa200\sl276\slmult1\sub\f0\fs72\lang9 REAPER Toolkit\par
+    <description><![CDATA[{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033\deflangfe2052{\fonttbl{\f0\fswiss\fprq2\fcharset0 Arial;}{\f1\fnil\fcharset2 Symbol;}}
+{\colortbl ;\red0\green0\blue0;\red0\green0\blue255;\red17\green85\blue204;}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mnaryLim0\mdispDef1\mwrapIndent1440 }\viewkind4\uc1
+\pard\keep\keepn\widctlpar\sa60\sl276\slmult1\cf1\f0\fs52 REAPER Toolkit\par
 
-\pard\sl240\slmult1 {\fs48{\field{\*\fldinst{HYPERLINK https://reapertoolkit.dev/ }}{\fldrslt{https://reapertoolkit.dev/\ul0\cf0}}}}\f0\fs48\par
+\pard\widctlpar\sl276\slmult1 {\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul https}}}}{\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul ://}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul reapertoolkit}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul .}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul dev}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul /}}}}\cf1\ulnone\f0\fs22\par
 \par
 rtk (REAPER Toolkit, but stylized as lowercase rtk) is a GUI and utility library for REAPER written in Lua.\par
 \par
 Some of rtk's key features are:\par
 
-\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent0{\pntxtb\'B7}}\fi-360\li720\sl240\slmult1 support for fluid layouts -- no fixed coordinates needed (although possible if desired)\par
-{\pntext\f1\'B7\tab}a flexible box model that will be familiar to web developers\par
-{\pntext\f1\'B7\tab}Retina/high-DPI friendly, with fully scalable UI, including support for multi-resolution image packs that dynamically picks the best resolution for the current scale\par
-{\pntext\f1\'B7\tab}support for touch screens with kinetic touch-scrolling\par
-{\pntext\f1\'B7\tab}a rich and customizable event handling system\par
+\pard{\pntext\f1\'B7\tab}{\*\pn\pnlvlblt\pnf1\pnindent360{\pntxtb\'B7}}\widctlpar\fi-360\li1080\sl276\slmult1\tx360\tx1080 support for fluid layouts -- no fixed coordinates needed (although possible if desired)\par
+{\pntext\f1\'B7\tab} flexible box model that will be familiar to web developers\par
+{\pntext\f1\'B7\tab}/high-DPI friendly, with fully scalable UI, including support for multi-resolution image packs that dynamically picks the best resolution for the current scale\par
+{\pntext\f1\'B7\tab} for touch screens with kinetic touch-scrolling\par
+{\pntext\f1\'B7\tab} rich and customizable event handling system\par
 {\pntext\f1\'B7\tab}enhanced window management (using the js_ReaScriptAPI extension if available) with a unified coordinate system on all platforms\par
 {\pntext\f1\'B7\tab}an animation subsystem that allows animating many different widget attributes\par
 {\pntext\f1\'B7\tab}support for light and dark themes, adapting to the user's REAPER theme\par
