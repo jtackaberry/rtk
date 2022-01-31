@@ -4,7 +4,7 @@ on:
     tags:
       - '[0-9]*'
 
-  # Allows manual execution of jobx
+  # Allows manual execution of jobs
   workflow_dispatch:
 
 jobs:
