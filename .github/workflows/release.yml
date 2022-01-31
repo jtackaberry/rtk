@@ -1,0 +1,41 @@
+name: Release
+on:
+  push:
+    tags:
+      - 'release**'
+
+  # Allows manual execution of jobx
+  workflow_dispatch:
+
+jobs:
+  reapack:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set environment variables
+        run: |
+          echo "tag=$(echo $GITHUB_REF | sed s,.*/release,release,)" >> $GITHUB_ENV
+          echo "shorthash=${GITHUB_SHA:0:7}" >> $GITHUB_ENV
+      - name: Checkout release tag
+        uses: actions/checkout@v2
+      - name: Checkout master
+        uses: actions/checkout@v2
+        with:
+          ref: master
+          path: master
+      - name: Checkout site branch
+        uses: actions/checkout@v2
+        with:
+          ref: site
+          path: site
+      - name: Generate ReaPack for ${{env.tag}}
+        run: |
+          python3 master/tools/mkreapack.py -t ${{env.tag}} [0-9]*/*.lua -m 5 -a "Jason Tackaberry" --reapack-manifest site/MANIFEST.reapack -i site/index.xml -o site/index.xml
+          cp MANIFEST site/MANIFEST.reapack
+      - name: Commit ReaPack ${{env.shorthash}} to site
+        run: |
+          cd site
+          git config --global user.name 'GitHub CI Bot'
+          git config --global user.email 'jtackaberry@users.noreply.github.com'
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
+          git add index.xml MANIFEST.reapack
+          git commit -am "Update ReaPack for ${{env.tag}} (${{env.shorthash}})" && git push origin site || echo "ReaPack didn't changed"
