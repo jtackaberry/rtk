@@ -1,14 +1,10 @@
 name: Build
-
 on:
   push:
-    branches: [ master ]
-    paths-ignore:
-      - '.github/**'
-  pull_request:
-    branches: [ master ]
+    tags:
+      - '[0-9]*'
 
-  # Allows manual execution of job
+  # Allows manual execution of jobx
   workflow_dispatch:
 
 jobs:
@@ -17,44 +13,67 @@ jobs:
     container:
       image: jtackaberry/luadox:latest
     steps:
-      - uses: actions/checkout@v2
-      - name: Build rtk.lua
+      - name: Set environment variables
         run: |
-          mkdir -p doc/html/download
-          python3 tools/luaknit.py rtk=rtk/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: $(date +%Y%m%d)-${GITHUB_SHA:0:7}\nbuild: $(date)" > doc/html/download/_rtk.lua
-      - name: Build documentation
+          echo "tag=$(echo $GITHUB_REF | sed s,.*/,,)" >> $GITHUB_ENV
+          echo "major=$(echo $GITHUB_REF | sed 's,.*/,,' | sed 's/\..*//')" >> $GITHUB_ENV
+      - name: Checkout tag ${{env.tag}}
+        uses: actions/checkout@v2
+      - name: Build rtk
         run: |
-          cd doc
-          luadox -c luadox.conf
-          cp -a img/ html/
-      - uses: actions/upload-artifact@v2
+          mkdir -p build/dist/${{env.major}}
+          python3 tools/luaknit.py rtk=rtk/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: ${{env.tag}}\nbuild: $(date)" > build/dist/${{env.major}}/rtk.lua
+          ls -l build/dist/${{env.major}}/rtk.lua
+      - name: Pull changes for ${{env.tag}} from change log
+        run: |
+          mkdir -p build/dist/${{env.major}}
+          sed -n "/^# ${{env.tag}}/,/^# /p" CHANGELOG.md | sed '${/^# /d}' > build/dist/${{env.major}}/CHANGELOG.md
+          cat build/dist/${{env.major}}/CHANGELOG.md
+      - name: Upload dist artifacts
+        uses: actions/upload-artifact@v2
         with:
-           name: html
-           path: doc/html/
+           name: dist
+           path: build/dist
            retention-days: 1
-  push:
+
+  dist:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-        with:
-          ref: 'gh-pages'
-      - uses: actions/download-artifact@v2
-        with:
-          name: html
-      - name: Replace rtk.lua if code updated
+      - name: Set environment variables
         run: |
-          # Don't fail if rtk.lua doesn't exist (initial build)
-          sed '/^--/d' download/rtk.lua > a || true
-          sed '/^--/d' download/_rtk.lua > b
-          cmp -s a b && rm -f download/_rtk.lua || mv download/_rtk.lua download/rtk.lua
-          rm -f a b
-      - name: Commit generated files
+          echo "tag=$(echo $GITHUB_REF | sed s,.*/,,)" >> $GITHUB_ENV
+          echo "release=$(date +%Y%m%dT%H%M%S)" >> $GITHUB_ENV
+      - name: Checkout dist branch
+        uses: actions/checkout@v2
+        with:
+          ref: 'dist'
+      - name: Download dist artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: dist
+      - name: Update MANIFEST
+        run: |
+          (cat MANIFEST | grep -v "^$(echo ${{env.tag}} | sed 's/\..*//')"; echo ${{env.tag}}) | sort > MANIFEST.new || true
+          mv -f MANIFEST.new MANIFEST
+          echo "Manifest is"
+          cat MANIFEST
+      - name: Configure Git
         run: |
           git config --global user.name 'GitHub CI Bot'
           git config --global user.email 'jtackaberry@users.noreply.github.com'
           git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/$GITHUB_REPOSITORY
-          git add download/rtk.lua
-          git commit -m "Compile rtk.lua via ${GITHUB_SHA:0:7}" && git push origin gh-pages || echo "rtk.lua didn't change"
+      - name: Commit new build for ${{env.tag}}
+        run: |
           git add *
-          git commit -am "Generate documentation via ${GITHUB_SHA:0:7}" && git push origin gh-pages || echo "Documentation didn't changed"
+          git commit -am "Generate build for ${{env.tag}}" && git push origin dist || echo "Build files did not change"
+      - name: Tag release for latest API versions
+        if: ${{ startsWith(github.ref, 'refs/tags/1') }}
+        run: |
+          mkdir -p -m 700 ~/.ssh
+          echo "${{secrets.RTK_DEPLOY_KEY}}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/*
+          git remote set-url origin git@github.com:${GITHUB_REPOSITORY}
+          git tag release/${{env.release}}
+          git push origin release/${{env.release}}
+          rm -rf ~/.ssh
