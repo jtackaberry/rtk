@@ -20,7 +20,7 @@ For a complete historical change log, visit https://reapertoolkit.dev/changelog
 {\*\generator Riched20 10.0.19041}{\*\mmathPr\mnaryLim0\mdispDef1\mwrapIndent1440 }\viewkind4\uc1
 \pard\keep\keepn\widctlpar\sa60\sl276\slmult1\cf1\f0\fs52 REAPER Toolkit\par
 
-\pard\widctlpar\sl276\slmult1 {\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul https}}}}{\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul ://}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul reapertoolkit}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul .}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul dev}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul /}}}}\cf1\ulnone\f0\fs22\par
+\pard\widctlpar\sl276\slmult1 {\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul https}}}}{\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul ://}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul reapertoolkit}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul .}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul dev}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul /}}}}\cf1\ulnone\f0\fs24\par
 \par
 rtk (REAPER Toolkit, but stylized as lowercase rtk) is a GUI and utility library for REAPER written in Lua.\par
 \par
@@ -48,7 +48,7 @@ Some of rtk's key features are:\par
 {\*\generator Riched20 10.0.19041}{\*\mmathPr\mnaryLim0\mdispDef1\mwrapIndent1440 }\viewkind4\uc1
 \pard\keep\keepn\widctlpar\sa60\sl276\slmult1\cf1\f0\fs52 REAPER Toolkit\par
 
-\pard\widctlpar\sl276\slmult1 {\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul https}}}}{\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul ://}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul reapertoolkit}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul .}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul dev}}}}{\cf1\ulnone\f0\fs22{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul /}}}}\cf1\ulnone\f0\fs22\par
+\pard\widctlpar\sl276\slmult1 {\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul https}}}}{\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul ://}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul reapertoolkit}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul .}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul dev}}}}{\cf1\ulnone\f0\fs24{\field{\*\fldinst{HYPERLINK "https://reapertoolkit.dev/"}}{\fldrslt{\ul\cf2\cf3\ul /}}}}\cf1\ulnone\f0\fs24\par
 \par
 rtk (REAPER Toolkit, but stylized as lowercase rtk) is a GUI and utility library for REAPER written in Lua.\par
 \par
