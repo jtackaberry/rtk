@@ -361,6 +361,19 @@ end
 
 --- Adds a widget to the container.
 --
+-- The @{container.cellattrs|cell attributes} table is optional, and may be passed either
+-- as the second argument, or as the `cell` field in the widget instance itself.
+--
+-- @code
+--   -- Given this box ...
+--   local box = rtk.HBox()
+--   -- ... these two lines are equivalent
+--   box:add(rtk.Text{'Hello World'}, {halign='center', valign='center'})
+--   box:add(rtk.Text{'Hello World', cell={halign='center', valign='center'}})
+--
+-- The second form, while slightly more verbose, may be preferred when you want to dictate
+-- the cell behavior at widget instantiation time, rather than during `add()`.
+--
 -- @tparam rtk.Widget widget the widget to add to the container
 -- @tparam table|nil attrs the @{container.cellattrs|cell attributes} to apply to
 --   the given widget
