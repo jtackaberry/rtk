@@ -1279,7 +1279,9 @@ function rtk.Window:_update()
     -- Check to see if resized now before _sync_window_attrs() below potentially meddles
     -- with gfx.w/h or self.w/h.
     local resized = gfx.w ~= calc.w or gfx.h ~= calc.h
-    if self._sync_window_attrs_on_update and self.hwnd and rtk.has_js_reascript_api then
+    -- Must not test for JSAPI here, as _sync_window_attrs() handles dock/undock even
+    -- for non-JSAPI case.
+    if self._sync_window_attrs_on_update then
         -- Sync current attributes to window state.  We'll amend the resized flag
         -- if _sync_window_attrs() actually resizes the window (in which case it will
         -- also update gfx.w/gfx.h to the new dimensions), so that we properly fire
