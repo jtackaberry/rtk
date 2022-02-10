@@ -453,16 +453,18 @@ end
 -- @tparam string|nil style the style of the subimage as previously described by `add().` If
 --   no image can be found with the requested style, other styles are searched and are recolored
 --   if necerssary.
--- @treturn rtk.MultiImage a multi-density image encapsulating all variants of the requested
---  subimage name and style.
+-- @treturn rtk.MultiImage|nil a multi-density image encapsulating all variants of the requested
+--  subimage name and style, or nil if the given image name could not be found.
 function rtk.ImagePack:get(name, style)
+    if not name then
+        return
+    end
     local key, densities = self:_get_densities(name, style)
     local multi = self._cache[key]
     if multi then
         -- Cache hit
         return multi
     end
-    log.time_start()
     local recolor = false
     if not densities and not style then
         -- No icon style was given, but no image was found registered under the nil
@@ -491,14 +493,12 @@ function rtk.ImagePack:get(name, style)
         local img = src.img
         -- Ensure we load the source image (even though it may need to be recolored)
         if not img then
-            log.info('LOAD IMAGE: %s', src.src)
             img = rtk.Image():load(src.src)
             src.img = img
         end
         if recolor then
             img = src.recolors[style]
             if not img then
-                log.info('MUST RECOLOR -> %s', style)
                 img = src.img:clone():recolor(style == 'light' and '#ffffff' or '#000000')
                 src.recolors[style] = img
             end
@@ -508,7 +508,6 @@ function rtk.ImagePack:get(name, style)
     end
     multi.style = style
     self._cache[key] = multi
-    log.time_end('!!!!! NEW GET KEY %s -> %s', key, densities)
     return multi
 end
 
