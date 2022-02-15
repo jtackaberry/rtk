@@ -129,7 +129,8 @@ rtk.Window.register{
     -- XXX: on geometry: x/y attributes are synced to real window coordinates, but are
     -- always calculated as 0 because those calculcated attributes are used for
     -- positioning children within the window.  Similarly w/h is synced based on real
-    -- window size, but the calculcated versions include a reduction for any padding.
+    -- window size, but the calculated versions account for scaling on Retina displays, and
+    -- also factor in a reduction for any padding.
 
     --- The x screen coordinate of the window when undocked (default 0).  When this attribute
     -- is @{rtk.Widget.attr|set} the window will be moved only if it's undocked, but when
@@ -140,6 +141,12 @@ rtk.Window.register{
     --
     -- Tip: you can call @{rtk.Widget.move|move}() to set both `x` and `y` at the same time.
     --
+    -- Note that while `x` reflects the current screen position of the window, the
+    -- @{rtk.Widget.calc|calculated version} of this attribute is *always* 0.  This is
+    -- because the calculated value is used as the offset for drawing widgets inside the
+    -- window.  If you want to offset the inner contents, you can use `lpadding` or `tpadding`
+    -- instead.
+    --
     -- @meta read/write
     -- @type number
     x = rtk.Attribute{
@@ -148,10 +155,16 @@ rtk.Window.register{
         reflow=rtk.Widget.REFLOW_NONE,
         window_sync=true,
     },
-    --- Like `x` but for the y screen coordinate where y=0 represents the *top* of the
-    -- screen (even on Mac) (default 0).  Normally with Mac y coordinates are relative
-    -- to the bottom of the screen, but with rtk this detail is abstracted away and
-    -- all y coordinates are relative to the top of the display regardless of platform.
+    --- Like `x` but for the y screen coordinate (default 0).
+    --
+    -- Whereas on Windows and Linux the `y` coordinate is relative the top of the screen
+    -- (so `y=0` refers to the top edge of the screen), on Mac this is inverted such that
+    -- `y=0` refers to the *bottom* edge of the screen.
+    --
+    -- If you need a consistent representation of the y coordinate, you can use
+    -- `rtk.Window:get_normalized_y()`, however this requires either the SWS or
+    -- js_ReaScriptAPI extension.
+    --
     -- @meta read/write
     -- @type number
     y = rtk.Attribute{
@@ -159,15 +172,24 @@ rtk.Window.register{
         reflow=rtk.Widget.REFLOW_NONE,
         window_sync=true,
     },
-    --- The current width of the window. If the window is undocked, then this attribute is
-    -- also settable.  If set before `open()` then it defines the initial width of the
-    -- window if undocked, but has no effect on the width of docked windows (as REAPER
-    -- doesn't allow that).
+    --- The current client width of the window.  Client in this context means the inner
+    -- contents of the window without the OS native window frame.
     --
-    -- Setting a value *after* `open()` is possible but only when (you guessed it) the
-    -- window is undocked, and this requires the js_ReaScriptAPI extension.
+    -- If the window is undocked, then this attribute is also settable.  If set before
+    -- `open()` then it defines the initial width of the window if undocked, but has no
+    -- effect on the width of docked windows (as REAPER doesn't allow that).
     --
-    -- `minw` is respected and the window will not be allowed a smaller widget.
+    -- Setting a value *after* `open()` is possible but only when the window is undocked,
+    -- and this requires the js_ReaScriptAPI extension.
+    --
+    -- `minw` is respected and the window will not be allowed a smaller width when `w` is
+    -- set via `attr()`, or when resizing when `borderless` is true.  However for bordered
+    -- windows, the OS may allow the user to set a smaller width for the window than
+    -- `minw`, and so in this case it's possible for `w` to be smaller than `minw`.
+    --
+    -- On Macs with Retina displays, the OS window size is actually half the size of the
+    -- internal graphics buffer.  The @{rtk.Widget.calc|calculated versions} of `w` and `h`
+    -- reflect this full (double) size, but `w` and `h` themselves will be half the size.
     --
     -- Tip: you can call @{rtk.Widget.resize|resize}() to set both `w` and `h` at the same
     -- time.
@@ -179,12 +201,13 @@ rtk.Window.register{
         type='number',
         window_sync=true,
         calculate=function(self, attr, value, target)
-            return math.max(self.minw or 100, value or 0)
+            return math.max(self.minw or 100, value or 0) * self._gfx_win_ratio
         end,
     },
     --- Like `w` but for the window height.
     --
-    -- `minh` is respected and the window will not be allowed a smaller height.
+    -- `minh` is respected and the window will not be allowed a smaller height when
+    -- set via `attr()` or when `borderless` is true.
     --
     -- @meta read/write
     -- @type number
@@ -192,7 +215,7 @@ rtk.Window.register{
         window_sync=true,
         default=600,
         calculate=function(self, attr, value, target)
-            return math.max(self.minh or 30, value or 0)
+            return math.max(self.minh or 30, value or 0) * self._gfx_win_ratio
         end,
     },
 
@@ -364,6 +387,11 @@ rtk.Window.register{
 --
 -- @display rtk.Window
 function rtk.Window:initialize(attrs, ...)
+    -- Multiplier to translate window dimensions to gfx buffer dimensions (gfx.w/h). On
+    -- Macs with Retina displays, this will be set to 2 in open().  We need to initialize
+    -- this now howver because w/h attribute calculate functions reference this field.
+    self._gfx_win_ratio = 1
+
     rtk.Container.initialize(self, attrs, self.class.attributes.defaults, ...)
 
     -- Singleton window
@@ -461,10 +489,11 @@ function rtk.Window:_handle_attr(attr, value, oldval, trigger, reflow, sync)
             self._gdi_pen = reaper.JS_GDI_CreatePen(1, color)
         end
     end
-    if self.class.attributes.get(attr).window_sync then
+    if self.class.attributes.get(attr).window_sync and not sync then
+        -- Attribute was set using attr(), not sync(), so we need to sync the window to
+        -- requested attributes on next update.
         self._sync_window_attrs_on_update = true
     end
-
     return true
 end
 
@@ -556,71 +585,50 @@ function rtk.Window:_run()
 end
 
 -- Fetches the resolution of the display where the top left corner of the window appears.
-function rtk.Window:_get_display_resolution()
+-- Returns {x, y, w, h} where on Mac the y coordinate is normalized such that 0 is top.
+function rtk.Window:_get_display_resolution(working)
     -- Here we use user-provided attributes instead of calculated values in case a move was
     -- requested.
-    local x2 = self.x + (self.w or 0)
-    local y2 = self.y + (self.h or 0)
-    if rtk.has_sws_extension then
-        local l, t, r, b = reaper.BR_Win32_GetMonitorRectFromRect(0, self.x, self.y, x2, y2)
-        return l, t, r - l, math.abs(b - t)
-    elseif rtk.has_js_reascript_api then
-        local l, t, r, b = reaper.JS_Window_GetViewportFromRect(self.x, self.y, x2, y2, 0)
-        return l, t, r - l, math.abs(b - t)
+    local x2 = self.x + (self.calc.w or 0)
+    local y2 = self.y + (self.calc.h or 0)
+    local l, t, r, b
+    if rtk.has_js_reascript_api then
+        l, t, r, b = reaper.JS_Window_GetViewportFromRect(self.x, self.y, x2, y2, working or false)
+    elseif rtk.has_sws_extension then
+        l, t, r, b = reaper.BR_Win32_GetMonitorRectFromRect(working or false, self.x, self.y, x2, y2)
     else
         return nil, nil
     end
+    local w = r - l
+    return l, t, r - l, math.abs(b - t)
 end
 
 function rtk.Window:_get_geometry_from_attrs(overrides)
-    local x, y = self.x, self.y
-    local w, h = self.w, self.h
+    local x = self.x
+    local y = self.y
+    local w = self.w * self._gfx_win_ratio
+    local h = self.h * self._gfx_win_ratio
     if overrides then
         -- This returns nil if the resolution can't be determined.
         local _, _, sw, sh = self:_get_display_resolution()
         if sw and sh then
+            -- FIXME: broken on Mac retina displays. Does not account for display scaling.
+            local _, cw, ch = reaper.JS_Window_GetClientSize(self.hwnd)
             if overrides.halign == rtk.Widget.CENTER then
-                x = (overrides.x or x) + (sw - w) / 2
+                x = (overrides.x or x) + (sw - cw) / 2
             elseif overrides.halign == rtk.Widget.RIGHT then
-                x = (overrides.x or x) + sw - w
+                x = (overrides.x or x) + sw - cw
             end
             if overrides.valign == rtk.Widget.CENTER then
-                y = (overrides.y or y) + (sh - h) / 2
+                y = (overrides.y or y) + (sh - ch) / 2
             elseif overrides.valign == rtk.Widget.BOTTOM then
-                y = (overrides.y or y) + sh - h
+                y = (overrides.y or y) + sh - ch
             end
         end
     end
     return math.round(x), math.round(y), math.round(w), math.round(h)
 end
 
--- Returns a screen y coordinate appropriate for the current OS.  On
--- Linux and Windows, this just returns back the given y.
---
--- On Mac, this translates the coordinate such that y=0 represents the
--- bottom of the screen.
---
--- The offset can be provided if we need to subtract an additional value, e.g. to
--- determine the top of a window as opposed to the bottom.
-
--- No point in bothering to check rtk.os.mac on each invocation.  And if we don't
--- have any extension available that can help us determine display resolution,
--- we're stuck.
-if not rtk.os.mac or not (rtk.has_sws_extension or rtk.has_js_reascript_api) then
-    function rtk.Window:_get_os_native_y(y, offset)
-        return y
-    end
-else
-    function rtk.Window:_get_os_native_y(y, offset)
-        if not rtk.os.mac then
-            return y
-        end
-        if not self._screenh then
-            _, _, _, self._screenh = self:_get_display_resolution()
-        end
-        return self._screenh - y - (offset or 0)
-    end
-end
 
 function rtk.Window:_sync_window_attrs(overrides)
     local calc = self.calc
@@ -634,7 +642,7 @@ function rtk.Window:_sync_window_attrs(overrides)
             gfx.dock(dockstate)
             self:_handle_dock_change(dockstate)
         end
-        return
+        return 0
     end
 
     -- Everything below depends on js_ReaScriptAPI.
@@ -649,8 +657,8 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- But if we just docked, then let's immediately store the new docked geometry in
             -- the w/h attributes so that our next reflow has the proper size.
             gfx.w, gfx.h = w, h
-            self:sync('w', w)
-            self:sync('h', h)
+            self:sync('w', w / self._gfx_win_ratio, nil, nil, w)
+            self:sync('h', h / self._gfx_win_ratio, nil, nil, h)
             -- Force resized now as the comparisons later won't be able to tell that
             -- we did, having just replaced the w/h attrs.
             resized = 1
@@ -658,7 +666,7 @@ function rtk.Window:_sync_window_attrs(overrides)
         -- _handle_dock_change() calls us back, but on the re-call self._dockstate will
         -- properly reflect current dockstate so this conditional path won't be
         -- taken again.
-        return
+        return resized
     end
 
     if self._resize_grip then
@@ -668,7 +676,7 @@ function rtk.Window:_sync_window_attrs(overrides)
     if not calc.docked then
         if not calc.visible then
             reaper.JS_Window_Show(self.hwnd, 'HIDE')
-            return
+            return 0
         end
         local style = 'SYSMENU,DLGSTYLE,BORDER,THICKFRAME,CAPTION'
         if calc.borderless then
@@ -681,7 +689,9 @@ function rtk.Window:_sync_window_attrs(overrides)
                 --
                 -- Unfortunately this causes a background flicker on Windows that I can't
                 -- seem to hack around.  Mac and Linux are ok though.
-                reaper.JS_Window_Resize(self.hwnd, self.w, self.h)
+                local sw = math.ceil(self.calc.w / self._gfx_win_ratio)
+                local sh = math.ceil(self.calc.h / self._gfx_win_ratio)
+                reaper.JS_Window_Resize(self.hwnd, sw, sh)
             end
             self._resize_grip:show()
         end
@@ -729,26 +739,30 @@ function rtk.Window:_sync_window_attrs(overrides)
                 resized = 1
             end
         end
-        local r, lastx, top, _, _ = reaper.JS_Window_GetRect(self.hwnd)
-        local lasty = self:_get_os_native_y(top)
+        -- Gets the outer box including window frame.
+        local r, lastx, lasty, x2, y2 = reaper.JS_Window_GetClientRect(self.hwnd)
         local moved = r and (self.x ~= lastx or self.y ~= lasty)
+
         if moved or resized ~= 0 then
             local sw, sh = w, h
-            -- JS_Window_SetPosition() requires outer dimensions, not inner content size, so
-            -- unless we're borderless we need to account for the window frame.
-            if not calc.borderless then
+            -- JS_Window_SetPosition() requires outer dimensions, not inner content size,
+            -- so unless we're borderless we need to account for the window frame.  The
+            -- exception is when we're toggling borderless state, where we skip the
+            -- addition to avoid size creep -- except this only applies to Windows for
+            -- some reason.
+            if not calc.borderless and (calc.borderless == self._last_synced_attrs.borderless or not rtk.os.windows) then
                 sw = w + self._os_window_frame_width
                 sh = h + self._os_window_frame_height
             end
-            local sx = x
-            local sy = self:_get_os_native_y(y, h + self._os_window_frame_height)
-            reaper.JS_Window_SetPosition(self.hwnd, sx, sy, sw, sh)
+            sw = math.ceil(sw / self._gfx_win_ratio)
+            sh = math.ceil(sh / self._gfx_win_ratio)
+            reaper.JS_Window_SetPosition(self.hwnd, x, y, sw, sh)
         end
         -- update() only fires onresize when the window resized from external
         -- causes (like the user manually resizing), whereas here we are resizing
         -- due to attribute changes.
         if resized ~= 0 then
-            self:onresize(gfx.w, gfx.h)
+            self:onresize(gfx.w / self._gfx_win_ratio, gfx.h / self._gfx_win_ratio)
             -- Override values from gfx.update() so we don't double-reflow in update()
             gfx.w = w
             gfx.h = h
@@ -759,10 +773,10 @@ function rtk.Window:_sync_window_attrs(overrides)
         -- As with onresize(), we manually fire onmove().
         if moved then
             -- We moved based on self.x/y but we replace the values to ensure they are
-            -- rounded to the nearest pixel.
-            --
-            -- Note that calculated x/y are not set as they are always 0 for windows.
-            self.x, self.y = x, y
+            -- rounded to the nearest pixel. Calculated x/y for rtk.Window is forced to 0,
+            -- but we expose window position via non-calculated variant.
+            self:sync('x', x, nil, nil, 0)
+            self:sync('y', y, nil, nil, 0)
             self:onmove(lastx, lasty)
         end
         reaper.JS_Window_SetOpacity(self.hwnd, 'ALPHA', calc.opacity)
@@ -776,6 +790,7 @@ function rtk.Window:_sync_window_attrs(overrides)
         flags = flags & ~0x00080000 -- WS_EX_LAYERED
         reaper.JS_Window_SetLong(self.hwnd, 'EXSTYLE', flags)
     end
+    self._last_synced_attrs.borderless = calc.borderless
     return resized or 0
 end
 
@@ -817,19 +832,17 @@ function rtk.Window:open(attrs)
     attrs = self:_calc_cell_attrs(self, attrs)
     local x, y, w, h = self:_get_geometry_from_attrs(attrs)
     -- Set current attributes based on initial geometry.
-    self:sync('x', x)
-    self:sync('y', y)
-    self:sync('w', w)
-    self:sync('h', h)
+    self:sync('x', x, nil, nil, 0)
+    self:sync('y', y, nil, nil, 0)
+    self:sync('w', w / self._gfx_win_ratio, nil, nil, w)
+    self:sync('h', h / self._gfx_win_ratio, nil, nil, h)
     local dockstate = self:_get_dockstate_from_attrs()
 
-    -- Correct y coordinate for Mac
-    if rtk.os.mac then
-        local _, _, _, screenh = self:_get_display_resolution()
-        y = screenh - y - h
+    gfx.init(calc.title, self.w, self.h, dockstate, x, y)
+    gfx.update()
+    if gfx.ext_retina == 2 and rtk.os.mac then
+        self._gfx_win_ratio = 2
     end
-    gfx.init(calc.title, w, h, dockstate, x, y)
-
     -- Initialize dock state.
     dockstate, _, _ = gfx.dock(-1, true, true)
     -- After _handle_dock_change(), self.hwnd will be set, and window attrs will be synced.
@@ -870,58 +883,89 @@ function rtk.Window:_setup_borderless()
         -- Already setup
         return
     end
+    -- rtk.callafter(1, function()
+    --     self:attr('x', 500)
+    --     self:attr('y', 100)
+    -- end)
     local calc = self.calc
     -- Use a blank spacer at the top of the window with a low z-index as the
     -- move grip.  ondragstart() will not be invoked if a higher z-level
     -- widget handles the event.
     local move = rtk.Spacer{z=-10000, w=1.0, h=30, touch_activate_delay=0}
-    move.onmousedown = function()
+    move.onmousedown = function(this, event)
+        if not calc.docked and calc.borderless then
+            local _, wx, wy, _, _ = reaper.JS_Window_GetClientRect(self.hwnd)
+            local mx, my = reaper.GetMousePosition()
+            this._drag_start_mx = mx
+            this._drag_start_my = my
+            this._drag_start_wx = wx
+            this._drag_start_wy = wy
+            this._drag_start_ww = gfx.w / self._gfx_win_ratio
+            this._drag_start_wh = gfx.h / self._gfx_win_ratio
+            this._drag_start_dx = mx - wx
+            this._drag_start_dy = my - wy
+        end
         -- Return true to ensure doubleclick fires.
         return true
     end
     move.ondragstart = function(this, event)
-        if not calc.docked and calc.borderless then
-            local _, wx, wy, _, _ = reaper.JS_Window_GetClientRect(self.hwnd)
-            this._drag_start_ex, this._drag_start_ey = event.x, event.y
-            this._drag_start_wx, this._drag_start_wy = wx, wy
-            this._drag_start_ww, this._drag_start_wh = calc.w, calc.h
+        if not calc.docked and calc.borderless and this._drag_start_mx then
             return true
         else
             -- Prevent ondragmousemove from firing.
             return false
         end
     end
+    move.ondragend = function(this, event)
+        this._drag_start_mx = nil
+    end
     move.ondragmousemove = function(this, event)
-        local _, wx, wy, _, _ = reaper.JS_Window_GetClientRect(self.hwnd)
-        local x = wx + (event.x - this._drag_start_ex)
+        local _, wx, wy, _, wy2 = reaper.JS_Window_GetClientRect(self.hwnd)
+        local mx, my = reaper.GetMousePosition()
+        local x = mx - this._drag_start_dx
         local y
         if rtk.os.mac then
-            y = (wy - this._drag_start_wh) - (event.y - this._drag_start_ey)
+            local h = wy - wy2
+            y = my - this._drag_start_dy - h
         else
-            y = wy + (event.y - this._drag_start_ey)
+            y = my - this._drag_start_dy
         end
         if self._unmaximized_geometry then
             -- We're moving a maximized window.  Restore to previous size.
             local _, _, w, h = table.unpack(self._unmaximized_geometry)
             local sx, _, sw, sh = self:_get_display_resolution()
+            -- How many pixels into the window are we.  Unlike mx, event.x is based on gfx
+            -- buffer size so must be adjusted.
+            local xoffset = event.x / self._gfx_win_ratio
             -- Find the same relative position based on new window size
-            local dx = math.ceil((w/this._drag_start_ww) * event.x)
-            x = rtk.clamp(sx + dx, sx, sx + sw - w)
+            local dx = math.ceil(w * xoffset / this._drag_start_ww)
+            x = rtk.clamp(sx + xoffset - dx, sx, sx + sw - w)
             self._unmaximized_geometry = nil
             -- Reset initial drag state based on the restored geometry.
-            this._drag_start_ex = dx
-            this._drag_start_ww, this._drag_start_wh = w, h
-            this._drag_start_wx = x
+            this._drag_start_ww = w
+            this._drag_start_wh = h
+            this._drag_start_dx = dx
+            if rtk.os.mac then
+                -- Recalculate y position given the new window height we are restoring.
+                y = (wy - h) + (my - this._drag_start_my)
+            end
             reaper.JS_Window_SetPosition(self.hwnd, x, y, w, h)
         else
             reaper.JS_Window_Move(self.hwnd, x, y)
         end
     end
     move.ondoubleclick = function(this, event)
-        local x, y, w, h = self:_get_display_resolution()
-        local calc = self.calc
+        if calc.docked or not calc.borderless then
+            return
+        end
+        local x, y, w, h = self:_get_display_resolution(true)
         if self._unmaximized_geometry then
-            if x == self.x and y == self.y and w == calc.w and h == calc.h then
+            -- Heuristic: on Linux, getting the working area of display resolution doesn't
+            -- work, but when we request a window larger, REAPER (or perhaps the WM?)
+            -- snaps it back to fit the working area.  This means we can't check for the
+            -- exact geometry that we set on maximize, so we allow for a 5% tolerance.
+            -- Works on stock Ubuntu 20.04 at least.
+            if math.abs(w - self.w) < w*0.05 and math.abs(h - self.h) < h*0.05 then
                 x, y, w, h = table.unpack(self._unmaximized_geometry)
             end
             self._unmaximized_geometry = nil
@@ -954,13 +998,16 @@ function rtk.Window:_setup_borderless()
             this:animate{attr='alpha', dst=0.4, duration=0.25}
         end
     end
+    resize.onmousedown = move.onmousedown
     resize.ondragstart = move.ondragstart
     resize.ondragmousemove = function(this, event)
-        local x = event.x - this._drag_start_ex
-        local y = event.y - this._drag_start_ey
+        local _, ww, wh = reaper.JS_Window_GetClientSize(self.hwnd)
+        local mx, my = reaper.GetMousePosition()
+        local dx = mx - this._drag_start_mx
+        local dy = (my - this._drag_start_my) * (rtk.os.mac and -1 or 1)
         -- Clamp dimensions so the window can't be resized down to nothing.
-        local w = math.max(self.minw, this._drag_start_ww + x)
-        local h = math.max(self.minh, this._drag_start_wh + y)
+        local w = math.max(self.minw * self._gfx_win_ratio, this._drag_start_ww + dx)
+        local h = math.max(self.minh * self._gfx_win_ratio, this._drag_start_wh + dy)
         reaper.JS_Window_Resize(self.hwnd, w, h)
         -- Immediately paint the background on the expanded area (if any) to avoid
         -- flicker.
@@ -1037,6 +1084,8 @@ function rtk.Window:_get_hwnd()
         local _, l, t, r, b = reaper.JS_Window_GetRect(hwnd)
         self._os_window_frame_width = (r - l) - w
         self._os_window_frame_height = math.abs(b - t) - h
+        self._os_window_frame_width = self._os_window_frame_width * self._gfx_win_ratio
+        self._os_window_frame_height = self._os_window_frame_height * self._gfx_win_ratio
     end
     return hwnd
 end
@@ -1061,12 +1110,14 @@ function rtk.Window:_handle_dock_change(dockstate)
         elseif self._undocked_geometry then
             -- We undocked, so restore the last saved geoemetry.
             local x, y, w, h = table.unpack(self._undocked_geometry)
-            self:sync('x', x)
-            self:sync('y', y)
-            self:sync('w', w)
-            self:sync('h', h)
-            gfx.w = w
-            gfx.h = h
+            local gw = w * self._gfx_win_ratio
+            local gh = h * self._gfx_win_ratio
+            self:sync('x', x, nil, nil, 0)
+            self:sync('y', y, nil, nil, 0)
+            self:sync('w', w, nil, nil, gw)
+            self:sync('h', h, nil, nil, gh)
+            gfx.w = gw
+            gfx.h = gh
         end
     end
     self:_sync_window_attrs()
@@ -1103,6 +1154,21 @@ end
 -- invoke this.
 function rtk.Window:queue_blit()
     self._blits_queued = self._blits_queued + 2
+end
+
+
+-- Whereas rtk.Widget:_get_content_size() determines its size based on self.w/self.h,
+-- rtk.Window's w/h attributes are pre gfxbuffer/window ratio, so we need to adjust for
+-- that.
+--
+-- Moreover, we don't have the luxury of dictating window size.  While we respect
+-- minw and minh in the w/h attribute calculate functions, if _update() has synced
+-- w/h based on actual window geometry, it is what it is.  So we return the calculated
+-- values, which compensate for the gfx-win ratio.
+function rtk.Window:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, scale)
+    local calc = self.calc
+    local tp, rp, bp, lp = self:_get_padding_and_border()
+    return calc.w - lp - rp, calc.h - tp - bp, tp, rp, bp, lp
 end
 
 --- Queues a simulated mousemove event on next update to cause widgets to refresh the
@@ -1210,15 +1276,7 @@ function rtk.Window:_get_mousemove_event(simulated)
 end
 
 local function _get_wheel_distance(v)
-    if rtk.os.mac then
-        -- On Mac, kinetic scrolling seems a bit overzealous, so let's flatten that a
-        -- bit.  XXX: at least in VM testing, need to verify if this is also the case
-        -- with a native system.
-        local direction = v < 0 and 1 or -1
-        return direction * math.sqrt(math.abs(v) / 6)
-    else
-        return -v / 120
-    end
+    return -v / 120
 end
 
 
@@ -1297,24 +1355,27 @@ function rtk.Window:_update()
     -- Sync dock state.  Do this now before reflowing in case the dock state was toggled
     -- such that our size is now different.  We want to reflow immediately with the new
     -- size to prevent a reflow-flicker.
+    --
+    -- gfx.dock() returns client coordinates (i.e. offset within the window border)
+    -- analogous to JS_Window_GetClientRect()
     local dockstate, x, y = gfx.dock(-1, true, true)
     local dock_changed = dockstate ~= self._dockstate
     if dock_changed then
         self:_handle_dock_change(dockstate)
     end
-    y = self:_get_os_native_y(y, gfx.h + self._os_window_frame_height)
     if x ~= self.x or y ~= self.y then
+        local lastx, lasty = self.x, self.y
         -- Note that calc.x/y are not set as they are always 0 for rtk.Windows (in order
         -- for container layout to work).  Instead we just sync the user-facing attributes.
-        local lastx, lasty = self.x, self.y
-        self.x, self.y = x, y
+        self:sync('x', x, nil, nil, 0)
+        self:sync('y', y, nil, nil, 0)
         self:onmove(lastx, lasty)
     end
     if resized and self.visible then
         -- Update both calculated and user-facing attributes for the newly discovered size.
-        local last_w, last_h = calc.w, calc.h
-        self:sync('w', gfx.w)
-        self:sync('h', gfx.h)
+        local last_w, last_h = self.w, self.h
+        self:sync('w', gfx.w / self._gfx_win_ratio, nil, nil, gfx.w)
+        self:sync('h', gfx.h / self._gfx_win_ratio, nil, nil, gfx.h)
         -- Helps to reduce flicker just a tiny bit when the window size expands.
         self:_clear_gdi(calc.w, calc.h)
         self:onresize(last_w, last_h)
@@ -1855,6 +1916,38 @@ end
 -- could be used in certain cases within an @{rtk.Widget.ondraw|ondraw} handler.
 function rtk.Window:clear()
     self._backingstore:clear(self.calc.bg or rtk.theme.bg)
+end
+
+
+--- Returns a normalized version of a screen-level y coordinate.
+--
+-- On Mac, window `y` coordinates are relative to the bottom of the screen, while on
+-- Windows and Linux they are relative to the top.  In other words, on Mac, y=0 represents
+-- the bottom of the screen, while on other platforms it's the top of the screen.
+--
+-- This method returns a normalized version of the `y` attribute so that it's always
+-- relative to the top of the screen, regardless of platform. screen, regardless of the
+-- platform.
+--
+-- @warning Requires extension support
+--   This method requires either the SWS or js_ReaScriptAPI extensions to be present on
+--   the system in order to work, because the display resolution must first be discovered
+--   in order to do the normalization.  If neither are available, then nil will be
+--   returned.
+--
+-- @treturn number|nil the normalized `y` coordinate, or nil if neither SWS nor JS API
+--   was present.
+function rtk.Window:get_normalized_y()
+    if not rtk.has_sws_extension and not rtk.has_js_reascript_api then
+        return
+    end
+    if not rtk.os.mac then
+        return self.y
+    else
+        local _, _, _, sh = self:_get_display_resolution()
+        local offset = gfx.h + self._os_window_frame_height
+        return sh - self.y - offset/self._gfx_win_ratio
+    end
 end
 
 function rtk.Window:_set_touch_scrolling(viewport, state)

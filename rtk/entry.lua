@@ -942,7 +942,7 @@ function rtk.Entry:_rendertext(x, y)
         )
     end
     self:setcolor(self.calc.textcolor)
-    self._font:draw(self.calc.value, -self._loffset, 0)
+    self._font:draw(self.calc.value, -self._loffset, rtk.os.mac and 1 or 0)
     self._backingstore:popdest()
     self._dirty_text = false
 end
@@ -1013,7 +1013,13 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
     if calc.placeholder and #calc.value == 0 then
         self._font:set()
         self:setcolor(rtk.theme.entry_placeholder, alpha)
-        self._font:draw(calc.placeholder, x + lp, y + tp, calc.w - lp, calc.h - tp)
+        self._font:draw(
+            calc.placeholder,
+            x + lp,
+            y + tp + (rtk.os.mac and 1 or 0),
+            calc.w - lp,
+            calc.h - tp
+        )
     end
 
     if focused then

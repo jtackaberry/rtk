@@ -473,7 +473,6 @@ function rtk.queue_animation(kwargs)
         rtk._animations_len = rtk._animations_len + 1
     end
     local step = 1.0 / (rtk.fps * duration)
-    -- rtk.fps=30
     anim = table.shallow_copy(kwargs, {
         easingfunc = easingfunc,
         -- If no step function is provided, we can default src to 0 if nil.

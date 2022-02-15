@@ -77,7 +77,7 @@ local function init()
 
     -- Tweaks based on current platform
     if rtk.os.mac then
-        rtk.font.multiplier = 0.8
+        rtk.font.multiplier = 0.75
     elseif rtk.os.linux then
         rtk.font.multiplier = 0.7
     end

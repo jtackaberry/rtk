@@ -266,7 +266,8 @@ function rtk.Font:layout(s, boxw, boxh, wrap, align, relative, spacing, breakwor
         scale = rtk.scale.value
     }
     align = align or rtk.Widget.LEFT
-    spacing = spacing or 0
+    -- Mac benefits from a bit extra spacing between lines
+    spacing = (spacing or 0) + math.ceil((rtk.os.mac and 3 or 0) * rtk.scale.value)
     -- Common case where the string fits in the box.  But first if the string contains a
     -- newline and we're not wrapping we need to take the slower path.
     if not s:find('\n') then

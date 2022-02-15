@@ -601,7 +601,7 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
     self.clientx, self.clienty = x, y
     listen = self:_should_handle_event(listen)
 
-    if y + calc.h < 0 or y > self.window.h or calc.ghost then
+    if y + calc.h < 0 or y > self.window.calc.h or calc.ghost then
         -- Container is not visible
         return false
     end

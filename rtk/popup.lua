@@ -188,7 +188,7 @@ function rtk.Popup:_realize_geometry()
         -- geometry and our own.  Now that we've reflowed and know our own height, we place
         -- the viewport below the anchor if it fits, otherwise above.
         calc.x = anchor.clientx
-        if anchor.clienty + anchor.calc.h + calc.h < self.window.h then
+        if anchor.clienty + anchor.calc.h + calc.h < self.window.calc.h then
             -- Position viewport below anchor
             calc.y = anchor.clienty + anchor.calc.h
             if calc.width_from_anchor then
@@ -220,7 +220,7 @@ end
 function rtk.Popup:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)
     if self.calc.overlay then
         self:setcolor(self.calc.overlay, alpha)
-        gfx.rect(0, 0, self.window.w, self.window.h, 1)
+        gfx.rect(0, 0, self.window.calc.w, self.window.calc.h, 1)
     end
     -- This is a bit cheeky, and breaks the architecture of rtk (wherein calculated geometry
     -- is expected to be current after reflow), but because we can't ensure we will always be

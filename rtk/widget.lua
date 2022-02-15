@@ -1144,7 +1144,7 @@ function rtk.Widget:_draw_debug_info(event)
     if y - bh >= 0 then
         y = math.max(0, y - bh)
     else
-        y = math.min(y + calc.h, self.window.h - bh)
+        y = math.min(y + calc.h, self.window.calc.h - bh)
     end
 
     rtk.color.set('#ffffff')

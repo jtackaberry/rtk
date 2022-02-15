@@ -298,7 +298,7 @@ local _os = reaper.GetOS():lower():sub(1, 3)
 -- @fullnames
 rtk.os = {
     --- true if running on Mac OS X, false otherwise
-    mac = (_os == 'osx'),
+    mac = (_os == 'osx' or _os == 'mac'),
     --- true if running on Windows, false otherwise
     windows = (_os == 'win'),
     --- true if running on Linux, false otherwise
