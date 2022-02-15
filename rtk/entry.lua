@@ -280,9 +280,9 @@ function rtk.Entry:initialize(attrs, ...)
     self._num_doubleclicks = 0
 end
 
-function rtk.Entry:_handle_attr(attr, value, oldval, trigger, reflow)
+function rtk.Entry:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     local calc = self.calc
-    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
+    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ok == false then
         return ok
     end

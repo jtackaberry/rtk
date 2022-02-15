@@ -150,8 +150,8 @@ function rtk.Application:initialize(attrs, ...)
     self:_handle_attr('status', self.calc.status)
 end
 
-function rtk.Application:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ok = rtk.VBox._handle_attr(self, attr, value, oldval, trigger, reflow)
+function rtk.Application:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ok = rtk.VBox._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ok == false then
         return ok
     end

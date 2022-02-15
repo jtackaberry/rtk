@@ -236,8 +236,8 @@ function rtk.CheckBox:_handle_click(event)
     return ret
 end
 
-function rtk.CheckBox:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ret = rtk.Button._handle_attr(self, attr, value, oldval, trigger, reflow)
+function rtk.CheckBox:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ret = rtk.Button._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ret ~= false then
         if attr == 'value' then
             self.calc.icon = self._value_map[value] or self._value_map[rtk.CheckBox.UNCHECKED]

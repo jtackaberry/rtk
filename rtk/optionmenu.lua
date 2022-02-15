@@ -187,8 +187,8 @@ function rtk.OptionMenu:select(value, trigger)
     return self:attr('selected', value, trigger)
 end
 
-function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ok = rtk.Button._handle_attr(self, attr, value, oldval, trigger, reflow)
+function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ok = rtk.Button._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ok == false then
         return ok
     end

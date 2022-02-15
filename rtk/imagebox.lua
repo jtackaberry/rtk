@@ -101,8 +101,8 @@ function rtk.ImageBox:initialize(attrs, ...)
 end
 
 
-function rtk.ImageBox:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ret = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
+function rtk.ImageBox:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ret = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ret == false then
         return ret
     end

@@ -434,10 +434,12 @@ function rtk.Window:initialize(attrs, ...)
     -- Number of currently scrolling viewports based on calls to _set_touch_scrolling() by
     -- rtk.Viewport, and used to tweak certain event behaviors.
     self._touch_scrolling = {count=0}
+    -- Saved state for _sync_window_attrs()
+    self._last_synced_attrs = {}
 end
 
-function rtk.Window:_handle_attr(attr, value, oldval, trigger)
-    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger)
+function rtk.Window:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ok == false then
         return ok
     end

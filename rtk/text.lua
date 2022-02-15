@@ -198,8 +198,8 @@ function rtk.Text:__tostring_info()
 end
 
 
-function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
+function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ok == false then
         return ok
     end

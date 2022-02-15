@@ -363,8 +363,8 @@ function rtk.Button:__tostring_info()
     return self.label or (self.icon and self.icon.path)
 end
 
-function rtk.Button:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ret = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
+function rtk.Button:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ret = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ret == false then
         return ret
     end

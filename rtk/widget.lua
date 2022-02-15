@@ -1199,15 +1199,19 @@ end
 --   avoided.
 -- @treturn rtk.Widget returns self for method chaining
 function rtk.Widget:attr(attr, value, trigger, reflow)
-    return self:_attr(attr, value, trigger, reflow, false)
+    return self:_attr(attr, value, trigger, reflow, nil, false)
 end
 
 -- XXX: internal function for now while reactives are fleshed out
-function rtk.Widget:sync(attr, value, trigger, reflow)
-    return self:_attr(attr, value, trigger, reflow, true)
+--
+-- calculated forces direct setting of the calculated value, bypassing the attributes
+-- calculate() function.  This can be used to forcefully sync a value that might otherwise
+-- be out of bounds, for example.
+function rtk.Widget:sync(attr, value, trigger, reflow, calculated)
+    return self:_attr(attr, value, trigger, reflow, calculated, true)
 end
 
-function rtk.Widget:_attr(attr, value, trigger, reflow, reactive)
+function rtk.Widget:_attr(attr, value, trigger, reflow, calculated, sync)
     local meta = self.class.attributes.get(attr)
     if value == rtk.Attribute.DEFAULT then
         if meta.default == rtk.Attribute.FUNCTION then
@@ -1228,13 +1232,15 @@ function rtk.Widget:_attr(attr, value, trigger, reflow, reactive)
             self[replaces[i]] = nil
         end
     end
-    local calculated = self:_calc_attr(attr, value, nil, meta)
+    if calculated == nil then
+        calculated = self:_calc_attr(attr, value, nil, meta)
+    end
     -- Use rawequal here to ensure we detect replacement of a reactive when the
     -- underlying value is the same between old and new.
     if not rawequal(value, oldval) or calculated ~= oldcalc or replaces or trigger then
         self[attr] = value
         self:_set_calc_attr(attr, value, calculated, self.calc, meta)
-        self:_handle_attr(attr, calculated, oldcalc, trigger == nil or trigger, reflow)
+        self:_handle_attr(attr, calculated, oldcalc, trigger == nil or trigger, reflow, sync)
     end
     -- Return self to allow chaining multiple attributes
     return self
@@ -2789,12 +2795,15 @@ end
 -- @tparam any oldval the attribute's previous calculated value
 -- @tparam bool trigger if true, we are expected to emit any other
 --   `on*()` handlers even if the value did not actually change.
+-- @tparam bool sync if true, the attribute was set via `sync()`. This implies the
+--   attribute value was set from within the widget in response to a user interaction
+--   as opposed to programmatically.
 -- @treturn bool|nil if false, suppresses the default behavior. Any other
 --   value will execute default behavior.
-function rtk.Widget:onattr(attr, value, oldval, trigger) return true end
+function rtk.Widget:onattr(attr, value, oldval, trigger, sync) return true end
 
-function rtk.Widget:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ok = self:onattr(attr, value, oldval, trigger)
+function rtk.Widget:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ok = self:onattr(attr, value, oldval, trigger, sync)
     if ok ~= false then
         -- Always queue a reflow on attribute change, but only queue a more expensive full
         -- reflow if the rtk.Attribute has marked it for reflow. Otherwise we just request

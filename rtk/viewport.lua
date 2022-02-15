@@ -226,8 +226,8 @@ function rtk.Viewport:initialize(attrs, ...)
 
 end
 
-function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow)
-    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow)
+function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ok == false then
         return ok
     end
