@@ -1276,7 +1276,12 @@ function rtk.Window:_get_mousemove_event(simulated)
 end
 
 local function _get_wheel_distance(v)
-    return -v / 120
+    if rtk.os.mac then
+        -- Mac benefits from a bit more velocity than the other platforms
+        return -v / 90
+    else
+        return -v / 120
+    end
 end
 
 
