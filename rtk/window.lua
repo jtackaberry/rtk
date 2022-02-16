@@ -159,7 +159,8 @@ rtk.Window.register{
     --
     -- Whereas on Windows and Linux the `y` coordinate is relative the top of the screen
     -- (so `y=0` refers to the top edge of the screen), on Mac this is inverted such that
-    -- `y=0` refers to the *bottom* edge of the screen.
+    -- `y=0` refers to the *bottom* edge of the window positioned at the bottom edge of the
+    -- screen.
     --
     -- If you need a consistent representation of the y coordinate, you can use
     -- `rtk.Window:get_normalized_y()`, however this requires either the SWS or
@@ -462,7 +463,7 @@ function rtk.Window:initialize(attrs, ...)
     -- Number of currently scrolling viewports based on calls to _set_touch_scrolling() by
     -- rtk.Viewport, and used to tweak certain event behaviors.
     self._touch_scrolling = {count=0}
-    -- Saved state for _sync_window_attrs()
+    -- Saved state for _sync_window_attrs(), used to detect when attributes have changed.
     self._last_synced_attrs = {}
 end
 
@@ -585,44 +586,54 @@ function rtk.Window:_run()
 end
 
 -- Fetches the resolution of the display where the top left corner of the window appears.
--- Returns {x, y, w, h} where on Mac the y coordinate is normalized such that 0 is top.
+-- Returns {x, y, w, h} of the display, where y is relative to bottom edge on Mac
 function rtk.Window:_get_display_resolution(working)
     -- Here we use user-provided attributes instead of calculated values in case a move was
     -- requested.
-    local x2 = self.x + (self.calc.w or 0)
-    local y2 = self.y + (self.calc.h or 0)
-    local l, t, r, b
-    if rtk.has_js_reascript_api then
-        l, t, r, b = reaper.JS_Window_GetViewportFromRect(self.x, self.y, x2, y2, working or false)
-    elseif rtk.has_sws_extension then
-        l, t, r, b = reaper.BR_Win32_GetMonitorRectFromRect(working or false, self.x, self.y, x2, y2)
-    else
-        return nil, nil
-    end
-    local w = r - l
+    local x = self.x + 5
+    local y = self.y + 5
+    -- This is in fact a native function, despite the odd naming.
+    -- https://forum.cockos.com/showthread.php?t=195629
+    local l, t, r, b = reaper.my_getViewport(0, 0, 0, 0, x, y, x+1, y+1, working and 1 or 0)
     return l, t, r - l, math.abs(b - t)
 end
 
 function rtk.Window:_get_geometry_from_attrs(overrides)
     local x = self.x
     local y = self.y
-    local w = self.w * self._gfx_win_ratio
-    local h = self.h * self._gfx_win_ratio
+    -- Use calculated values here (rather than self.w/h) to ensure we respect minw/minh
+    -- clamping done by those attrs' calculate funcitons.
+    local w = self.calc.w / self._gfx_win_ratio
+    local h = self.calc.h / self._gfx_win_ratio
     if overrides then
         -- This returns nil if the resolution can't be determined.
-        local _, _, sw, sh = self:_get_display_resolution()
+        local sx, sy, sw, sh = self:_get_display_resolution(true)
         if sw and sh then
-            -- FIXME: broken on Mac retina displays. Does not account for display scaling.
-            local _, cw, ch = reaper.JS_Window_GetClientSize(self.hwnd)
             if overrides.halign == rtk.Widget.CENTER then
-                x = (overrides.x or x) + (sw - cw) / 2
+                x = (overrides.x or x) + (sw - w) / 2
             elseif overrides.halign == rtk.Widget.RIGHT then
-                x = (overrides.x or x) + sw - cw
+                x = (overrides.x or x) + sw - w
             end
-            if overrides.valign == rtk.Widget.CENTER then
-                y = (overrides.y or y) + (sh - ch) / 2
-            elseif overrides.valign == rtk.Widget.BOTTOM then
-                y = (overrides.y or y) + sh - ch
+            if rtk.os.mac then
+                if overrides.valign == rtk.Widget.TOP then
+                    y = (overrides.y or y) + (sh - h) + sy
+                elseif overrides.valign == rtk.Widget.CENTER then
+                    y = (overrides.y or y) + (sh - h) / 2 + sy
+                elseif overrides.valign == rtk.Widget.BOTTOM then
+                    y = (overrides.y or y) + sy
+                end
+            else
+                if overrides.valign == rtk.Widget.CENTER then
+                    y = (overrides.y or y) + (sh - h) / 2
+                elseif overrides.valign == rtk.Widget.BOTTOM then
+                    y = (overrides.y or y) + sh - h
+                end
+            end
+            if overrides.constrain then
+                -- TODO: also adjust x/y if this resulting w/h would be less than half the
+                -- requested size.
+                w = math.min(w, sw - x + sx)
+                h = math.min(h, sh - (rtk.os.mac and y-sy-h or y+sy))
             end
         end
     end
@@ -728,6 +739,9 @@ function rtk.Window:_sync_window_attrs(overrides)
         -- Resize/move window and set opacity.
         local x, y, w, h = self:_get_geometry_from_attrs(overrides)
         if not resized then
+            -- Note: On Mac, toggling borderless actually affects the gfx buffer, so
+            -- resized ends up being non-zero when it's toggled.  Windows and Linux
+            -- don't behave this way, gfx buffer does not change.
             if w == gfx.w and h == gfx.h then
                 -- No change to dimensions
                 resized = 0
@@ -742,20 +756,17 @@ function rtk.Window:_sync_window_attrs(overrides)
         -- Gets the outer box including window frame.
         local r, lastx, lasty, x2, y2 = reaper.JS_Window_GetClientRect(self.hwnd)
         local moved = r and (self.x ~= lastx or self.y ~= lasty)
-
-        if moved or resized ~= 0 then
+        local borderless_toggled = calc.borderless ~= self._last_synced_attrs.borderless
+        if moved or resized ~= 0 or borderless_toggled then
             local sw, sh = w, h
             -- JS_Window_SetPosition() requires outer dimensions, not inner content size,
-            -- so unless we're borderless we need to account for the window frame.  The
-            -- exception is when we're toggling borderless state, where we skip the
-            -- addition to avoid size creep -- except this only applies to Windows for
-            -- some reason.
-            if not calc.borderless and (calc.borderless == self._last_synced_attrs.borderless or not rtk.os.windows) then
-                sw = w + self._os_window_frame_width
-                sh = h + self._os_window_frame_height
+            -- so unless we're borderless we need to account for the window frame.
+            if not calc.borderless then
+                sw = w + self._os_window_frame_width/self._gfx_win_ratio
+                sh = h + self._os_window_frame_height/self._gfx_win_ratio
             end
-            sw = math.ceil(sw / self._gfx_win_ratio)
-            sh = math.ceil(sh / self._gfx_win_ratio)
+            sw = math.ceil(sw)
+            sh = math.ceil(sh)
             reaper.JS_Window_SetPosition(self.hwnd, x, y, sw, sh)
         end
         -- update() only fires onresize when the window resized from external
@@ -797,22 +808,22 @@ end
 --- Opens the window and begins the main event loop.  Once called, the application
 -- will continue running until `close()` is called.
 --
--- The `attrs` parameter allows one to control window placement beyond the
--- standard `x` and `y` attributes.  You can think of this as analogous to
--- cell attributes when @{rtk.Container.add|adding widgets to containers} except
--- this applies to the `rtk.Window` at the OS level.
+-- The `options` parameter is an optional table of fields that allows you to influence
+-- placement beyond the standard `x` and `y` attributes. The following options are
+-- currently supported:
 --
--- Currently @{rtk.Widget.halign|halign} and @{rtk.Widget.valign|valign} attributes are
--- supported.  This, as with all special `rtk.Window` functionality, depends on the
--- js_ReaScriptAPI extension being available.  If it's not installed, then the
--- placement attributes will be ignored.
+-- | Attribute | Values | Function |
+-- |-|-|-|
+-- | `halign` | `'left'`, `'center'`, `'right'` | Controls horizontal alignment of the window. `x` offsets from the aligned position. |
+-- | `valign` | `'top`', `'center'`, `'bottom'` | Controls vertical alignment of the window . `y` offsets from the aligned position. |
+-- | `constrain` | `true`, `false` | If true, the window's size will be clamped to prevent it from extending behind the current display |
 --
 -- @code
 --   local window = rtk.Window()
 --   window:open{halign='center', valign='center'}
 --
--- @tparam table|nil attrs an optional table of placement attributes
-function rtk.Window:open(attrs)
+-- @tparam table|nil options an optional table of placement attributes
+function rtk.Window:open(options)
     if self.running or rtk._quit then
         return
     end
@@ -829,19 +840,32 @@ function rtk.Window:open(attrs)
     gfx.ext_retina = 1
     -- Initialize the gfx.clear to the right background color.
     self:_handle_attr('bg', calc.bg or rtk.theme.bg)
-    attrs = self:_calc_cell_attrs(self, attrs)
-    local x, y, w, h = self:_get_geometry_from_attrs(attrs)
-    -- Set current attributes based on initial geometry.
+
+    options = self:_calc_cell_attrs(self, options)
+    local x, y, w, h = self:_get_geometry_from_attrs(options)
+    -- Set current attributes based on initial geometry.  Pass calculated values for x/y
+    -- because we know they need to be pinned to 0.
     self:sync('x', x, nil, nil, 0)
     self:sync('y', y, nil, nil, 0)
-    self:sync('w', w / self._gfx_win_ratio, nil, nil, w)
-    self:sync('h', h / self._gfx_win_ratio, nil, nil, h)
+    -- Intentionally don't set calculated versions here to allow w/h attr calculate
+    -- functions to clamp.
+    self:sync('w', w)
+    self:sync('h', h)
     local dockstate = self:_get_dockstate_from_attrs()
-
-    gfx.init(calc.title, self.w, self.h, dockstate, x, y)
+    -- Use calculated width/height here so that we respect any minw/minh clamping done by
+    -- the calculate functions.  At this point, _gfx_win_ratio is always 1, so we don't
+    -- need to worry about adjusting calc.w/h.  In other words, it's basically like
+    -- self.w/h except clamped.
+    gfx.init(calc.title, calc.w, calc.h, dockstate, x, y)
     gfx.update()
     if gfx.ext_retina == 2 and rtk.os.mac then
+        -- This is a retina display, which means client window geometry is half the gfx
+        -- buffer.
         self._gfx_win_ratio = 2
+        -- Directly update calculated attributes now to avoid triggering onresize on next
+        -- _update().
+        self.calc.w = calc.w * 2
+        self.calc.h = calc.h * 2
     end
     -- Initialize dock state.
     dockstate, _, _ = gfx.dock(-1, true, true)
