@@ -21,12 +21,17 @@ local log = require('rtk.log')
 -- attributes (`x`, `y`, `w`, `h`), which normally affects widget layout, here moves and
 -- resizes the actual window.  Similarly, `bg` sets the window's overall background color.
 --
--- A considerable amount of functionality (particularly the ability to modify the window
--- after it has opened) depends on the js_ReaScriptAPI extension. rtk itself doesn't
--- *require* the extension however, so just be aware when you use some functionality that
--- depends on it (which will be clearly explained in the APIs below).  You will need to be
--- cognizant of whether you want to impose the js_ReaScriptAPI requirement on users of
--- your script based on the dependent functionality you use.
+-- Windows can be either docked or undocked (floating), which is controlled by the `docked`
+-- attribute, and which can be changed dynamically.  Most of `rtk.Window`'s attributes
+-- don't apply to docked windows: geometry (`x`, `y`, `w`, `h`), `borderless`, `opacity`, etc.
+-- are only respected when the window is undocked.
+--
+-- Moreover, a considerable amount of functionality (particularly the ability to modify
+-- the window after it has opened) depends on the js_ReaScriptAPI extension. rtk itself
+-- doesn't *require* the extension however, so just be aware when you use some
+-- functionality that depends on it (which will be clearly explained in the APIs below).
+-- You will need to be cognizant of whether you want to impose the js_ReaScriptAPI
+-- requirement on users of your script based on the dependent functionality you use.
 --
 -- Due to REAPER's design there can only be one `rtk.Window` per script.
 --
@@ -37,10 +42,7 @@ local log = require('rtk.log')
 --  -- This works exactly like any other rtk.Container: this will add the
 --  -- text widget and center it within the window.
 --  window:add(rtk.Text{'Hello world!'}, {halign='center', valign='center'})
---  -- Now open the window which itself is top-center on the screen.  This window
---  -- positioning functionality depends on js_ReaScriptAPI and is a no-op if
---  -- it's not available (i.e. the window will open wherever REAPER or the OS
---  -- chooses to place it).
+--  -- Now open the window which itself is top-center on the screen.
 --  window:open{halign='center', valign='top'}
 --
 -- ### Closing the Window
@@ -102,8 +104,8 @@ rtk.Window.static.DOCK_RIGHT =  (function() return {3} end)()
 rtk.Window.static.DOCK_FLOATING =  (function() return {4} end)()
 
 function rtk.Window.static._make_icons()
-    -- TODO: support different scales
-    -- Total dimensions of icon
+    -- Total dimensions of icon.  This is good enough even with scaling, because
+    -- the icon is just a bunch of little squares, which scales up fairly cleanly.
     local w, h = 12, 12
     -- Size of dots and distance between them
     local sz = 2
@@ -220,7 +222,8 @@ rtk.Window.register{
         end,
     },
 
-    --- Sets the visibility of the detached window when undocked (default true).
+    --- Sets the visibility of the detached window when undocked (default true).  This
+    -- atribute is ignored when docked.
     --
     -- This requires the js_ReaScriptAPI extension to be available in order to work,
     -- otherwise setting this is a no-op.  This attribute can be set directly, or you can
@@ -267,7 +270,8 @@ rtk.Window.register{
         reflow=rtk.Widget.REFLOW_NONE,
     },
     --- If true, undocked windows will be pinned (i.e. they are always on top) and
-    -- if false the window ordering works as usual (default false).
+    -- if false the window ordering works as usual (default false).  This attribute
+    -- is ignored when docked.
     --
     -- This requires js_ReaScriptAPI extension to work and without it is always false.
     --
@@ -293,6 +297,8 @@ rtk.Window.register{
         end,
     },
     --- If true, undocked windows will not show the OS-native window frame (default false).
+    -- This attribute is ignored when docked.
+    --
     -- When borderless, a resize grip will be shown on the bottom right corner of the
     -- window to allow the window to be resizable, and also if the user clicks and drags
     -- along the top edge of the window it can be moved.
@@ -313,7 +319,7 @@ rtk.Window.register{
 
     [1] = rtk.Attribute{alias='title'},
     --- The title of the window shown in the OS-native window frame (default "REAPER
-    -- Application").
+    -- Application"). This attribute is ignored when docked.
     --
     -- Setting after `open()` is called requires the js_ReaScriptAPI extension, otherwise
     -- the change is ignored.
@@ -328,7 +334,7 @@ rtk.Window.register{
         window_sync=true,
     },
     --- The opacity of the full window at the OS level, which affects how the window is
-    -- composited by the OS (default 1.0).
+    -- composited by the OS (default 1.0). This attribute is ignored when docked.
     --
     -- This is distinct from `alpha`, which affects how all widgets within the window are
     -- blended on top of the @{rtk.Widget.bg|background color}, because `opacity` can make
