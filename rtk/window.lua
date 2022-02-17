@@ -590,11 +590,11 @@ end
 function rtk.Window:_get_display_resolution(working)
     -- Here we use user-provided attributes instead of calculated values in case a move was
     -- requested.
-    local x = self.x + 5
-    local y = self.y + 5
+    local x = self.x
+    local y = self.y
     -- This is in fact a native function, despite the odd naming.
     -- https://forum.cockos.com/showthread.php?t=195629
-    local l, t, r, b = reaper.my_getViewport(0, 0, 0, 0, x, y, x+1, y+1, working and 1 or 0)
+    local l, t, r, b = reaper.my_getViewport(0, 0, 0, 0, x, y, x+self.w, y+self.h, working and 1 or 0)
     return l, t, r - l, math.abs(b - t)
 end
 
@@ -630,10 +630,10 @@ function rtk.Window:_get_geometry_from_attrs(overrides)
                 end
             end
             if overrides.constrain then
-                -- TODO: also adjust x/y if this resulting w/h would be less than half the
-                -- requested size.
-                w = math.min(w, sw - x + sx)
-                h = math.min(h, sh - (rtk.os.mac and y-sy-h or y+sy))
+                x = rtk.clamp(x, sx, sx + sw - w)
+                y = rtk.clamp(y, sy, sy + sh - h)
+                w = rtk.clamp(w, self.calc.minw, sw - x + sx)
+                h = rtk.clamp(h, self.calc.minh, sh - (rtk.os.mac and y-sy-h or y+sy))
             end
         end
     end
@@ -816,7 +816,7 @@ end
 -- |-|-|-|
 -- | `halign` | `'left'`, `'center'`, `'right'` | Controls horizontal alignment of the window. `x` offsets from the aligned position. |
 -- | `valign` | `'top`', `'center'`, `'bottom'` | Controls vertical alignment of the window . `y` offsets from the aligned position. |
--- | `constrain` | `true`, `false` | If true, the window's size will be clamped to prevent it from extending behind the current display |
+-- | `constrain` | `true`, `false` | If true, the window's initial geometry will be modified to ensure the window fits within the current display.  On multi-display systems, "current display" is the display which contains most of the window's rectangle. |
 --
 -- @code
 --   local window = rtk.Window()
