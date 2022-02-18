@@ -2,19 +2,6 @@
 <index version="1" name="rtk" desc="REAPER Toolkit (rtk)">
   <category name="Development">
     <reapack name="rtk" desc="REAPER Toolkit (rtk)" type="script">
-      <version name="1.0.0" author="Jason Tackaberry" time="2022-02-17T01:38:35Z">
-        <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220217T013834/1/rtk.lua</source>
-        <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
-
-# 1.0.0
-
-No changes to this API version in this release.
-
-
-
-For a complete historical change log, visit https://reapertoolkit.dev/changelog
-]]></changelog>
-      </version>
       <metadata>
         <description><![CDATA[{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang1033\deflangfe2052{\fonttbl{\f0\fswiss\fprq2\fcharset0 Arial;}{\f1\fnil\fcharset2 Symbol;}}
 {\colortbl ;\red0\green0\blue0;\red0\green0\blue255;\red17\green85\blue204;}
