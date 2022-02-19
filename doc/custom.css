@@ -2,6 +2,23 @@ dd img {
     padding-left: 2em;
 }
 
+pre.language-url {
+    display: inline-block;
+    padding: 1em 1em;
+    border-radius: 0.5em;
+    font-weight: bold;
+    font-size: 110%;
+}
+
+span.api {
+    font-size: 80%;
+    opacity: 0.5;
+}
+
+span.api span {
+    padding: 0 0.7em;
+}
+
 h2#rtk\.mouse\.cursors + div.inner img {
     content:url();
     width: 32px;

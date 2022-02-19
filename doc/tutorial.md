@@ -16,32 +16,29 @@ browse the API documentation to the left for the real meat.
 
 ## Loading the library
 
-rtk is bundled as a single `rtk.lua` file which you can distribute with your script.
+The easiest way to get started is to @{index.1_reapack|install rtk via ReaPack}.  This
+tutorial assumes you have done that.
 
 You load the library via `require()`, which, as usual for Lua, searches `package.path`
 for the file.  REAPER famously does not setup `package.path` to anything particularly
 useful, so your entrypoint script (the one directly executed by a REAPER action)
 will need to initialize `package.path`.
 
-This example sets `package.path` to search the directory that holds the entrypoint
-script, and imports rtk:
+This example sets `package.path` to the location where rtk will be installed with the ReaPack:
 
 ```lua
--- Set package path to search within directory containing current script.
-local path = ({reaper.get_action_context()})[2]:match('^.+[\\//]')
-package.path = string.format('%s?.lua;%s?/init.lua', path, path)
-
--- Import rtk
+-- Set package path to find rtk installed via ReaPack
+package.path = reaper.GetResourcePath() .. '/Scripts/rtk/1/?.lua'
+-- Load the package
 local rtk = require('rtk')
 -- Set the module-local log variable for more convenient logging.  Throughout
 -- this tutorial we will assume both rtk and log variables have been set.
 local log = rtk.log
 ```
 
-Setting `package.path` only needs to be done once by your entrypoint script.
-Once you've done that, you can `require()` other files (say if your application
-is spread across multiple files), and those other files can `require('rtk')`
-without needing to touch `package.path` again.
+A lot more information can be found on the @{loading|loading rtk} page, but for now you're
+ready to execute any of the examples in this tutorial and throughout the
+documentation.
 
 ## Widgets
 
@@ -373,7 +370,7 @@ Now that we've covered the fundamentals, let's build a simple (if admittedly con
 script that provides a button to append a new track, with a settings screen to allow
 toggling borderless window.
 
-We'll assume you've already @{tutorial.loading_the_library|imported rtk as described above}.
+We'll assume you've already @{tutorial.loading_the_library|loaded rtk as described above}.
 The code below reads in sequence, with periodic breaks for commentary, but if you assembled
 all the code blocks below into one file, it would execute.
 
