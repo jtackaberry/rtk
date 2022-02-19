@@ -25,7 +25,7 @@ There are a couple different methods to install rtk:
 |-|-|-|
 | User | ReaPack | You want to use a script that requires a system-wide install of rtk. The script's documentation will indicate this, or may direct you to this site when you run it. |
 | Developer | ReaPack | Easiest method to get started. You don't want to have to distribute rtk (which is fairly sizable) along with your script, and you're comfortable asking your users to install the ReaPack for rtk. Ideal for quick, single-file scripts. |
-| Developer | Bundle | Maximum control. You want to minimize the prerequisite steps for your script, or you want the most assurance that what you tested is what your uses will be running. |
+| Developer | Bundle | Maximum control. You want to minimize the prerequisite steps for your script, or you want the most assurance that what you tested is what your users will be running. |
 
 Developers, you can learn more about these options on the @{loading|Loading rtk} page.
 
@@ -83,13 +83,13 @@ The [SWS](https://www.sws-extension.org/) and
 [js_ReaScriptAPI](https://forum.cockos.com/showthread.php?t=212174) extensions are
 recommended but not required.  rtk will work with either or both, and when present much
 more functionality is available.  The APIs are appropriately documented when an extension
-is required, and it's up to you as a script author to use or avoid these APIs, and if
-necessary pass along the extension requirement(s) to your users.
+is required, and it's up to you as a script author to pass along the extension
+requirement(s) to your users should you use any APIs that depend upon them.
 
 
 ## Hello World
 
-Here's a simple example to give you a flavor of what rtk looks like:
+Here's a simple example to give you a flavor of what coding with rtk looks like:
 
 ```lua
 -- Set package path to find rtk installed via ReaPack
