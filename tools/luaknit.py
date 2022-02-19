@@ -177,6 +177,8 @@ def main():
     p.add_argument('-c', '--comment', type=str, metavar='COMMENT',
                    default='This is generated code.',
                    help='Top-of-file comment (\\n is interpreted as newline)')
+    p.add_argument('-p', '--preamble', type=str, metavar='PREAMBLE',
+                   help='Top-of-file preamble global scope code (\\n is interpreted as newline)')
     p.add_argument('-o', '--output', type=str, metavar='FILE',
                    default='-',
                    help='Filename to write generated code to (- for stdout)')
@@ -185,6 +187,8 @@ def main():
     args = p.parse_args()
     args.comment = args.comment.replace('\\n', '\n')
     out = ['-- {}\n'.format(line) for line in args.comment.splitlines()]
+    if args.preamble:
+        out.extend(['{}\n'.format(line) for line in args.preamble.splitlines()])
 
     return_symbol = None
     for f in args.files:
