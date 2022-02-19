@@ -1247,4 +1247,83 @@ function rtk.quit()
     rtk._quit = true
 end
 
+
+--- rtk.version.
+--
+-- Information about the currently loaded rtk version.
+--
+-- If you're interested in checking REAPER's version rather than rtk's, see
+-- `rtk.check_reaper_version()`
+--
+-- @section rtk.version
+-- @scope rtk.version
+-- @compact fields
+
+rtk.version = {
+    -- Default API version when executing directly from source tree (for development).
+    -- If the __RTK_VERSION global exists (which is injected during build) then it
+    -- takes precedence.
+    _DEFAULT_API = 1,
+
+    --- The stringified version of this rtk package, e.g. `1.2.5`.
+    -- @type string
+    -- @meta read-only
+    string = nil,
+
+    --- The API version number.  If the rtk version is `1.2.5` then this value is `1`. See
+    -- [here](https://reapertoolkit.dev/loading.html#api_versions) for more details on API
+    -- versioning.
+    -- @type number
+    -- @meta read-only
+    api = nil,
+
+    --- The major version number.  This is identical to `api`.
+    -- @type number
+    -- @meta read-only
+    major = nil,
+
+    --- The minor version number.  If the rtk version is `1.2.5` then this value is `2`.
+    -- @type number
+    -- @meta read-only
+    minor = nil,
+
+    --- The patch version number.  If the rtk version is `1.2.5` then this value is `5`.
+    -- @type number
+    -- @meta read-only
+    patch = nil,
+}
+
+-- Internal function to parse __RTK_VERSION, called from init().
+function rtk.version.parse()
+    -- If __RTK_VERSION is nil then we're running directly from source.  Use a dummy
+    -- version while preserving default API Version.
+    local ver = __RTK_VERSION or string.format('%s.99.99', rtk.version._DEFAULT_API)
+    local parts = ver:split('.')
+    rtk.version.major = tonumber(parts[1])
+    rtk.version.minor = tonumber(parts[2])
+    rtk.version.patch = tonumber(parts[3])
+    rtk.version.api = rtk.version.major
+    rtk.version.string = ver
+end
+
+--- Checks the current rtk version against the given version component numbers.
+--
+-- @usage
+--   if rtk.version.check(1, 2) then
+--       return reaper.MB('rtk version 1.2 is required', 'Version too old', 0)
+--   end
+--
+-- @tparam number major require at least this major (i.e. API) version
+-- @tparam number|nil minor require at least this minor version, provided the major version is
+--   satisfied.  If nil, minor version is not checked and patch must also be nil.
+-- @tparam number|nil patch require at least this patch level, provided both major and minor
+--   versions are satisfied. If nil, patch level is not checked.
+-- @treturn bool true if the current rtk version is at least as new as the given version
+function rtk.version.check(major, minor, patch)
+    local v = rtk.version
+    return v.major > major or
+           (v.major == major and (not minor or v.minor > minor)) or
+           (v.major == major and v.minor == minor and (not patch or v.patch >= patch))
+end
+
 return rtk

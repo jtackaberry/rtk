@@ -75,6 +75,9 @@ local function init()
     -- Normalize 3-digit minor versions
     rtk._reaper_version_minor = minor < 100 and minor or minor/10
 
+    -- Parse rtk's own version
+    rtk.version.parse()
+
     -- Tweaks based on current platform
     if rtk.os.mac then
         rtk.font.multiplier = 0.75
