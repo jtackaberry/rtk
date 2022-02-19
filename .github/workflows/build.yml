@@ -22,7 +22,7 @@ jobs:
       - name: Build rtk
         run: |
           mkdir -p build/dist/${{env.major}}
-          python3 tools/luaknit.py rtk=rtk/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: ${{env.tag}}\nbuild: $(date)" > build/dist/${{env.major}}/rtk.lua
+          python3 tools/luaknit.py rtk=rtk/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: ${{env.tag}}\nbuild: $(date)"  -p "__RTK_VERSION='${{env.tag}}'" > build/dist/${{env.major}}/rtk.lua
           ls -l build/dist/${{env.major}}/rtk.lua
       - name: Pull changes for ${{env.tag}} from change log
         run: |
