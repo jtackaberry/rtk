@@ -1,6 +1,7 @@
 -- This is generated code. See https://reapertoolkit.dev/ for more info.
 -- version: 1.0.0
--- build: Thu Feb 17 01:38:18 UTC 2022
+-- build: Sat Feb 19 01:55:46 UTC 2022
+__RTK_VERSION='1.0.0'
 rtk=(function()
 __mod_rtk_core=(function()
 __mod_rtk_log=(function()
@@ -216,6 +217,13 @@ function rtk.quit()if rtk.window and rtk.window.running then
 rtk.window:close()end
 rtk._quit=true
 end
+rtk.version={_DEFAULT_API=1,string=nil,api=nil,major=nil,minor=nil,patch=nil,}function rtk.version.parse()local ver=__RTK_VERSION or string.format('%s.99.99', rtk.version._DEFAULT_API)local parts=ver:split('.')rtk.version.major=tonumber(parts[1])rtk.version.minor=tonumber(parts[2])rtk.version.patch=tonumber(parts[3])rtk.version.api=rtk.version.major
+rtk.version.string=ver
+end
+function rtk.version.check(major,minor,patch)local v=rtk.version
+return v.major>major or
+(v.major==major and(not minor or v.minor>minor))or
+(v.major==major and v.minor==minor and(not patch or v.patch>=patch))end
 return rtk
 end)()
 
@@ -5272,7 +5280,7 @@ local parts=ver:gsub('/.*', ''):split('.')rtk._reaper_version_major=tonumber(par
 rtk._reaper_version_prerelease=minor:sub(sepidx):gsub('^%+', '')minor=minor:sub(1,sepidx-1)end
 minor=tonumber(minor)or 0
 rtk._reaper_version_minor=minor<100 and minor or minor/10
-if rtk.os.mac then
+rtk.version.parse()if rtk.os.mac then
 rtk.font.multiplier=0.75
 elseif rtk.os.linux then
 rtk.font.multiplier=0.7
