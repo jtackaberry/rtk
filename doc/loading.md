@@ -5,10 +5,10 @@ First, a word about how rtk approaches versioning ...
 
 
 Releases are versioned according to [semantic
-versioning](https://en.wikipedia.org/wiki/Software_versioning), and takes the following
+versioning](https://en.wikipedia.org/wiki/Software_versioning), and applies the following
 philosophy:
 
- 1. The API of major versions are forward-compatible with minor or patch releases within the same major version
+ 1. The API of major versions are backward-compatible with minor or patch releases within the same major version
     * For example, if you develop a script against rtk v1.1.5, if the user has v1.5.9 installed, your script will continue to work
     * Because of this, the major rtk version is called the **API version**
  1. Although breaking the API is generally avoided, it's sometimes necessary for proper design
