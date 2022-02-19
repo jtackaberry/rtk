@@ -231,7 +231,19 @@ local _wrap_characters = {
 --       log.info('line %d: %s,%s %sx%s: %s', n, x, y, w, h, line)
 --   end
 --
--- @tparam string s the string to layout
+-- The returned table contains positional elements for each computed line segment, in
+-- the form `{line, x, y, w, h}` (as described below), but the table also holds a number
+-- of fields.  All of the arguments passed to this method are included in the returned table
+-- as named fields, plus:
+--
+-- | Field | Type | Description |
+-- |-|-|-|
+-- | `multiplier` | number | The value of `rtk.font.multiplier` at the time of layout |
+-- | `scale` | number | The value of `rtk.scale.value` at the time of layout |
+-- | `isvalid()` | function | Returns false if either `rtk.font.multiplier` or `rtk.scale.value` have changed since layout, or if `dirty` is true. Otherwise returns true to indicate the computed segments are still valid. |
+-- | `dirty` | bool | Initialized to false, but you can set this to `true` afterward to induce `isvalid()` to return false |
+--
+-- @tparam string text the string to layout
 -- @tparam number boxw the width constraint for the laid out string
 -- @tparam number|nil boxh the height constraint for the laid out string (not currently used)
 -- @tparam bool|nil wrap if true, the string will be wrapped so as not to overflow `boxw`
@@ -253,27 +265,32 @@ local _wrap_characters = {
 -- @treturn number the calculated width of the string, which is guaranteed to be less
 --   than `boxw` if (and only if) `wrap` is true.
 -- @treturn number the calculated height of the string when rendered (which includes `spacing`)
-function rtk.Font:layout(s, boxw, boxh, wrap, align, relative, spacing, breakword)
+function rtk.Font:layout(text, boxw, boxh, wrap, align, relative, spacing, breakword)
     self:set()
     local segments = {
-        text = s,
+        text = text,
         boxw = boxw,
         boxh = boxh,
         wrap = wrap,
         align = align,
         relative = relative,
         spacing = spacing,
-        scale = rtk.scale.value
+        multiplier = rtk.font.multiplier,
+        scale = rtk.scale.value,
+        dirty = false,
+        isvalid = function()
+            return not self.dirty and self.scale == rtk.scale.value and self.multiplier == rtk.font.multiplier
+        end
     }
     align = align or rtk.Widget.LEFT
     -- Mac benefits from a bit extra spacing between lines
     spacing = (spacing or 0) + math.ceil((rtk.os.mac and 3 or 0) * rtk.scale.value)
     -- Common case where the string fits in the box.  But first if the string contains a
     -- newline and we're not wrapping we need to take the slower path.
-    if not s:find('\n') then
-        local w, h = gfx.measurestr(s)
+    if not text:find('\n') then
+        local w, h = gfx.measurestr(text)
         if w <= boxw or not wrap then
-            segments[1] = {s, 0, 0, w, h}
+            segments[1] = {text, 0, 0, w, h}
             return segments, w, h
         end
     end
@@ -292,7 +309,7 @@ function rtk.Font:layout(s, boxw, boxh, wrap, align, relative, spacing, breakwor
     end
 
     if not wrap then
-        for n, line in ipairs(s:split('\n')) do
+        for n, line in ipairs(text:split('\n')) do
             if #line > 0 then
                 addsegment(line)
             else
@@ -302,16 +319,16 @@ function rtk.Font:layout(s, boxw, boxh, wrap, align, relative, spacing, breakwor
     else
         local startpos = 1
         local wrappos = 1
-        local len = s:len()
+        local len = text:len()
         for endpos = 1, len do
-            local substr = s:sub(startpos, endpos)
-            local ch = s:sub(endpos, endpos)
+            local substr = text:sub(startpos, endpos)
+            local ch = text:sub(endpos, endpos)
             local w, h = gfx.measurestr(substr)
             if _wrap_characters[ch] then
                 wrappos = endpos
             end
             if w > boxw or ch == '\n' then
-                local wrapchar = _wrap_characters[s:sub(wrappos, wrappos)]
+                local wrapchar = _wrap_characters[text:sub(wrappos, wrappos)]
                 -- If we're allowed to break words and the current wrap position is not a
                 -- wrap character (which can happen when breakword is true and we're
                 -- forced to wrap at a non-break character to fit in boxw) then we throw
@@ -321,7 +338,7 @@ function rtk.Font:layout(s, boxw, boxh, wrap, align, relative, spacing, breakwor
                     wrappos = endpos - 1
                 end
                 if wrappos > startpos and (breakword or wrapchar) then
-                    addsegment(s:sub(startpos, wrappos):strip())
+                    addsegment(text:sub(startpos, wrappos):strip())
                     startpos = wrappos + 1
                     wrappos = endpos
                 elseif ch == '\n' then
@@ -332,7 +349,7 @@ function rtk.Font:layout(s, boxw, boxh, wrap, align, relative, spacing, breakwor
         end
         if startpos <= len then
             -- Add the remaining segment at the tail end.
-            addsegment(string.strip(s:sub(startpos, len)))
+            addsegment(string.strip(text:sub(startpos, len)))
         end
     end
     if align == rtk.Widget.CENTER then

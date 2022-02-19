@@ -205,7 +205,7 @@ function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     end
     if self._segments and (attr == 'text' or attr == 'wrap' or attr == 'textalign' or attr == 'spacing') then
         -- Force regeneration of segments on next reflow
-        self._segments.invalid = true
+        self._segments.dirty = true
     end
     return ok
 end
@@ -223,7 +223,7 @@ function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, 
     local lmaxh = (clamph or fillh) and (boxh - vpadding) or h or math.inf
     -- Avoid re-laying out the string if nothing relevant has changed.
     local seg = self._segments
-    if not seg or seg.boxw ~= lmaxw or seg.invalid or rtk.scale.value ~= seg.scale then
+    if not seg or seg.boxw ~= lmaxw or not seg.isvalid() then
         self._segments, self.lw, self.lh = self._font:layout(
             calc.text,
             lmaxw, lmaxh,

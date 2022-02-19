@@ -370,7 +370,7 @@ function rtk.Button:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     end
     if self._segments and (attr == 'wrap' or attr == 'label') then
         -- Force regeneration of segments on next reflow
-        self._segments.invalid = true
+        self._segments.dirty = true
     end
     if type(self.icon) == 'string' and (attr == 'color' or attr == 'label') then
         -- We're (potentially) changing the color but, because the user-provided attribute
@@ -394,7 +394,7 @@ function rtk.Button:_reflow_get_max_label_size(boxw, boxh)
     -- Avoid re-laying out the string if nothing relevant has changed.
     local calc = self.calc
     local seg = self._segments
-    if seg and seg.boxw == boxw and seg.wrap == calc.wrap and not seg.invalid and rtk.scale.value == seg.scale then
+    if seg and seg.boxw == boxw and seg.wrap == calc.wrap and seg:isvalid() then
         return self._segments, self.lw, self.lh
     else
         return self._font:layout(calc.label, boxw, boxh, calc.wrap)

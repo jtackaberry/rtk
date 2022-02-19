@@ -604,7 +604,8 @@ rtk.font = {
     ITALICS = FONT_FLAG_ITALICS,
     --- Font flag for underlined text
     UNDERLINE = FONT_FLAG_UNDERLINE,
-    --- Global font size multiplier, automatically adjusted by platform
+    --- Global font size multiplier, automatically adjusted by platform. You'll need to call
+    -- `rtk.Window:queue_reflow()` after changing this value.
     multiplier = 1.0
 }
 
