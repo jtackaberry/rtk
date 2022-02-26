@@ -638,8 +638,8 @@ function rtk.Window:_get_geometry_from_attrs(overrides)
             if overrides.constrain then
                 x = rtk.clamp(x, sx, sx + sw - w)
                 y = rtk.clamp(y, sy, sy + sh - h)
-                w = rtk.clamp(w, self.calc.minw, sw - x + sx)
-                h = rtk.clamp(h, self.calc.minh, sh - (rtk.os.mac and y-sy-h or y+sy))
+                w = rtk.clamp(w, self.calc.minw, sw - (x - sx))
+                h = rtk.clamp(h, self.calc.minh, sh - (rtk.os.mac and y-sy-h or y-sy))
             end
         end
     end
