@@ -2,6 +2,26 @@
 <index version="1" name="rtk" desc="REAPER Toolkit (rtk)">
   <category name="Development">
     <reapack name="rtk" desc="REAPER Toolkit (rtk)" type="script">
+      <version name="1.1.0" author="Jason Tackaberry" time="2022-02-28T23:46:20Z">
+        <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220228T234618/1/rtk.lua</source>
+        <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
+
+# 1.1.0
+
+## New Features
+
+* Added rtk.scale.framebuffer, which indicates the ratio of the internal gfx frame buffer to the OS window geometry
+
+## Bug Fixes
+
+* Fixed widgets not properly respecting changes to rtk.font.multiplier on reflow
+* Fixed window height clamping on Windows and Linux when rtk.Window:open() is called with constrain option
+* When setting the rtk.Window.w or rtk.Window.h attribute, fixed a bug where the other dimension would end up being halved on MacOS systems with Retina displays
+
+
+For a complete historical change log, visit https://reapertoolkit.dev/changelog
+]]></changelog>
+      </version>
       <version name="1.0.0" author="Jason Tackaberry" time="2022-02-19T01:56:03Z">
         <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220219T015602/1/rtk.lua</source>
         <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
