@@ -201,10 +201,10 @@ rtk.scale = setmetatable({
     user = nil,
     -- Internal value behind the 'user' proxy
     _user = 1.0,
-    --- Scale factor determined by the system.  On retina displays, this value will be `2.0`.
-    -- On Windows, with variable scale, this can be an arbitrary factor and updates in real
-    -- time as the system global scale is modified.  This value is only known after
-    -- `rtk.Window:open()` is called, and will be `nil` before then.
+    -- Scale factor determined by the system.  On Apple Retina displays, this value will
+    -- be `2.0`. On Windows, with variable scale, this can be an arbitrary factor and
+    -- updates in real time as the system global scale is modified.  This value is only
+    -- known after `rtk.Window:open()` is called, and will be `nil` before then.
     -- @type number
     -- @meta read-only
     system = nil,
@@ -214,6 +214,27 @@ rtk.scale = setmetatable({
     -- @type number
     -- @meta read-only
     reaper = 1.0,
+    --- The scale factor of the internal graphics frame buffer relative to the OS window
+    -- geometry. On Windows and Linux this is generally `1.0`, but on MacOS retina
+    -- displays it's `2.0`, indicating that `rtk.Window.w` and `rtk.Window.h` (which
+    -- represent the OS window size) will result in an internal graphics buffer that's
+    -- `rtk.scale.framebuffer` times bigger.  See `rtk.Window.w` for more information.
+    --
+    -- This is distinct from `rtk.scale.system`, which indicates the OS-defined scale
+    -- factor independent of the internal graphics buffer.  For example, on Windows with a
+    -- 200% scale (so-called High DPI), `rtk.scale.system` will be `2.0` while
+    -- `rtk.scale.framebuffer` remains `1.0`, indicating the OS window size is the same as
+    -- the internal framebuffer size.  Meanwhile, on MacOS Retina displays, both the
+    -- values will be `2.0`.  In other words, when converting between OS window geometry
+    -- and the calculated size of rtk widgets, you must adjust by `rtk.scale.framebuffer`,
+    -- not `rtk.scale.system`.
+    --
+    -- This value is only known after `rtk.Window:open()` is called, and will be nil
+    -- before that time.
+    --
+    -- @type number
+    -- @meta read-only
+    framebuffer = nil,
     --- The final calculated scale factor to which all UI elements scale themselves.  This is
     -- calculated as `user` * `system` * `reaper`.  Because `rtk.scale.system` is not known until
     -- after the window is open, this calculated value is also therefore not valid until that time.

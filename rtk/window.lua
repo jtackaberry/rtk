@@ -193,6 +193,7 @@ rtk.Window.register{
     -- On Macs with Retina displays, the OS window size is actually half the size of the
     -- internal graphics buffer.  The @{rtk.Widget.calc|calculated versions} of `w` and `h`
     -- reflect this full (double) size, but `w` and `h` themselves will be half the size.
+    -- This ratio is reflected by `rtk.scale.framebuffer`.
     --
     -- Tip: you can call @{rtk.Widget.resize|resize}() to set both `w` and `h` at the same
     -- time.
@@ -204,7 +205,7 @@ rtk.Window.register{
         type='number',
         window_sync=true,
         calculate=function(self, attr, value, target)
-            return math.max(self.minw or 100, value or 0) * self._gfx_win_ratio
+            return math.max(self.minw or 100, value or 0) * (rtk.scale.framebuffer or 1.0)
         end,
     },
     --- Like `w` but for the window height.
@@ -218,7 +219,7 @@ rtk.Window.register{
         window_sync=true,
         default=600,
         calculate=function(self, attr, value, target)
-            return math.max(self.minh or 30, value or 0) * self._gfx_win_ratio
+            return math.max(self.minh or 30, value or 0) * (rtk.scale.framebuffer or 1.0)
         end,
     },
 
@@ -394,11 +395,6 @@ rtk.Window.register{
 --
 -- @display rtk.Window
 function rtk.Window:initialize(attrs, ...)
-    -- Multiplier to translate window dimensions to gfx buffer dimensions (gfx.w/h). On
-    -- Macs with Retina displays, this will be set to 2 in open().  We need to initialize
-    -- this now howver because w/h attribute calculate functions reference this field.
-    self._gfx_win_ratio = 1
-
     rtk.Container.initialize(self, attrs, self.class.attributes.defaults, ...)
 
     -- Singleton window
@@ -605,12 +601,18 @@ function rtk.Window:_get_display_resolution(working)
 end
 
 function rtk.Window:_get_geometry_from_attrs(overrides)
+    -- open() calls us before gfx.init() is called, which means we may not know the
+    -- framebuffer scale yet.  It's ok to fallback to 1 though, because if it's nil, the
+    -- calculated w/h will be initialized to the user-supplied prescaled size anyway. It
+    -- only gets adjusted to the doubled size on retina displays after the next _update()
+    -- call.
+    local scale = rtk.scale.framebuffer or 1
     local x = self.x
     local y = self.y
     -- Use calculated values here (rather than self.w/h) to ensure we respect minw/minh
     -- clamping done by those attrs' calculate funcitons.
-    local w = self.calc.w / self._gfx_win_ratio
-    local h = self.calc.h / self._gfx_win_ratio
+    local w = self.calc.w / scale
+    local h = self.calc.h / scale
     if overrides then
         -- This returns nil if the resolution can't be determined.
         local sx, sy, sw, sh = self:_get_display_resolution(true)
@@ -674,8 +676,8 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- But if we just docked, then let's immediately store the new docked geometry in
             -- the w/h attributes so that our next reflow has the proper size.
             gfx.w, gfx.h = w, h
-            self:sync('w', w / self._gfx_win_ratio, nil, nil, w)
-            self:sync('h', h / self._gfx_win_ratio, nil, nil, h)
+            self:sync('w', w / rtk.scale.framebuffer, nil, nil, w)
+            self:sync('h', h / rtk.scale.framebuffer, nil, nil, h)
             -- Force resized now as the comparisons later won't be able to tell that
             -- we did, having just replaced the w/h attrs.
             resized = 1
@@ -706,8 +708,8 @@ function rtk.Window:_sync_window_attrs(overrides)
                 --
                 -- Unfortunately this causes a background flicker on Windows that I can't
                 -- seem to hack around.  Mac and Linux are ok though.
-                local sw = math.ceil(self.calc.w / self._gfx_win_ratio)
-                local sh = math.ceil(self.calc.h / self._gfx_win_ratio)
+                local sw = math.ceil(self.calc.w / rtk.scale.framebuffer)
+                local sh = math.ceil(self.calc.h / rtk.scale.framebuffer)
                 reaper.JS_Window_Resize(self.hwnd, sw, sh)
             end
             self._resize_grip:show()
@@ -744,17 +746,19 @@ function rtk.Window:_sync_window_attrs(overrides)
 
         -- Resize/move window and set opacity.
         local x, y, w, h = self:_get_geometry_from_attrs(overrides)
+        local scaled_gfxw = gfx.w / rtk.scale.framebuffer
+        local scaled_gfxh = gfx.h / rtk.scale.framebuffer
         if not resized then
             -- Note: On Mac, toggling borderless actually affects the gfx buffer, so
             -- resized ends up being non-zero when it's toggled.  Windows and Linux
             -- don't behave this way, gfx buffer does not change.
-            if w == gfx.w and h == gfx.h then
+            if w == scaled_gfxw and h == scaled_gfxh then
                 -- No change to dimensions
                 resized = 0
-            elseif w <= gfx.w and h <= gfx.h then
+            elseif w <= scaled_gfxw and h <= scaled_gfxh then
                 -- One or both got smaller
                 resized = -1
-            elseif w > gfx.w or h > gfx.h then
+            elseif w > scaled_gfxw or h > scaled_gfxh then
                 -- Either got bigger
                 resized = 1
             end
@@ -768,18 +772,18 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- JS_Window_SetPosition() requires outer dimensions, not inner content size,
             -- so unless we're borderless we need to account for the window frame.
             if not calc.borderless then
-                sw = w + self._os_window_frame_width/self._gfx_win_ratio
-                sh = h + self._os_window_frame_height/self._gfx_win_ratio
+                sw = w + self._os_window_frame_width / rtk.scale.framebuffer
+                sh = h + self._os_window_frame_height / rtk.scale.framebuffer
             end
             sw = math.ceil(sw)
             sh = math.ceil(sh)
             reaper.JS_Window_SetPosition(self.hwnd, x, y, sw, sh)
         end
-        -- update() only fires onresize when the window resized from external
-        -- causes (like the user manually resizing), whereas here we are resizing
-        -- due to attribute changes.
         if resized ~= 0 then
-            self:onresize(gfx.w / self._gfx_win_ratio, gfx.h / self._gfx_win_ratio)
+            -- update() only fires onresize when the window resized from external causes
+            -- (like the user manually resizing), whereas here we are resizing due to
+            -- attribute changes.
+            self:onresize(scaled_gfxw, scaled_gfxh)
         end
         -- As with onresize(), we manually fire onmove().
         if moved then
@@ -853,20 +857,17 @@ function rtk.Window:open(options)
     self:sync('h', h)
     local dockstate = self:_get_dockstate_from_attrs()
     -- Use calculated width/height here so that we respect any minw/minh clamping done by
-    -- the calculate functions.  At this point, _gfx_win_ratio is always 1, so we don't
-    -- need to worry about adjusting calc.w/h.  In other words, it's basically like
-    -- self.w/h except clamped.
+    -- the calculate functions.  At this point, rtk.scale.framebuffer is nil and will be
+    -- defaulted to 1.0, so we don't need to worry about adjusting calc.w/h.  In other
+    -- words, it's basically like self.w/h except clamped.
     gfx.init(calc.title, calc.w, calc.h, dockstate, x, y)
     gfx.update()
-    if gfx.ext_retina == 2 and rtk.os.mac then
-        -- This is a retina display, which means client window geometry is half the gfx
-        -- buffer.
-        self._gfx_win_ratio = 2
-        -- Directly update calculated attributes now to avoid triggering onresize on next
-        -- _update().
-        self.calc.w = calc.w * 2
-        self.calc.h = calc.h * 2
-    end
+    -- Determine the ratio of the framebuffer.  On Apple retina displays this is 2x.
+    rtk.scale.framebuffer = gfx.w / calc.w
+    -- Directly update calculated attributes now to avoid triggering onresize on next
+    -- _update(), should the framebuffer scale be other than 1.0.
+    calc.w = calc.w * rtk.scale.framebuffer
+    calc.h = calc.h * rtk.scale.framebuffer
     -- Initialize dock state.
     dockstate, _, _ = gfx.dock(-1, true, true)
     -- After _handle_dock_change(), self.hwnd will be set, and window attrs will be synced.
@@ -924,8 +925,8 @@ function rtk.Window:_setup_borderless()
             this._drag_start_my = my
             this._drag_start_wx = wx
             this._drag_start_wy = wy
-            this._drag_start_ww = gfx.w / self._gfx_win_ratio
-            this._drag_start_wh = gfx.h / self._gfx_win_ratio
+            this._drag_start_ww = gfx.w / rtk.scale.framebuffer
+            this._drag_start_wh = gfx.h / rtk.scale.framebuffer
             this._drag_start_dx = mx - wx
             this._drag_start_dy = my - wy
         end
@@ -960,7 +961,7 @@ function rtk.Window:_setup_borderless()
             local sx, _, sw, sh = self:_get_display_resolution()
             -- How many pixels into the window are we.  Unlike mx, event.x is based on gfx
             -- buffer size so must be adjusted.
-            local xoffset = event.x / self._gfx_win_ratio
+            local xoffset = event.x / rtk.scale.framebuffer
             -- Find the same relative position based on new window size
             local dx = math.ceil(w * xoffset / this._drag_start_ww)
             x = rtk.clamp(sx + xoffset - dx, sx, sx + sw - w)
@@ -1030,8 +1031,8 @@ function rtk.Window:_setup_borderless()
         local dx = mx - this._drag_start_mx
         local dy = (my - this._drag_start_my) * (rtk.os.mac and -1 or 1)
         -- Clamp dimensions so the window can't be resized down to nothing.
-        local w = math.max(self.minw * self._gfx_win_ratio, this._drag_start_ww + dx)
-        local h = math.max(self.minh * self._gfx_win_ratio, this._drag_start_wh + dy)
+        local w = math.max(self.minw * rtk.scale.framebuffer, this._drag_start_ww + dx)
+        local h = math.max(self.minh * rtk.scale.framebuffer, this._drag_start_wh + dy)
         reaper.JS_Window_Resize(self.hwnd, w, h)
         -- Immediately paint the background on the expanded area (if any) to avoid
         -- flicker.
@@ -1108,8 +1109,8 @@ function rtk.Window:_get_hwnd()
         local _, l, t, r, b = reaper.JS_Window_GetRect(hwnd)
         self._os_window_frame_width = (r - l) - w
         self._os_window_frame_height = math.abs(b - t) - h
-        self._os_window_frame_width = self._os_window_frame_width * self._gfx_win_ratio
-        self._os_window_frame_height = self._os_window_frame_height * self._gfx_win_ratio
+        self._os_window_frame_width = self._os_window_frame_width * rtk.scale.framebuffer
+        self._os_window_frame_height = self._os_window_frame_height * rtk.scale.framebuffer
     end
     return hwnd
 end
@@ -1134,8 +1135,8 @@ function rtk.Window:_handle_dock_change(dockstate)
         elseif self._undocked_geometry then
             -- We undocked, so restore the last saved geoemetry.
             local x, y, w, h = table.unpack(self._undocked_geometry)
-            local gw = w * self._gfx_win_ratio
-            local gh = h * self._gfx_win_ratio
+            local gw = w * rtk.scale.framebuffer
+            local gh = h * rtk.scale.framebuffer
             self:sync('x', x, nil, nil, 0)
             self:sync('y', y, nil, nil, 0)
             self:sync('w', w, nil, nil, gw)
@@ -1403,8 +1404,8 @@ function rtk.Window:_update()
     if resized and self.visible then
         -- Update both calculated and user-facing attributes for the newly discovered size.
         local last_w, last_h = self.w, self.h
-        self:sync('w', gfx.w / self._gfx_win_ratio, nil, nil, gfx.w)
-        self:sync('h', gfx.h / self._gfx_win_ratio, nil, nil, gfx.h)
+        self:sync('w', gfx.w / rtk.scale.framebuffer, nil, nil, gfx.w)
+        self:sync('h', gfx.h / rtk.scale.framebuffer, nil, nil, gfx.h)
         -- Helps to reduce flicker just a tiny bit when the window size expands.
         self:_clear_gdi(calc.w, calc.h)
         self:onresize(last_w, last_h)
@@ -1975,7 +1976,7 @@ function rtk.Window:get_normalized_y()
     else
         local _, _, _, sh = self:_get_display_resolution()
         local offset = gfx.h + self._os_window_frame_height
-        return sh - self.y - offset/self._gfx_win_ratio
+        return sh - self.y - offset/rtk.scale.framebuffer
     end
 end
 
