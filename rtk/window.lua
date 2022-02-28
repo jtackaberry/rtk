@@ -593,11 +593,13 @@ end
 function rtk.Window:_get_display_resolution(working)
     -- Here we use user-provided attributes instead of calculated values in case a move was
     -- requested.
-    local x = self.x
-    local y = self.y
+    local x = math.floor(self.x)
+    local y = math.floor(self.y)
+    local w = math.floor(x + self.w)
+    local h = math.floor(y + self.h)
     -- This is in fact a native function, despite the odd naming.
     -- https://forum.cockos.com/showthread.php?t=195629
-    local l, t, r, b = reaper.my_getViewport(0, 0, 0, 0, x, y, x+self.w, y+self.h, working and 1 or 0)
+    local l, t, r, b = reaper.my_getViewport(0, 0, 0, 0, x, y, w, h, working and 1 or 0)
     return l, t, r - l, math.abs(b - t)
 end
 
