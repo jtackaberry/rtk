@@ -780,12 +780,6 @@ function rtk.Window:_sync_window_attrs(overrides)
         -- due to attribute changes.
         if resized ~= 0 then
             self:onresize(gfx.w / self._gfx_win_ratio, gfx.h / self._gfx_win_ratio)
-            -- Override values from gfx.update() so we don't double-reflow in update()
-            gfx.w = w
-            gfx.h = h
-            -- But since we're skipping that unnecessary second reflow, we do need to force
-            -- a blit to make sure the window is properly drawn after having been resized.
-            self:queue_blit()
         end
         -- As with onresize(), we manually fire onmove().
         if moved then
