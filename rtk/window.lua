@@ -175,12 +175,13 @@ rtk.Window.register{
         reflow=rtk.Widget.REFLOW_NONE,
         window_sync=true,
     },
-    --- The current client width of the window.  Client in this context means the inner
-    -- contents of the window without the OS native window frame.
+    --- The current client width of the window (default 800).  Client in this context means
+    -- the inner contents of the window without the OS native window frame.
     --
     -- If the window is undocked, then this attribute is also settable.  If set before
     -- `open()` then it defines the initial width of the window if undocked, but has no
-    -- effect on the width of docked windows (as REAPER doesn't allow that).
+    -- effect on the width of docked windows (as REAPER doesn't allow that).  The default
+    -- value if not specified is 800.
     --
     -- Setting a value *after* `open()` is possible but only when the window is undocked,
     -- and this requires the js_ReaScriptAPI extension.
@@ -208,7 +209,7 @@ rtk.Window.register{
             return math.max(self.minw or 100, value or 0) * (rtk.scale.framebuffer or 1.0)
         end,
     },
-    --- Like `w` but for the window height.
+    --- Like `w` but for the window height (default 600).
     --
     -- `minh` is respected and the window will not be allowed a smaller height when
     -- set via `attr()` or when `borderless` is true.
