@@ -781,6 +781,13 @@ function rtk.Window:_sync_window_attrs(overrides)
             reaper.JS_Window_SetPosition(self.hwnd, x, y, sw, sh)
         end
         if resized ~= 0 then
+            -- Override gfx buffer size so we don't later detect a resize in _update() and
+            -- invoke onresize() twice.
+            gfx.w = w * rtk.scale.framebuffer
+            gfx.h = h * rtk.scale.framebuffer
+            -- It's necessary to blit again after the current update cycle due to changing
+            -- the window geometry from under REAPER's feet.
+            self:queue_blit()
             -- update() only fires onresize when the window resized from external causes
             -- (like the user manually resizing), whereas here we are resizing due to
             -- attribute changes.
@@ -1367,19 +1374,19 @@ function rtk.Window:_update()
         return
     end
     need_draw = rtk._do_animations(now) or need_draw
-    -- Check to see if resized now before _sync_window_attrs() below potentially meddles
-    -- with gfx.w/h or self.w/h.
-    local resized = gfx.w ~= calc.w or gfx.h ~= calc.h
     -- Must not test for JSAPI here, as _sync_window_attrs() handles dock/undock even
     -- for non-JSAPI case.
     if self._sync_window_attrs_on_update then
-        -- Sync current attributes to window state.  We'll amend the resized flag
-        -- if _sync_window_attrs() actually resizes the window (in which case it will
-        -- also update gfx.w/gfx.h to the new dimensions), so that we properly fire
-        -- onresize() and reflow according to the new size now without having to wait for
-        -- the next update.  If we did resize, gfx.w/h will have been updated to the new
-        -- target size, which we set to our calculated size a bit later on.
-        resized = (self:_sync_window_attrs() ~= 0) or resized
+        -- Sync current attributes to window state.
+        if self:_sync_window_attrs() ~= 0 then
+            -- Size has changed programmatically.  _sync_window_attrs() has already
+            -- updated gfx.w/h and called onresize(), so we just need to force a full
+            -- reflow now.  Note this is distinct from window size changing from external
+            -- factors (such as the user resizing the window via OS controls), which is
+            -- detected and handled later on in this method.
+            self:reflow(rtk.Widget.REFLOW_FULL)
+            need_draw = true
+        end
         self._sync_window_attrs_on_update = false
     end
 
@@ -1402,6 +1409,13 @@ function rtk.Window:_update()
         self:sync('y', y, nil, nil, 0)
         self:onmove(lastx, lasty)
     end
+
+    -- Check to see if the gfx buffer has changed size, which indicates a window resize
+    -- caused by external factors.  If we resized programmatically (e.g. the w/h attributes
+    -- were changed), then _sync_window_attrs() above will already have called onresize()
+    -- and overwritten gfx.w/h to the new dimensions, meaning resized here will end up
+    -- being false.
+    local resized = gfx.w ~= calc.w or gfx.h ~= calc.h
     if resized and self.visible then
         -- Update both calculated and user-facing attributes for the newly discovered size.
         local last_w, last_h = self.w, self.h
