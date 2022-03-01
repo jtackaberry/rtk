@@ -1293,8 +1293,7 @@ rtk.version = {
     string = nil,
 
     --- The API version number.  If the rtk version is `1.2.5` then this value is `1`. See
-    -- [here](https://reapertoolkit.dev/loading.html#api_versions) for more details on API
-    -- versioning.
+    -- @{loading.api_versions|here} for more details on API versioning.
     -- @type number
     -- @meta read-only
     api = nil,
