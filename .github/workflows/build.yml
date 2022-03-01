@@ -27,7 +27,7 @@ jobs:
       - name: Pull changes for ${{env.tag}} from change log
         run: |
           mkdir -p build/dist/${{env.major}}
-          sed -n "/^# ${{env.tag}}/,/^# /p" CHANGELOG.md | sed '${/^# /d}' > build/dist/${{env.major}}/CHANGELOG.md
+          sed -n "/^## ${{env.tag}}/,/^## /p" CHANGELOG.md | sed '${/^## /d};s/^##/#/g;s/^##/#/g' > build/dist/${{env.major}}/CHANGELOG.md
           cat build/dist/${{env.major}}/CHANGELOG.md
       - name: Upload dist artifacts
         uses: actions/upload-artifact@v2
