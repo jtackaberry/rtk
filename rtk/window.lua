@@ -621,23 +621,23 @@ function rtk.Window:_get_geometry_from_attrs(overrides)
         local sx, sy, sw, sh = self:_get_display_resolution(true)
         if sw and sh then
             if overrides.halign == rtk.Widget.CENTER then
-                x = (overrides.x or x) + (sw - w) / 2
+                x = (overrides.x or 0) + (sw - w) / 2
             elseif overrides.halign == rtk.Widget.RIGHT then
-                x = (overrides.x or x) + sw - w
+                x = (overrides.x or 0) + sw - w
             end
             if rtk.os.mac then
                 if overrides.valign == rtk.Widget.TOP then
-                    y = (overrides.y or y) + (sh - h) + sy
+                    y = (overrides.y or 0) + (sh - h) + sy
                 elseif overrides.valign == rtk.Widget.CENTER then
-                    y = (overrides.y or y) + (sh - h) / 2 + sy
+                    y = (overrides.y or 0) + (sh - h) / 2 + sy
                 elseif overrides.valign == rtk.Widget.BOTTOM then
-                    y = (overrides.y or y) + sy
+                    y = (overrides.y or 0) + sy
                 end
             else
                 if overrides.valign == rtk.Widget.CENTER then
-                    y = (overrides.y or y) + (sh - h) / 2
+                    y = (overrides.y or 0) + (sh - h) / 2
                 elseif overrides.valign == rtk.Widget.BOTTOM then
-                    y = (overrides.y or y) + sh - h
+                    y = (overrides.y or 0) + sh - h
                 end
             end
             if overrides.constrain then
@@ -822,19 +822,27 @@ end
 --- Opens the window and begins the main event loop.  Once called, the application
 -- will continue running until `close()` is called.
 --
--- The `options` parameter is an optional table of fields that allows you to influence
--- placement beyond the standard `x` and `y` attributes. The following options are
--- currently supported:
+-- The `options` parameter is an optional table of fields that allows you to influence the
+-- initial placement of *undocked* windows beyond the standard `x` and `y` attributes. The
+-- following options are currently supported:
 --
--- | Attribute | Values | Function |
+-- | Field | Values | Description |
 -- |-|-|-|
--- | `halign` | `'left'`, `'center'`, `'right'` | Controls horizontal alignment of the window. `x` offsets from the aligned position. |
--- | `valign` | `'top`', `'center'`, `'bottom'` | Controls vertical alignment of the window . `y` offsets from the aligned position. |
--- | `constrain` | `true`, `false` | If true, the window's initial geometry will be modified to ensure the window fits within the current display.  On multi-display systems, "current display" is the display which contains most of the window's rectangle. |
+-- | halign | `'left'`, `'center'`, `'right'` | Controls horizontal alignment of the window. If nil, the `x` attribute controls the x coordinate of undocked windows. |
+-- | valign | `'top`', `'center'`, `'bottom'` | Controls vertical alignment of the window . If nil, the `y` attribute controls the y coordinate of undocked windows. |
+-- | constrain | `true`, `false` | If true, the window's initial geometry will be modified to ensure the window fits within the current display.  On multi-display systems, "current display" is the display which contains most of the window's rectangle. |
 --
 -- @code
 --   local window = rtk.Window()
 --   window:open{halign='center', valign='center'}
+--
+-- @warning Options are for one-time placement only
+--   The fields in the options table only apply to the initial placement of the window
+--   during open, and have no further influence after that point.  Notably, the
+--   halign/valign options are *unrelated* to the `halign` and `valign` widget attributes:
+--   the alignment options here influence position of the undocked OS-native window, while the
+--   `halign` and `valign` widget attributes affect the alignment of child widgets placed within
+--   the rtk.Window.
 --
 -- @tparam table|nil options an optional table of placement attributes
 function rtk.Window:open(options)
@@ -857,7 +865,15 @@ function rtk.Window:open(options)
 
     options = self:_calc_cell_attrs(self, options)
     local x, y, w, h = self:_get_geometry_from_attrs(options)
-    -- Set current attributes based on initial geometry.  Pass calculated values for x/y
+
+    -- Reset the framebuffer scale in case we are reopening the window and already have a
+    -- valid value for it.  And we must do this *after* calling _get_geometry_from_attrs(),
+    -- because if we have already opened before, the calculated w/h values will aleady be
+    -- multiplied by rtk.scale.framebuffer, and _get_geometry_from_attrs() will adjust for
+    -- that.  But resetting rtk.scale.framebuffer back to 1 ensures that, after sync() below,
+    -- calc.w and calc.h are a) clamped and b) prescaled, which is what gfx.init() expects.
+    rtk.scale.framebuffer = 1
+    -- Reset current attributes based on initial geometry.  Pass calculated values for x/y
     -- because we know they need to be pinned to 0.
     self:sync('x', x, nil, nil, 0)
     self:sync('y', y, nil, nil, 0)
@@ -872,6 +888,7 @@ function rtk.Window:open(options)
     -- words, it's basically like self.w/h except clamped.
     gfx.init(calc.title, calc.w, calc.h, dockstate, x, y)
     gfx.update()
+
     -- Determine the ratio of the framebuffer.  On Apple retina displays this is 2x.
     rtk.scale.framebuffer = gfx.w / calc.w
     -- Directly update calculated attributes now to avoid triggering onresize on next
