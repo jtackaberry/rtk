@@ -201,7 +201,7 @@ rtk.scale = setmetatable({
     user = nil,
     -- Internal value behind the 'user' proxy
     _user = 1.0,
-    -- Scale factor determined by the system.  On Apple Retina displays, this value will
+    --- Scale factor determined by the system.  On Apple Retina displays, this value will
     -- be `2.0`. On Windows, with variable scale, this can be an arbitrary factor and
     -- updates in real time as the system global scale is modified.  This value is only
     -- known after `rtk.Window:open()` is called, and will be `nil` before then.
