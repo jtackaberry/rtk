@@ -1,7 +1,7 @@
 -- This is generated code. See https://reapertoolkit.dev/ for more info.
--- version: 1.1.0
--- build: Mon Feb 28 23:45:45 UTC 2022
-__RTK_VERSION='1.1.0'
+-- version: 1.1.1
+-- build: Sat Mar  5 22:47:36 UTC 2022
+__RTK_VERSION='1.1.1'
 rtk=(function()
 __mod_rtk_core=(function()
 __mod_rtk_log=(function()
@@ -3286,23 +3286,23 @@ local h=self.calc.h/scale
 if overrides then
 local sx,sy,sw,sh=self:_get_display_resolution(true)if sw and sh then
 if overrides.halign==rtk.Widget.CENTER then
-x=(overrides.x or x)+(sw-w)/2
+x=(overrides.x or 0)+(sw-w)/2
 elseif overrides.halign==rtk.Widget.RIGHT then
-x=(overrides.x or x)+sw-w
+x=(overrides.x or 0)+sw-w
 end
 if rtk.os.mac then
 if overrides.valign==rtk.Widget.TOP then
-y=(overrides.y or y)+(sh-h)+sy
+y=(overrides.y or 0)+(sh-h)+sy
 elseif overrides.valign==rtk.Widget.CENTER then
-y=(overrides.y or y)+(sh-h)/2+sy
+y=(overrides.y or 0)+(sh-h)/2+sy
 elseif overrides.valign==rtk.Widget.BOTTOM then
-y=(overrides.y or y)+sy
+y=(overrides.y or 0)+sy
 end
 else
 if overrides.valign==rtk.Widget.CENTER then
-y=(overrides.y or y)+(sh-h)/2
+y=(overrides.y or 0)+(sh-h)/2
 elseif overrides.valign==rtk.Widget.BOTTOM then
-y=(overrides.y or y)+sh-h
+y=(overrides.y or 0)+sh-h
 end
 end
 if overrides.constrain then
@@ -3381,7 +3381,8 @@ end
 local calc=self.calc
 self.running=true
 gfx.ext_retina=1
-self:_handle_attr('bg', calc.bg or rtk.theme.bg)options=self:_calc_cell_attrs(self,options)local x,y,w,h=self:_get_geometry_from_attrs(options)self:sync('x', x, nil, nil, 0)self:sync('y', y, nil, nil, 0)self:sync('w', w)self:sync('h', h)local dockstate=self:_get_dockstate_from_attrs()gfx.init(calc.title,calc.w,calc.h,dockstate,x,y)gfx.update()rtk.scale.framebuffer=gfx.w/calc.w
+self:_handle_attr('bg', calc.bg or rtk.theme.bg)options=self:_calc_cell_attrs(self,options)local x,y,w,h=self:_get_geometry_from_attrs(options)rtk.scale.framebuffer=1
+self:sync('x', x, nil, nil, 0)self:sync('y', y, nil, nil, 0)self:sync('w', w)self:sync('h', h)local dockstate=self:_get_dockstate_from_attrs()gfx.init(calc.title,calc.w,calc.h,dockstate,x,y)gfx.update()rtk.scale.framebuffer=gfx.w/calc.w
 calc.w=calc.w*rtk.scale.framebuffer
 calc.h=calc.h*rtk.scale.framebuffer
 dockstate,_,_=gfx.dock(-1,true,true)self:_handle_dock_change(dockstate)if rtk.has_js_reascript_api then
@@ -3392,6 +3393,7 @@ self:_run()end
 function rtk.Window:_close()self.running=false
 gfx.quit()end
 function rtk.Window:close()self.running=false
+self.hwnd=nil
 gfx.quit()self:onclose()end
 function rtk.Window:_setup_borderless()if self._move_grip then
 return
