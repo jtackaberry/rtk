@@ -925,6 +925,8 @@ end
 -- yet terminated obviously).
 function rtk.Window:close()
     self.running = false
+    -- Ensure we don't subsequently try to sync window attrs to a non-existent window.
+    self.hwnd = nil
     gfx.quit()
     self:onclose()
 end
