@@ -2,6 +2,21 @@
 <index version="1" name="rtk" desc="REAPER Toolkit (rtk)">
   <category name="Development">
     <reapack name="rtk" desc="REAPER Toolkit (rtk)" type="script">
+      <version name="1.1.1" author="Jason Tackaberry" time="2022-03-05T22:47:52Z">
+        <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220305T224750/1/rtk.lua</source>
+        <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
+
+# 1.1.1 - 2022-03-05
+
+## Bug Fixes
+
+* Fixed a bug with `rtk.Window:open()` alignment options when reopening windows on Macs with Retina displays
+* Fixed a potential hard REAPER crash when updating window attributes after `rtk.Window:close()` is called
+
+
+For a complete historical change log, visit https://reapertoolkit.dev/changelog
+]]></changelog>
+      </version>
       <version name="1.1.0" author="Jason Tackaberry" time="2022-02-28T23:46:20Z">
         <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220228T234618/1/rtk.lua</source>
         <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
