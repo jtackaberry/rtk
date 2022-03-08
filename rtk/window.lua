@@ -620,24 +620,28 @@ function rtk.Window:_get_geometry_from_attrs(overrides)
         -- This returns nil if the resolution can't be determined.
         local sx, sy, sw, sh = self:_get_display_resolution(true)
         if sw and sh then
-            if overrides.halign == rtk.Widget.CENTER then
-                x = (overrides.x or 0) + (sw - w) / 2
+            if overrides.halign == rtk.Widget.LEFT then
+                x = sx
+            elseif overrides.halign == rtk.Widget.CENTER then
+                x = sx + (overrides.x or 0) + (sw - w) / 2
             elseif overrides.halign == rtk.Widget.RIGHT then
-                x = (overrides.x or 0) + sw - w
+                x = sx + (overrides.x or 0) + (sw - w)
             end
             if rtk.os.mac then
                 if overrides.valign == rtk.Widget.TOP then
-                    y = (overrides.y or 0) + (sh - h) + sy
+                    y = sy + (overrides.y or 0) + (sh - h)
                 elseif overrides.valign == rtk.Widget.CENTER then
-                    y = (overrides.y or 0) + (sh - h) / 2 + sy
+                    y = sy + (overrides.y or 0) + (sh - h) / 2
                 elseif overrides.valign == rtk.Widget.BOTTOM then
-                    y = (overrides.y or 0) + sy
+                    y = sy + (overrides.y or 0)
                 end
             else
-                if overrides.valign == rtk.Widget.CENTER then
-                    y = (overrides.y or 0) + (sh - h) / 2
+                if overrides.valign == rtk.Widget.TOP then
+                    y = sy
+                elseif overrides.valign == rtk.Widget.CENTER then
+                    y = sy + (overrides.y or 0) + (sh - h) / 2
                 elseif overrides.valign == rtk.Widget.BOTTOM then
-                    y = (overrides.y or 0) + sh - h
+                    y = sy + (overrides.y or 0) + (sh - h)
                 end
             end
             if overrides.constrain then
