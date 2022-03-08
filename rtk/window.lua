@@ -658,6 +658,7 @@ end
 
 function rtk.Window:_sync_window_attrs(overrides)
     local calc = self.calc
+    local lastw, lasth = self.w, self.h
     local resized
     local dockstate = self:_get_dockstate_from_attrs()
 
@@ -667,8 +668,11 @@ function rtk.Window:_sync_window_attrs(overrides)
         if dockstate ~= self._dockstate then
             gfx.dock(dockstate)
             self:_handle_dock_change(dockstate)
+            self:onresize(lastw, lasth)
+            return 1
+        else
+            return 0
         end
-        return 0
     end
 
     -- Everything below depends on js_ReaScriptAPI.
@@ -687,12 +691,12 @@ function rtk.Window:_sync_window_attrs(overrides)
             self:sync('h', h / rtk.scale.framebuffer, nil, nil, h)
             -- Force resized now as the comparisons later won't be able to tell that
             -- we did, having just replaced the w/h attrs.
-            resized = 1
         end
+        self:onresize(lastw, lasth)
         -- _handle_dock_change() calls us back, but on the re-call self._dockstate will
         -- properly reflect current dockstate so this conditional path won't be
         -- taken again.
-        return resized
+        return 1
     end
 
     if self._resize_grip then
