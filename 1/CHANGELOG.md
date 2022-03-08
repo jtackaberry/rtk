@@ -1,8 +1,9 @@
-# 1.1.1 - 2022-03-05
+# 1.1.2 - 2022-03-08
 
 ## Bug Fixes
 
-* Fixed a bug with `rtk.Window:open()` alignment options when reopening windows on Macs with Retina displays
-* Fixed a potential hard REAPER crash when updating window attributes after `rtk.Window:close()` is called
+* Fixed calculation of `rtk.scale.framebuffer` when docked
+* Ensure `rtk.Window:onresize()` handler fires when dock state changes
+* Detect display based on current values of `rtk.Window.x` and `rtk.Window.y` attributes
 
 
