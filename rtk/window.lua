@@ -897,12 +897,18 @@ function rtk.Window:open(options)
     gfx.init(calc.title, calc.w, calc.h, dockstate, x, y)
     gfx.update()
 
-    -- Determine the ratio of the framebuffer.  On Apple retina displays this is 2x.
-    rtk.scale.framebuffer = gfx.w / calc.w
-    -- Directly update calculated attributes now to avoid triggering onresize on next
-    -- _update(), should the framebuffer scale be other than 1.0.
-    calc.w = calc.w * rtk.scale.framebuffer
-    calc.h = calc.h * rtk.scale.framebuffer
+    -- Set the framebuffer scale for Retina displays.  We can't just assume the
+    -- framebuffer scale is gfx.w/calc.w because if we're docked REAPER can constrain our
+    -- size.  So we use this heuristic instead.  Note that on Windows gfx.ext_retina can
+    -- be 2 if display scaling is set to 200%, however the framebuffer scale is still 1x
+    -- in this case, so we also need to check if we're Mac.
+    if gfx.ext_retina == 2 and rtk.os.mac then
+        rtk.scale.framebuffer = 2
+        -- Directly update calculated attributes now to avoid triggering onresize on next
+        -- _update(), should the framebuffer scale be other than 1.0.
+        calc.w = calc.w * rtk.scale.framebuffer
+        calc.h = calc.h * rtk.scale.framebuffer
+    end
     -- Initialize dock state.
     dockstate, _, _ = gfx.dock(-1, true, true)
     -- After _handle_dock_change(), self.hwnd will be set, and window attrs will be synced.
