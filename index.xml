@@ -2,6 +2,22 @@
 <index version="1" name="rtk" desc="REAPER Toolkit (rtk)">
   <category name="Development">
     <reapack name="rtk" desc="REAPER Toolkit (rtk)" type="script">
+      <version name="1.1.2" author="Jason Tackaberry" time="2022-03-08T22:51:19Z">
+        <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220308T225117/1/rtk.lua</source>
+        <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
+
+# 1.1.2 - 2022-03-08
+
+## Bug Fixes
+
+* Fixed calculation of `rtk.scale.framebuffer` when docked
+* Ensure `rtk.Window:onresize()` handler fires when dock state changes
+* Detect display based on current values of `rtk.Window.x` and `rtk.Window.y` attributes
+
+
+For a complete historical change log, visit https://reapertoolkit.dev/changelog
+]]></changelog>
+      </version>
       <version name="1.1.1" author="Jason Tackaberry" time="2022-03-05T22:47:52Z">
         <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220305T224750/1/rtk.lua</source>
         <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
