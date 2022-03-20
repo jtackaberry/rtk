@@ -292,14 +292,14 @@ function rtk._do_animations(now)
             if anim.update then
                 -- Per-frame user-custom callback.  Can be used for animations against things
                 -- other than widget attributes.
-                anim.update(finished and anim.doneval or newval, target, attr)
+                anim.update(finished and anim.doneval or newval, target, attr, anim)
             end
             if widget then
                 if not finished then
                     -- widget:attr(attr, newval) is more correct but much slower (about
                     -- 4x) due to all the indirect callbacks and event handlers.  Set the
                     -- calculated value directly, but still use the attribute's calc function
-                    --  if it exists.
+                    -- if it exists.
                     local value = anim.calculate and anim.calculate(widget, attr, newval, widget.calc) or newval
                     -- We set the user-facing attribute here so widget:_reflow() is
                     -- working with the right inputs, *and* the calculated value so
@@ -388,16 +388,18 @@ end
 --   * `widget`: an `rtk.Widget` to act upon.  If defined, the `attr` field defines
 --      a widget attribute to animate.  If nil, you'll probably want to specify `update`.
 --   * `update`: an optional function that's invoked on each step of the animation,
---      and which receives as arguments (value, target, attr).  This is useful when you
---      want to animate something other than a widget attribute.
+--      and which receives as arguments `(value, target, attr, anim)`, where `value` is
+--      the current mid-animation value, `target` and `attr` correspond to the fields in
+--      the table passed to this function, and `anim` is the overall table holding the
+--      animation state (see below). The `update` callback is useful when you want to
+--      animate something other than a widget attribute.
 --   * `target`: the target table against which the animation is occurring.  This defaults
 --      to `widget` if nil.
 --   * `stepfunc`: a function invoked to calculate the next step of the animation,
 --      which is manditory when src/dst are not numbers, or 1, 2, 3, or 4 element tables.
---      The function takes two arguments `(target, anim)` where `target` corresponds to
---      the `target` field in the animation table (described above), and `anim` is a table
---      holding the animation state (see below). The function must return the attribute value
---      for the next frame in the animation.
+--      The function takes two arguments `(target, anim)` which are the same as described
+--      in the `update` field above. The function must return the attribute value for the
+--      next frame in the animation.
 --   * `doneval`: when the animation is finished, the target attribute will be set to this
 --     final value.  Defaults to `dst` if not specified.
 --
@@ -426,7 +428,7 @@ function rtk.queue_animation(kwargs)
     local anim = rtk._animations[key]
     if anim then
         -- There's an existing animation.  If the destination value is the same, return
-        -- the existing animatin's Future.
+        -- the existing animation's Future.
         if _is_equal(anim.dst, kwargs.dst) then
             return anim.future
         else
