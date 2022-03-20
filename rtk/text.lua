@@ -199,6 +199,15 @@ end
 
 
 function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow, sync)
+    if attr == 'text' and reflow == rtk.Widget.REFLOW_DEFAULT and self.w and not self.calc.wrap then
+        -- We have a fixed with and aren't wrapping.  Provided neither old nor new values
+        -- contain newlines, we can skip the costly full refow.  Technically we could skip
+        -- full reflow if the number of newlines is the same, but this handles the common
+        -- case.
+        if not value:find('\n') and not oldval:find('\n') then
+            reflow = rtk.Widget.REFLOW_PARTIAL
+        end
+    end
     local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)
     if ok == false then
         return ok
