@@ -2141,10 +2141,10 @@ function rtk.Widget:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, 
 end
 
 
---- Internal implementation of reflow.  Subclasses override and there is no need
--- to call up to this method: the default implementation merely sets the
--- @{calc|calculated box geometry} based on sane defaults, but widget implementations
--- almost always need something slightly different.
+--- Internal implementation of `reflow()`, using the same arguments and return values.
+-- Subclasses override and there is no need to call up to this method: the default
+-- rtk.Widget implementation merely sets the @{calc|calculated box geometry} based on sane
+-- defaults, but widget implementations almost always need something slightly different.
 --
 -- Parent containers may directly modify a child's geometry (e.g. for alignment purposes)
 -- after calling `reflow()`.  This means that subclass implementations of _reflow() must
@@ -2167,7 +2167,8 @@ end
 -- This is where subclasses should do any precalculations for `_draw()` that
 -- depend on its geometry.  They mustn't do this within `_reflow()` because
 -- parent containers can make direct modifications to the widget's calculated
--- geometry after `_reflow()` was called.
+-- geometry after `_reflow()` was called, for example to arrange the widget within
+-- a box relative to siblings, or to implement cell alignment.
 --
 -- The default implementation simply sets `realized` to true.
 function rtk.Widget:_realize_geometry()
@@ -2730,7 +2731,7 @@ function rtk.Widget:_unrealize()
 end
 
 
---- Called by the parent @{rtk.Window|window} when the widget is being asedk to give up its
+--- Called by the parent @{rtk.Window|window} when the widget is being asked to give up its
 -- modal state.
 --
 -- When the widget was previously registered with `rtk.add_modal()` and the
