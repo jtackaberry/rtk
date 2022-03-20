@@ -265,7 +265,7 @@ rtk.Box.register{
     --
     -- Here are two examples showing the behavior of `stretch` in the context of two HBoxes,
     -- where `stretch` applies in the vertical (i.e. perpendicular) direction.  The thick
-    -- black rectangle is the boundary of the HBox.  In the left example where, the
+    -- black rectangle is the boundary of the HBox.  In the left example, the
     -- center-valigned purple sibling is centered relative to the grey `h=0.7` widget
     -- because `stretch`=siblings is implied due to non-top alignment. In the right
     -- example where stretch is true, now the purple widget is centered relative to the
