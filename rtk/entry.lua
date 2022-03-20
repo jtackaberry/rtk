@@ -356,8 +356,8 @@ function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
         maxw, maxh = charwidth * calc.textwidth, self._font.texth
     else
         -- No hints given on dimensions, so make something up from whole cloth for our
-        -- intrinsic size.
-        maxw, maxh = gfx.measurestr("Dummy string!")
+        -- intrinsic size, preferring the placeholder if it exists.
+        maxw, maxh = gfx.measurestr(calc.placeholder or "Dummy string!")
     end
 
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
