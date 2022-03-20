@@ -54,6 +54,8 @@ rtk.Entry.static.contextmenu = {
 }
 
 rtk.Entry.register{
+    [1] = rtk.Attribute{alias='value'},
+
     --- The current (or desired if setting) value of the text entry (default is the empty
     -- string). As the user interacts with the entry, this value is updated to reflect
     -- current state, or you can set the value programmatically via `attr()` one of the
@@ -61,6 +63,9 @@ rtk.Entry.register{
     --
     -- The value is never nil.  If no text is inputted, it is represented by the
     -- empty string.
+    --
+    -- This attribute may be passed as the first positional argument during initialization. (In
+    -- other words, `rtk.Entry{'Foo'}` is equivalent to `rtk.Entry{value='Foo'}`.)
     --
     -- @meta read/write
     -- @type string
