@@ -72,6 +72,7 @@ rtk.Entry.register{
     value = rtk.Attribute{
         default='',
         reflow=rtk.Widget.REFLOW_NONE,
+        redraw=true,
         calculate=function(self, attr, value, target)
             -- Ensure value is always a string.
             return value and tostring(value) or ''
