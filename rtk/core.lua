@@ -808,10 +808,10 @@ rtk.themes = {
         -- @type number
         button_clicked_border_mul = 1,
 
-        --- Default font used for `rtk.Text` objects (defaults to `default_font`)
+        --- default font used for `rtk.Text` objects (defaults to `default_font`)
         -- @type table
         text_font = nil,
-        --- Default font used for `rtk.Heading` objects (defaults to `{'Calibri', 26}`)
+        --- default font used for `rtk.Heading` objects (defaults to `{'Calibri', 26}`)
         -- @type table
         heading_font = {'Calibri', 26},
 
@@ -830,7 +830,7 @@ rtk.themes = {
         --- color of `rtk.Entry` borders when the widget is focused
         -- @type colortype
         entry_border_focused = '#4960b8',
-        --- ackground color of selected text in an `rtk.Entry`
+        --- background color of selected text in an `rtk.Entry`
         -- @type colortype
         entry_selection_bg = '#0066bb',
 
