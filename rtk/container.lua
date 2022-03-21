@@ -744,24 +744,24 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
             if not attrs._halign or attrs._halign == rtk.Widget.LEFT then
                 wx = lp + clp
             elseif attrs._halign == rtk.Widget.CENTER then
-                wx = math.max(0, lp + clp + (math.min(innerw, inner_maxw) - ww - clp - crp) / 2)
+                wx = lp + clp + math.max(0, (math.min(innerw, inner_maxw) - ww - clp - crp) / 2)
             else
                 -- Right-aligned ignores left cell padding
-                wx = math.max(0, lp + math.min(innerw, inner_maxw) - ww - crp)
+                wx = lp + math.max(0, math.min(innerw, inner_maxw) - ww - crp)
             end
             if not attrs._valign or attrs._valign == rtk.Widget.TOP then
                 wy = tp + ctp
             elseif attrs._valign == rtk.Widget.CENTER then
-                wy = math.max(0, tp + ctp + (math.min(innerh, inner_maxh) - wh - ctp - cbp) / 2)
+                wy = tp + ctp + math.max(0, (math.min(innerh, inner_maxh) - wh - ctp - cbp) / 2)
             else
                 -- Bottom-aligned ignores top cell padding
-                wy = math.max(0, tp + math.min(innerh, inner_maxh) - wh - cbp)
+                wy = tp + math.max(0, math.min(innerh, inner_maxh) - wh - cbp)
             end
             wcalc.x = wcalc.x + wx
             widget.box[1] = wx
             wcalc.y = wcalc.y + wy
             widget.box[2] = wy
-            self:_set_cell_box(attrs, wx + lp, wy + tp, ww + clp + crp, wh + ctp + cbp)
+            self:_set_cell_box(attrs, wcalc.x, wcalc.y, ww + clp + crp, wh + ctp + cbp)
             widget:_realize_geometry()
 
             -- Expand the size of the container according to the child's size
@@ -770,8 +770,8 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
             --
             -- We only need to add crp/cbp because clp/ctp is already baked into
             -- calculated x/y.
-            innerw = math.max(innerw, ww + wcalc.x - lp + crp)
-            innerh = math.max(innerh, wh + wcalc.y - tp + cbp)
+            innerw = math.max(innerw, wcalc.x + ww - lp + crp)
+            innerh = math.max(innerh, wcalc.y + wh - tp + cbp)
             self:_add_reflowed_child(widgetattrs, attrs.z or wcalc.z or 0)
         else
             widget.realized = false
