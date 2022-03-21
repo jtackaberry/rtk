@@ -303,8 +303,9 @@ local function register(cls, attrs)
     for _, ref in ipairs(refs) do
         local attrtable, field, srcattr, dstattr = table.unpack(ref)
         local src = attributes[srcattr]
-        if not attributes.defaults[dstattr] then
-            -- New attribute is lacking default, copy from referenced source (which may be nil)
+        -- If the new attribute is lacking default, copy from referenced source (which may be nil)
+        -- provided this is a top-level rather than a field-level reference.
+        if not attributes.defaults[dstattr] and not field then
             attributes.defaults[dstattr] = attributes.defaults[srcattr]
         end
         if field then
