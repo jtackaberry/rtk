@@ -565,9 +565,11 @@ function rtk.Window:_clear_gdi(startw, starth)
     local dc = reaper.JS_GDI_GetWindowDC(self.hwnd)
     reaper.JS_GDI_SelectObject(dc, self._gdi_brush)
     reaper.JS_GDI_SelectObject(dc, self._gdi_pen)
+    local x = calc.borderless and 0 or math.ceil(self._os_window_frame_width)
+    local y = calc.borderless and 0 or math.ceil(self._os_window_frame_height)
     local r, w, h = reaper.JS_Window_GetClientSize(self.hwnd)
     if not startw then
-        reaper.JS_GDI_FillRect(dc, 0, 0, w*2, h*2)
+        reaper.JS_GDI_FillRect(dc, x, y, w*2, h*2)
     elseif w > startw or h > starth then
         if not calc.docked and not calc.borderless then
             startw = startw + self._os_window_frame_width
@@ -575,8 +577,8 @@ function rtk.Window:_clear_gdi(startw, starth)
         end
         -- We have an existing rectangle defined by startw/starth we don't want to paint
         -- over, so just draw the two strips on the far right and bottom edges.
-        reaper.JS_GDI_FillRect(dc, math.round(startw), 0, w*2, h*2)
-        reaper.JS_GDI_FillRect(dc, 0, math.round(starth), w*2, h*2)
+        reaper.JS_GDI_FillRect(dc, x + math.round(startw), y, w*2, h*2)
+        reaper.JS_GDI_FillRect(dc, x, y + math.round(starth), w*2, h*2)
     end
     reaper.JS_GDI_ReleaseDC(self.hwnd, dc)
 end
