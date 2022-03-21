@@ -353,6 +353,24 @@ rtk.Window.register{
         window_sync=true,
     },
 
+    --- Controls whether undocked windows will be provided a means of resizing the window
+    -- (default true).  For `borderless` windows the resize grip on the bottom right
+    -- corner is hidden, while for normal bordered windows the normal resize zones along
+    -- the window frame and and minimize/maximize/restore buttons on the window title bar
+    -- will not be available. This does not prevent programmatic resizing, or resizing
+    -- through external means (such as AutoHotkey), and in those cases `onresize()` will
+    -- still be called.
+    --
+    -- Requires the js_ReaScriptAPI extension, otherwise this attribute is entirely ignored.
+    --
+    -- @meta read/write
+    -- @type bool
+    resizable = rtk.Attribute{
+        default=true,
+        reflow=rtk.Widget.REFLOW_NONE,
+        window_sync=true,
+    },
+
     --- The handle of the `rtk.Window` which is set once `open()` is called.
     --
     -- This requires the js_ReaScriptAPI extension and is nil if it's not installed.
@@ -708,7 +726,10 @@ function rtk.Window:_sync_window_attrs(overrides)
             reaper.JS_Window_Show(self.hwnd, 'HIDE')
             return 0
         end
-        local style = 'SYSMENU,DLGSTYLE,BORDER,THICKFRAME,CAPTION'
+        local style = 'SYSMENU,DLGSTYLE,BORDER,CAPTION'
+        if calc.resizable then
+            style = style .. ',THICKFRAME'
+        end
         if calc.borderless then
             style = 'POPUP'
             self:_setup_borderless()
@@ -723,7 +744,9 @@ function rtk.Window:_sync_window_attrs(overrides)
                 local sh = math.ceil(self.calc.h / rtk.scale.framebuffer)
                 reaper.JS_Window_Resize(self.hwnd, sw, sh)
             end
-            self._resize_grip:show()
+            if calc.resizable then
+                self._resize_grip:show()
+            end
         end
         local function restyle()
             reaper.JS_Window_SetStyle(self.hwnd, style)
@@ -741,6 +764,15 @@ function rtk.Window:_sync_window_attrs(overrides)
                 reaper.JS_Window_SetLong(self.hwnd, 'STYLE', n | 0x80000000)
             end
             reaper.JS_Window_SetZOrder(self.hwnd, calc.pinned and 'TOPMOST' or 'NOTOPMOST')
+            -- There seems to be a bug when the THICKFRAME style is dropped from the window
+            -- where, at least on Windows, the OS doesn't update the style until the window's
+            -- geometry is updated.  So we need to give it a kick before rediscovering the
+            -- new frame size, since on some OSes that can change.
+            local r, x1, y1, x2, y2 = reaper.JS_Window_GetClientRect(self.hwnd)
+            if r then
+                reaper.JS_Window_Resize(self.hwnd, x2-x1, y2-y1)
+                self:_discover_os_window_frame_size(self.hwnd)
+            end
         end
         -- Calling SetStyle() will implicitly show the window if it's currently hidden.  If
         -- the window is already visible, we immediately apply the style to reduce the time
@@ -1049,6 +1081,7 @@ function rtk.Window:_setup_borderless()
     local resize = rtk.ImageBox{
         image=rtk.Window._icon_resize_grip,
         z=10000,
+        visible=calc.resizable,
         cursor=rtk.mouse.cursors.SIZE_NW_SE,
         alpha=0.4,
         autofocus=true,
