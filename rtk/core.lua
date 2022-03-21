@@ -203,19 +203,18 @@ rtk.scale = setmetatable({
     _user = 1.0,
     --- Scale factor determined by the system.  On Apple Retina displays, this value will
     -- be `2.0`. On Windows, with variable scale, this can be an arbitrary factor and
-    -- updates in real time as the system global scale is modified.  This value is only
-    -- known after `rtk.Window:open()` is called, and will be `nil` before then.
+    -- updates in real time as the system global scale is modified.
     -- @type number
     -- @meta read-only
     system = nil,
     --- REAPER's custom scale modifier that is set via the "Advanced UI/system tweaks" button on
-    -- the General settings page.  This value is only read once when `rtk.Window:open()` is called,
-    -- so the script will need to be restarted if this preference is changed.
+    -- the General settings page.  This value is only read once on startup, so the script
+    -- will need to be restarted if this preference is changed.
     -- @type number
     -- @meta read-only
     reaper = 1.0,
     --- The scale factor of the internal graphics frame buffer relative to the OS window
-    -- geometry. On Windows and Linux this is generally `1.0`, but on MacOS retina
+    -- geometry. On Windows and Linux this is always `1.0`, but on MacOS with retina
     -- displays it's `2.0`, indicating that `rtk.Window.w` and `rtk.Window.h` (which
     -- represent the OS window size) will result in an internal graphics buffer that's
     -- `rtk.scale.framebuffer` times bigger.  See `rtk.Window.w` for more information.
@@ -229,15 +228,11 @@ rtk.scale = setmetatable({
     -- and the calculated size of rtk widgets, you must adjust by `rtk.scale.framebuffer`,
     -- not `rtk.scale.system`.
     --
-    -- This value is only known after `rtk.Window:open()` is called, and will be nil
-    -- before that time.
-    --
     -- @type number
     -- @meta read-only
     framebuffer = nil,
     --- The final calculated scale factor to which all UI elements scale themselves.  This is
-    -- calculated as `user` * `system` * `reaper`.  Because `rtk.scale.system` is not known until
-    -- after the window is open, this calculated value is also therefore not valid until that time.
+    -- calculated as `user` * `system` * `reaper`.
     --
     -- @note
     --  If you are implementing widgets or manually drawing, `rtk.scale.value` is the value all
@@ -246,18 +241,45 @@ rtk.scale = setmetatable({
     -- @type number
     -- @meta read-only
     value = 1.0,
+
+    _discover = function()
+        local inifile = reaper.get_ini_file()
+        local ini, err = rtk.file.read(inifile)
+        if not err then
+            rtk.scale.reaper = ini:match('uiscale=([^\n]*)') or 1.0
+        end
+        -- This API was added in REAPER 5.974
+        local ok, dpi = reaper.ThemeLayout_GetLayout("mcp", -3)
+        if not ok then
+            return
+        end
+        dpi = tonumber(dpi)
+        rtk.scale.system = dpi / 256.0
+        if not rtk.scale.framebuffer then
+            if rtk.os.mac and dpi == 512 then
+                -- Heuristic for retina display
+                rtk.scale.framebuffer = 2
+            else
+                rtk.scale.framebuffer = 1
+            end
+        end
+        rtk.scale._calc()
+    end,
+    _calc = function()
+        local value = rtk.scale.user * rtk.scale.system * rtk.scale.reaper
+        -- Clamp to units of 0.01 to avoid tiny fractional values creeping in from
+        -- floating point precision issues.
+        rtk.scale.value = math.ceil(value * 100) / 100.0
+    end,
 }, {
     __index=function(t, key)
-        return key == 'user' and t._user
+        return key == 'user' and t._user or nil
     end,
     __newindex=function(t, key, value)
         if key == 'user' then
             if value ~= t._user then
                 t._user = value
-                value = value * (t.system or 1.0) * t.reaper
-                -- Clamp to units of 0.01 to avoid tiny fractional values creeping in from
-                -- floating point precision issues.
-                t.value = math.ceil(value * 100) / 100.0
+                rtk.scale._calc()
                 if rtk.window then
                     rtk.window:queue_reflow()
                 end

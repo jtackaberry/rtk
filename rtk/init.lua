@@ -77,6 +77,9 @@ local function init()
 
     -- Parse rtk's own version
     rtk.version.parse()
+    -- Initial detection of scale values.  rtk.Window:open() may update and is
+    -- authoritative.
+    rtk.scale._discover()
 
     -- Tweaks based on current platform
     if rtk.os.mac then
