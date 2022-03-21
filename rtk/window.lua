@@ -165,8 +165,7 @@ rtk.Window.register{
     -- screen.
     --
     -- If you need a consistent representation of the y coordinate, you can use
-    -- `rtk.Window:get_normalized_y()`, however this requires either the SWS or
-    -- js_ReaScriptAPI extension.
+    -- `rtk.Window:get_normalized_y()`.
     --
     -- @meta read/write
     -- @type number
@@ -2044,18 +2043,8 @@ end
 -- relative to the top of the screen, regardless of platform. screen, regardless of the
 -- platform.
 --
--- @warning Requires extension support
---   This method requires either the SWS or js_ReaScriptAPI extensions to be present on
---   the system in order to work, because the display resolution must first be discovered
---   in order to do the normalization.  If neither are available, then nil will be
---   returned.
---
--- @treturn number|nil the normalized `y` coordinate, or nil if neither SWS nor JS API
---   was present.
+-- @treturn number|nil the normalized `y` coordinate
 function rtk.Window:get_normalized_y()
-    if not rtk.has_sws_extension and not rtk.has_js_reascript_api then
-        return
-    end
     if not rtk.os.mac then
         return self.y
     else
