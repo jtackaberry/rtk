@@ -1009,6 +1009,7 @@ end
 
 function rtk.Widget:__tostring_info() end
 
+-- Initial processing of all attributes on instantiation.
 function rtk.Widget:_setattrs(attrs)
     if not attrs then
         return
@@ -1025,9 +1026,11 @@ function rtk.Widget:_setattrs(attrs)
                 -- as default funcs for priority attributes may depend on non-priority ones.
                 if v == rtk.Attribute.FUNCTION then
                     v = self.class.attributes[k].default_func(self, k)
+                elseif v == rtk.Attribute.NIL then
+                    v = nil
                 end
                 local calculated = self:_calc_attr(k, v, nil, meta)
-                self:_set_calc_attr(k, v, calculated, self.calc, meta)
+                self:_set_calc_attr(k, v, calculated, calc, meta)
             else
                 priority[#priority+1] = k
             end
@@ -1042,8 +1045,12 @@ function rtk.Widget:_setattrs(attrs)
             self[k] = v
         end
         if v ~= nil then
+            if v == rtk.Attribute.NIL then
+                v = nil
+                self[k] = nil
+            end
             local calculated = self:_calc_attr(k, v)
-            self:_set_calc_attr(k, v, calculated, self.calc)
+            self:_set_calc_attr(k, v, calculated, calc)
         end
     end
 end
@@ -1219,6 +1226,8 @@ function rtk.Widget:_attr(attr, value, trigger, reflow, calculated, sync)
         else
             value = meta.default
         end
+    elseif value == rtk.Attribute.NIL then
+        value = nil
     end
     local oldval = self[attr]
     local oldcalc = self.calc[attr]
@@ -1261,10 +1270,14 @@ function rtk.Widget:_calc_attr(attr, value, target, meta, namespace, widget)
         local tp = type(calculate)
         if tp == 'table' then
             if value == nil then
-                value = rtk.Attribute.NIL
+                value = calculate[rtk.Attribute.NIL]
+            else
+                value = calculate[value] or value
             end
-            value = calculate[value] or value
         elseif tp == 'function' then
+            if value == rtk.Attribute.NIL then
+                value = nil
+            end
             value = calculate(self, attr, value, target)
         end
     end
