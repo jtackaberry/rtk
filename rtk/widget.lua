@@ -1722,6 +1722,13 @@ function rtk.Widget:animate(kwargs)
     -- which will be passed to attr() when the animation finishes.
     local doneval = kwargs.dst or rtk.Attribute.DEFAULT
     if attr == 'w' or attr == 'h' then
+        -- Normally we don't update the surface value until the very end of the
+        -- animation.  But for w/h attrs, because the surface values are used
+        -- during reflow to calculate geometry, we make an exception.  Otherwise
+        -- every widget's _reflow() implementation would need to lookup active
+        -- animations and fetch the doneval, which doesn't seem worth the overhead
+        -- for such an improbable event.
+        kwargs.sync_surface_value = true
         -- If src value is nil or fractional and we're animating one of the
         -- dimensions, set the animation src to the current calculated size.
         if not kwargs.src or kwargs.src <= 1.0 then

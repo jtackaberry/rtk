@@ -301,12 +301,15 @@ function rtk._do_animations(now)
                     -- calculated value directly, but still use the attribute's calc function
                     -- if it exists.
                     local value = anim.calculate and anim.calculate(widget, attr, newval, widget.calc) or newval
-                    -- We set the user-facing attribute here so widget:_reflow() is
-                    -- working with the right inputs, *and* the calculated value so
-                    -- REFLOW_NONE attributes (such as viewport scroll_left/scroll_top)
-                    -- are synced
-                    widget[attr] = value
                     widget.calc[attr] = value
+                    -- We don't want to override the surface value with the mid-animation
+                    -- calculated value, but we do that if specifically requested via the
+                    -- sync_surface_value flag, which is used for w/h attributes as we
+                    -- want to be able to animate these but reflow acts on the surface
+                    -- values (as the point of reflow is to calculate geometry).
+                    if anim.sync_surface_value then
+                        widget[attr] = value
+                    end
                 else
                     -- However for the final value, we *do* use onattr() so that the
                     -- relevant event handlers get called.
