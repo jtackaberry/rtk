@@ -12,6 +12,7 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+-- TODO: use sync() for scroll positions (needed for reactives)
 local rtk = require('rtk.core')
 
 --- A scrollable single-child container.
@@ -839,9 +840,8 @@ end
 -- has been realized.
 function rtk.Viewport:_get_clamped_scroll(left, top)
     -- Clamp viewport position to fit child's current dimensions
-    left = rtk.clamp(left, 0, self._scroll_clamp_left)
-    top = rtk.clamp(top, 0, self._scroll_clamp_top)
-    return left, top
+    return rtk.clamp(left, 0, self._scroll_clamp_left),
+           rtk.clamp(top, 0, self._scroll_clamp_top)
 end
 
 function rtk.Viewport:_clamp()

@@ -1237,7 +1237,7 @@ function rtk.Widget:_attr(attr, value, trigger, reflow, calculated, sync)
     -- other attributes (e.g. padding), we force invocation of _handle_attr()
     -- even if the shorthand value hasn't changed, because we don't know here if
     -- changing the shorthand value will end up modifying a replaced attribute.
-    local replaces = self.class.attributes.get(attr).replaces
+    local replaces = meta.replaces
     if replaces then
         for i = 1, #replaces do
             self[replaces[i]] = nil
@@ -1763,12 +1763,12 @@ function rtk.Widget:animate(kwargs)
             window:reflow(rtk.Widget.REFLOW_FULL)
         end
     else
-        if kwargs.calculate then
+        if meta.calculate then
             -- We pass an empty table here in case the attribute is a shorthand attr (like
             -- padding) that injects other calculated attributes (like tpadding, etc.)  We
             -- are just fishing for the calculated dst value, we don't want to actually
             -- change our current calculated attributes.
-            kwargs.dst = kwargs.calculate(self, attr, kwargs.dst, {})
+            kwargs.dst = meta.calculate(self, attr, kwargs.dst, {})
             -- Update doneval now that we've got a calculated value.
             doneval = kwargs.dst or rtk.Attribute.DEFAULT
         end
@@ -1791,8 +1791,8 @@ function rtk.Widget:animate(kwargs)
         -- want to start from the current mid-animation value, not the current animation's
         -- dst value.
         kwargs.src = self:calc(attr, true)
-    elseif kwargs.calculate then
-        kwargs.src = kwargs.calculate(self, attr, kwargs.src, {})
+    elseif meta.calculate then
+        kwargs.src = meta.calculate(self, attr, kwargs.src, {})
     end
     return rtk.queue_animation(kwargs)
 end
