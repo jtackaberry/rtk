@@ -810,8 +810,8 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- But if we just docked, then let's immediately store the new docked geometry in
             -- the w/h attributes so that our next reflow has the proper size.
             gfx.w, gfx.h = w, h
-            self:sync('w', w / rtk.scale.framebuffer, nil, nil, w)
-            self:sync('h', h / rtk.scale.framebuffer, nil, nil, h)
+            self:sync('w', w / rtk.scale.framebuffer, w)
+            self:sync('h', h / rtk.scale.framebuffer, h)
             -- Force resized now as the comparisons later won't be able to tell that
             -- we did, having just replaced the w/h attrs.
         end
@@ -947,8 +947,8 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- We moved based on self.x/y but we replace the values to ensure they are
             -- rounded to the nearest pixel. Calculated x/y for rtk.Window is forced to 0,
             -- but we expose window position via non-calculated variant.
-            self:sync('x', x, nil, nil, 0)
-            self:sync('y', y, nil, nil, 0)
+            self:sync('x', x, 0)
+            self:sync('y', y, 0)
             self:onmove(lastx, lasty)
         end
         reaper.JS_Window_SetOpacity(self.hwnd, 'ALPHA', calc.opacity)
@@ -1017,8 +1017,8 @@ function rtk.Window:open(options)
     local x, y, w, h = self:_get_geometry_from_attrs(options)
     -- Reset current attributes based on initial geometry.  Pass calculated values for x/y
     -- because we know they need to be pinned to 0.
-    self:sync('x', x, nil, nil, 0)
-    self:sync('y', y, nil, nil, 0)
+    self:sync('x', x, 0)
+    self:sync('y', y, 0)
     -- Intentionally don't set calculated versions here to allow w/h attr calculate
     -- functions to clamp.  The dimensions returned by _get_geometry_from_attrs() are
     -- divided by rtk.scale.framebuffer.
@@ -1327,10 +1327,10 @@ function rtk.Window:_handle_dock_change(dockstate)
             local x, y, w, h = table.unpack(self._undocked_geometry)
             local gw = w * rtk.scale.framebuffer
             local gh = h * rtk.scale.framebuffer
-            self:sync('x', x, nil, nil, 0)
-            self:sync('y', y, nil, nil, 0)
-            self:sync('w', w, nil, nil, gw)
-            self:sync('h', h, nil, nil, gh)
+            self:sync('x', x, 0)
+            self:sync('y', y, 0)
+            self:sync('w', w, gw)
+            self:sync('h', h, gh)
             gfx.w = gw
             gfx.h = gh
         end
@@ -1603,9 +1603,10 @@ function rtk.Window:_update()
     if x ~= self.x or y ~= self.y then
         local lastx, lasty = self.x, self.y
         -- Note that calc.x/y are not set as they are always 0 for rtk.Windows (in order
-        -- for container layout to work).  Instead we just sync the user-facing attributes.
-        self:sync('x', x, nil, nil, 0)
-        self:sync('y', y, nil, nil, 0)
+        -- for container layout to work).  Instead we just sync the surface attributes,
+        -- forcing the computed values to 0.
+        self:sync('x', x, 0)
+        self:sync('y', y, 0)
         self:onmove(lastx, lasty)
     end
 
@@ -1620,8 +1621,8 @@ function rtk.Window:_update()
         -- attr's calculate function would be called and would clamp to minw/minh, but this
         -- must be avoided because gfx.w/gfx.h is authoritative.
         local last_w, last_h = self.w, self.h
-        self:sync('w', gfx.w / rtk.scale.framebuffer, nil, nil, gfx.w)
-        self:sync('h', gfx.h / rtk.scale.framebuffer, nil, nil, gfx.h)
+        self:sync('w', gfx.w / rtk.scale.framebuffer, gfx.w)
+        self:sync('h', gfx.h / rtk.scale.framebuffer, gfx.h)
         -- Helps to reduce flicker just a tiny bit when the window size expands.
         self:_clear_gdi(calc.w, calc.h)
         self:onresize(last_w, last_h)

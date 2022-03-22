@@ -1214,8 +1214,9 @@ end
 --
 -- calculated forces direct setting of the calculated value, bypassing the attributes
 -- calculate() function.  This can be used to forcefully sync a value that might otherwise
--- be out of bounds, for example.
-function rtk.Widget:sync(attr, value, trigger, reflow, calculated)
+-- be out of bounds, for example, or because the calculated value is already known and
+-- there's no need to recompute it.
+function rtk.Widget:sync(attr, value, calculated, trigger, reflow)
     return self:_attr(attr, value, trigger, reflow, calculated, true)
 end
 
