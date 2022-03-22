@@ -212,8 +212,10 @@ unparented, but they will be inert until added to a container that ultimately pa
 to an `rtk.Window`.
 
 ```lua
--- Creates a window, which is a container
-local w = rtk.Window()
+-- Creates a window, which is a container.  Normally, when undocked, rtk.Window
+-- will automatically fit to size its contents.  But here we'll force a fixed
+-- size to better demonstrate the alignment attributes.
+local w = rtk.Window{w=640, h=480}
 -- Creates a button, currently unparented
 local b = rtk.Button{'Click me!'}
 -- Now add the button to the container, centered.

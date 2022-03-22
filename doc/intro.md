@@ -102,8 +102,9 @@ local window = rtk.Window()
 -- Create a new button initialized with this label.  Note the curly braces,
 -- because all rtk.Widget classes actually receive a table of attributes
 -- upon initialization.  This one is a special "positional" value that
--- corresponds to the 'label' attribute.
-local button = rtk.Button{'Fool me once, shame on ... you'}
+-- corresponds to the 'label' attribute.  We also add a 20px margin around
+-- the button to add some spacing between it and the window border.
+local button = rtk.Button{'Fool me once, shame on ... you.', margin=20}
 -- Add an onclick handler to respond to mouse clicks of the button
 button.onclick = function(self, event)
     -- Animate the button color to red and change the label.
@@ -112,9 +113,9 @@ button.onclick = function(self, event)
 end
 -- Add the button widget to window, centered within it.  In practice you
 -- would probably use a series of box container widgets to craft a layout.
-window:add(button, {halign='center', valign='center'})
--- Finally open the window.
-window:open()
+window:add(button)
+-- Finally open the window, which we place in the center of the screen.
+window:open{align='center'}
 ```
 
 Now go check out the **@{tutorial}**.
