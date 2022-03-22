@@ -285,12 +285,13 @@ rtk.Widget.register{
     -- width to the widget (more on that later), then once the widget reflows
     -- `widget:calc('w')` will return the calculated width in pixels.
     --
-    -- In most cases the value you store in the attribute remains the way you set it, and
-    -- rtk internally uses the calculated variants.  However, whenever a user interacts with
-    -- a widget in that affects an attribute, the new value is synced back to both the calculated
-    -- version *and* the attribute vield.  For example, `rtk.Entry.caret` is modified when the
-    -- user moves where the caret is positioned.  Or `rtk.Window.w` is updated when the user
-    -- resizes the width of the window.
+    -- In most cases the value you store in the attribute -- what rtk calls the *surface*
+    -- value -- remains the way you set it, and rtk internally uses the calculated
+    -- variants.  However, whenever a user interacts with a widget in that affects an
+    -- attribute, the new value is synced back to both the calculated version *and* the
+    -- surface value.  For example, `rtk.Entry.caret` is modified when the user moves
+    -- where the caret is positioned.  Or `rtk.Window.w` is updated when the user resizes
+    -- the width of the window.
     --
     -- @section widget.attributes
 

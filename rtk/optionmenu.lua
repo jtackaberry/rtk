@@ -152,9 +152,6 @@ function rtk.OptionMenu:initialize(attrs, ...)
     end
     rtk.Button.initialize(self, attrs, self.class.attributes.defaults, ...)
     self._menu = rtk.NativeMenu()
-    if not self.icon then
-        -- self.calc.icon = rtk.OptionMenu.static._icon
-    end
     self:_handle_attr('menu', self.calc.menu)
     self:_handle_attr('icononly', self.calc.icononly)
 end
@@ -218,12 +215,12 @@ function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow, sync)
             self.selected_index = nil
             self.selected_id = nil
             if not self.calc.icononly then
-                self:attr('label', '')
+                self:sync('label', '')
             end
         end
         local last = self._menu:item(oldval)
         -- If the value has changed, fire both onselect and onchange.
-        if value ~= oldval then
+        if value ~= oldval and trigger ~= false then
             self:onchange(item, last)
             self:onselect(item, last)
         elseif trigger then

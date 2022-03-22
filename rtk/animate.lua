@@ -380,13 +380,16 @@ end
 --
 -- @warning
 --   Using `rtk.Widget:animate()` instead is strongly preferred.  You probably never need to
---   call this global function directly.
+--   call this global function directly, unless you're doing some low level operation and
+--   want to animate a non-widget attribute.
 --
 -- The arguments are the same as `rtk.Widget:animate()`, plus:
 --
 --   * `key`: a globally unique string that identifies this animation
---   * `widget`: an `rtk.Widget` to act upon.  If defined, the `attr` field defines
---      a widget attribute to animate.  If nil, you'll probably want to specify `update`.
+--   * `widget`: an optional `rtk.Widget` to act upon.  If defined, the `attr` field specifies
+--      a particular attribute to animate.  If nil, you'll want to specify `update` in
+--      order to receive frame updates during the animation.
+--   * `attr`: if `widget` is not nil, this is the widget's attribute that's being animated.
 --   * `update`: an optional function that's invoked on each step of the animation,
 --      and which receives as arguments `(value, target, attr, anim)`, where `value` is
 --      the current mid-animation value, `target` and `attr` correspond to the fields in

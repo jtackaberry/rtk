@@ -1310,7 +1310,7 @@ function rtk.Window:_handle_dock_change(dockstate)
     local was_docked = (self._dockstate & 0x01) ~= 0
     calc.docked = dockstate & 0x01 ~= 0
     calc.dock = (dockstate >> 8) & 0xff
-    -- Also sync to user-facing attributes
+    -- Also sync to surface attributes
     self:sync('dock', calc.dock)
     self:sync('docked', calc.docked)
     self._dockstate = dockstate
@@ -1616,7 +1616,9 @@ function rtk.Window:_update()
     -- being false.
     local resized = gfx.w ~= calc.w or gfx.h ~= calc.h
     if resized and self.visible then
-        -- Update both calculated and user-facing attributes for the newly discovered size.
+        -- Update both surface *and* calculated for the newly discovered size. Otherwise
+        -- attr's calculate function would be called and would clamp to minw/minh, but this
+        -- must be avoided because gfx.w/gfx.h is authoritative.
         local last_w, last_h = self.w, self.h
         self:sync('w', gfx.w / rtk.scale.framebuffer, nil, nil, gfx.w)
         self:sync('h', gfx.h / rtk.scale.framebuffer, nil, nil, gfx.h)
