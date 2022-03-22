@@ -194,7 +194,7 @@ function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow, sync)
         if not self.calc.icononly and not self.selected then
             -- Nothing selected but label should be visible, so set it to the empty string
             -- to ensure _reflow_get_max_label_size() gets called to set the appropriate width.
-            self:attr('label', '')
+            self:sync('label', '')
         elseif self.selected then
             -- Something was selected, so now that we've just set a new menu, reevaluate the
             -- selected item.
@@ -205,7 +205,7 @@ function rtk.OptionMenu:_handle_attr(attr, value, oldval, trigger, reflow, sync)
         self.selected_item = item
         if item then
             if not self.calc.icononly  then
-                self:attr('label', item.altlabel or item.label)
+                self:sync('label', item.altlabel or item.label)
             end
             self.selected_index = item.index
             self.selected_id = item.id
@@ -242,9 +242,10 @@ function rtk.OptionMenu:open()
     assert(self.menu, 'menu attribute was not set on OptionMenu')
     self._menu:open_at_widget(self):done(function(item)
         if item then
-            -- Passing true will always fire onselect() but onchange() only fires if the
-            -- value actually changed.
-            self:select(item.id or item.index, true)
+            -- We don't use select() as that calls attr() and here we are changing the
+            -- attribute from within. Passing true for trigger argument will always fire
+            -- onselect() but onchange() only fires if the value actually changed.
+            self:sync('selected', item.id or item.index, nil, true)
         end
     end)
 end
