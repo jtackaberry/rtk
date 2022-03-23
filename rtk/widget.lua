@@ -1651,6 +1651,13 @@ end
 -- value.  If the `dst` is the same, then the in-flight animation will continue
 -- to run without interruption.
 --
+-- During an animation, the attribute's calculated value is updated to reflect each
+-- individual step of the animation, and this can be fetched by calling `calc()` with the
+-- `instant` argument set to true.  However, the surface value -- that is, the direct
+-- fields of the widget object, such as `button.color` or `box.alpha` -- are not updated
+-- during the animation.  Surface attributes are updated either at the start of end of the
+-- animation, depending on what makes sense in the context of the attribute.
+--
 -- @code
 --   -- This example causes the button width to animate back and forth between
 --   -- 300px and its intrinsic size with different speeds each time it's clicked.
