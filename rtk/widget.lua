@@ -2842,7 +2842,7 @@ function rtk.Widget:_handle_attr(attr, value, oldval, trigger, reflow, sync)
         end
         if reflow ~= rtk.Widget.REFLOW_NONE then
             self:queue_reflow(reflow)
-        elseif redraw then
+        elseif redraw ~= false then
             -- No reflow for this widget, but at least queue a draw.
             self:queue_draw()
         end

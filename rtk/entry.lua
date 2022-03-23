@@ -72,7 +72,6 @@ rtk.Entry.register{
     value = rtk.Attribute{
         default='',
         reflow=rtk.Widget.REFLOW_NONE,
-        redraw=true,
         calculate=function(self, attr, value, target)
             -- Ensure value is always a string.
             return value and tostring(value) or ''
@@ -187,8 +186,6 @@ rtk.Entry.register{
         -- on the current value.
         priority=true,
         reflow=rtk.Widget.REFLOW_NONE,
-        -- We don't need to reflow, but we do need to redraw.
-        redraw=true,
         calculate=function(self, attr, value, target)
             return rtk.clamp(value, 1, #(target.value or '') + 1)
         end,

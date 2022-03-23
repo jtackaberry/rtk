@@ -114,13 +114,13 @@ rtk.Attribute = {
     -- luma-adaptive icon styling.
     -- @type boolean|nil
     priority = nil,
-    -- Defines the @{rtk.Widget.reflow|reflow behavior} when this attribute is set. When
-    -- nil, generally `rtk.Widget.REFLOW_PARTIAL` is assumed.
+    --- Defines the @{rtk.Widget.reflow|reflow behavior} when this attribute is set. When
+    -- nil, `rtk.Widget.REFLOW_PARTIAL` is used.
     -- @type reflowconst|nil
     reflow = nil,
-    -- When `reflow` is set to `rtk.Widget.REFLOW_NONE` reflow is skipped, but so too
-    -- is a redraw.  If the widget doesn't need a reflow but *does* need to be redrawn,
-    -- you can set this to true.
+    --- When `reflow` is set to `rtk.Widget.REFLOW_NONE` reflow is skipped and a straight redraw
+    -- is queued instead.  If you also want to skip the redraw, set redraw=false.  If nil or true
+    -- then a redraw is queued when the attribute is modified.
     -- @type boolean|nil
     redraw = nil,
     --- A table of one or more attribute names that will be set to nil when this attribute

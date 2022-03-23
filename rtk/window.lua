@@ -159,6 +159,7 @@ rtk.Window.register{
         -- Unlike normal x/y coords for widgets, window position doesn't affect layout
         type='number',
         reflow=rtk.Widget.REFLOW_NONE,
+        redraw=false,
         window_sync=true,
     },
     --- Like `x` but for the y screen coordinate (default 0).
@@ -176,6 +177,7 @@ rtk.Window.register{
     y = rtk.Attribute{
         type='number',
         reflow=rtk.Widget.REFLOW_NONE,
+        redraw=false,
         window_sync=true,
     },
     --- The current client width of the window (default nil).  Client in this context means
@@ -416,6 +418,7 @@ rtk.Window.register{
         default='REAPER application',
         reflow=rtk.Widget.REFLOW_NONE,
         window_sync=true,
+        redraw=false,
     },
     --- The opacity of the full window at the OS level, which affects how the window is
     -- composited by the OS (default 1.0). This attribute is ignored when docked.
@@ -434,6 +437,7 @@ rtk.Window.register{
         -- Force no reflow at all as this only affects drawing
         reflow=rtk.Widget.REFLOW_NONE,
         window_sync=true,
+        redraw=false,
     },
 
     --- Controls whether undocked windows will be provided a means of resizing the window
