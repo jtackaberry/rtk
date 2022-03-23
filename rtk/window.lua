@@ -1902,7 +1902,7 @@ function rtk.Window:_update()
             -- Clear _draw_queued flag before drawing so that if some event handler
             -- triggered from _draw() queues a redraw it won't get lost.
             self._draw_queued = false
-            self:_draw(0, 0, 1.0, event, calc.w, calc.h, 0, 0, 0, 0)
+            self:_draw(0, 0, calc.alpha, event, calc.w, calc.h, 0, 0, 0, 0)
             if event.debug then
                 event.debug:_draw_debug_info(event)
             end
