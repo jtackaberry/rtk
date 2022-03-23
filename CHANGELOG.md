@@ -11,7 +11,7 @@
 
 * The `update` callback passed to `rtk.queue_animation()` now receives the animation table as the 4th argument
 * The `rtk.Entry`'s value attribute can be be received as the first positional argument
-* Full reflow is avoided when setting `rtk.Text.value` on a fixed-width text widget (optimization)
+* Full reflow is avoided when setting `rtk.Text.text` on a fixed-width text widget (optimization)
 * Remove js_ReaScriptAPI requirement for `rtk.Window:get_normalized_y()`
 
 #### Bug Fixes
