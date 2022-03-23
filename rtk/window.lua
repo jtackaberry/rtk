@@ -827,7 +827,7 @@ function rtk.Window:_sync_window_attrs(overrides)
     end
 
     if self._resize_grip then
-        self._resize_grip:hide()
+        self._resize_grip:attr('visible', calc.borderless and calc.resizable and not calc.docked)
     end
 
     if not calc.docked then
@@ -852,9 +852,6 @@ function rtk.Window:_sync_window_attrs(overrides)
                 local sw = math.ceil(self.calc.w / rtk.scale.framebuffer)
                 local sh = math.ceil(self.calc.h / rtk.scale.framebuffer)
                 reaper.JS_Window_Resize(self.hwnd, sw, sh)
-            end
-            if calc.resizable then
-                self._resize_grip:show()
             end
         end
         local function restyle()
