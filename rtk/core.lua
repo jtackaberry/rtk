@@ -870,6 +870,19 @@ rtk.themes = {
         --- the border color of `rtk.Popup`s
         -- @type colortype
         popup_border = '#385074',
+
+        --- font and size used for `rtk.Slider` labels (defaults to `default_font`)
+        -- @type table
+        slider_font = nil,
+        --- color of `rtk.Slider` thumbs and active track segments
+        -- @type colortype
+        slider = '#2196f3',
+        --- color of `rtk.Slider` tracks
+        -- @type colortype
+        slider_track = '#5a5a5a',
+        --- color used for `rtk.Slider` labels (defaults to `text`)
+        -- @type colortype
+        slider_tick_label = nil,
     },
     light = {
         name = 'light',
@@ -908,6 +921,8 @@ rtk.themes = {
         popup_bg_brightness = 1.5,
         popup_shadow = '#11111122',
         popup_border = '#385074',
+        slider = '#2196f3',
+        slider_track = '#5a5a5a',
     }
 }
 

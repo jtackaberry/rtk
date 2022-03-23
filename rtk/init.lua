@@ -45,6 +45,7 @@ require('rtk.imagebox')
 require('rtk.optionmenu')
 require('rtk.checkbox')
 require('rtk.application')
+require('rtk.slider')
 
 -- Load other modules into the rtk namespace
 rtk.log = require('rtk.log')
