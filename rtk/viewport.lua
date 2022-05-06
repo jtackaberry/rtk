@@ -58,8 +58,9 @@ rtk.Viewport.static.SCROLLBAR_NEVER = 0
 -- space and the scrollbar will be drawn over top.
 -- @meta 'hover'
 rtk.Viewport.static.SCROLLBAR_HOVER = 1
---- Always show the scrollbar.  Unlike `SCROLLBAR_HOVER`, space is reserved for the scrollbar
--- and so the child won't overlap with the scrollbar handle.
+--- Always show the scrollbar when there is content to be scrolled.  Unlike
+-- `SCROLLBAR_HOVER`, space is reserved for the scrollbar and so the child won't overlap
+-- with the scrollbar handle.
 -- @meta 'always'
 rtk.Viewport.static.SCROLLBAR_ALWAYS = 2
 
@@ -141,8 +142,8 @@ rtk.Viewport.register{
         -- Scrollbar offset doesn't affect layout
         reflow=rtk.Widget.REFLOW_NONE,
     },
-    --- Number of pixels from the edge of the viewport that defines the "hot zone" where
-    -- when the mouse this region a `SCROLLBAR_HOVER` scrollbar will appear with a low
+    --- Number of pixels from the edge of the viewport that defines the "hot zone" where,
+    -- when the mouse enters this region, a `SCROLLBAR_HOVER` scrollbar will appear with a low
     -- opacity.  The opacity increases once the mouse moves directly over the scrollbar
     -- handle.
     -- @meta read/write
