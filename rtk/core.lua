@@ -644,6 +644,14 @@ local FONT_FLAG_UNDERLINE = string.byte('u') << 16
 --
 -- Font constants and settings to be used across the UI.
 --
+-- The constants (i.e. those fields in uppercase) can be used with the `fontflags`
+-- attributes available on certain widgets (such as `rtk.Text.fontflags`), which takes
+-- a bitmap of these constants:
+--
+-- @code
+--   local t1 = rtk.Text{'just bold', fontflags=rtk.font.BOLD}
+--   local t2 = rtk.Text{'bold and italicized', fontflags=rtk.font.BOLD|rtk.font.ITALICS}
+--
 -- @table rtk.font
 -- @compact
 rtk.font = {
