@@ -512,7 +512,9 @@ function rtk.Viewport:_draw_scrollbars(offx, offy, cltargetx, cltargety, alpha, 
         end
         self:setcolor(self._scrollbar_color)
         gfx.a = self._vscrolla.current * alpha
-        gfx.rect(scrx, scry, calc.scrollbar_size * rtk.scale.value, self._vscrollh + 1, 1)
+        if self._vscrollh > 0 then
+            gfx.rect(scrx, scry, calc.scrollbar_size * rtk.scale.value, self._vscrollh + 1, 1)
+        end
     end
 end
 
