@@ -766,15 +766,6 @@ rtk.themes = {
         --- global default font (default is `{'Calibri', 18}`)
         -- @type table
         default_font = {'Calibri', 18},
-        --- font used for tooltips (default is `{'Segoe UI (TrueType)', 16}`)
-        -- @type table
-        tooltip_font = {'Segoe UI (TrueType)', 16},
-        --- background color of the tooltip (default is white)
-        -- @type colortype
-        tooltip_bg = '#ffffff',
-        --- color of the tooltip text and border (default is black)
-        -- @type colortype
-        tooltip_text = '#000000',
 
         --- accent color used for things like mouseover highlights and selections
         -- @type colortype
@@ -782,6 +773,17 @@ rtk.themes = {
         --- used in areas where a more subdued accent color is needed
         -- @type colortype
         accent_subtle = '#306088',
+
+        --- background color of the tooltip (default is white)
+        -- @type colortype
+        tooltip_bg = '#ffffff',
+        --- color of the tooltip text and border (default is black)
+        -- @type colortype
+        tooltip_text = '#000000',
+        --- font used for tooltips (default is `{'Segoe UI (TrueType)', 16}`)
+        -- @type table
+        tooltip_font = {'Segoe UI (TrueType)', 16},
+
         --- text color for text in widgets such as `rtk.Text` and `rtk.Entry`
         -- @type colortype
         text = '#ffffff',
@@ -789,12 +791,19 @@ rtk.themes = {
         -- used for example with a status bar
         -- @type colortype
         text_faded = '#bbbbbb',
+        --- default font used for `rtk.Text` objects (defaults to `default_font`)
+        -- @type table
+        text_font = nil,
+
         --- the default color for `rtk.Button` surfaces
         -- @type colortype
         button = '#555555',
         --- the default color for `rtk.Heading` text, which uses `text` if nil (default nil)
         -- @type colortype
         heading = nil,
+        --- default font used for `rtk.Heading` objects (defaults to `{'Calibri', 26}`)
+        -- @type table
+        heading_font = {'Calibri', 26},
         --- color of text in `rtk.Button` labels
         -- @type colortype
         button_label = '#ffffff',
@@ -844,13 +853,6 @@ rtk.themes = {
         -- @type number
         button_clicked_border_mul = 1,
 
-        --- default font used for `rtk.Text` objects (defaults to `default_font`)
-        -- @type table
-        text_font = nil,
-        --- default font used for `rtk.Heading` objects (defaults to `{'Calibri', 26}`)
-        -- @type table
-        heading_font = {'Calibri', 26},
-
         --- Default font used for `rtk.Entry` objects (defaults to `default_font`)
         -- @type table
         entry_font = nil,
@@ -885,15 +887,15 @@ rtk.themes = {
         -- @type colortype
         popup_border = '#385074',
 
-        --- font and size used for `rtk.Slider` labels (defaults to `default_font`)
-        -- @type table
-        slider_font = nil,
         --- color of `rtk.Slider` thumbs and active track segments
         -- @type colortype
         slider = '#2196f3',
         --- color of `rtk.Slider` tracks
         -- @type colortype
         slider_track = '#5a5a5a',
+        --- font and size used for `rtk.Slider` labels (defaults to `default_font`)
+        -- @type table
+        slider_font = nil,
         --- color used for `rtk.Slider` labels (defaults to `text`)
         -- @type colortype
         slider_tick_label = nil,
