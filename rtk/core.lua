@@ -102,7 +102,7 @@ local rtk = {
     --
 
     --- The last `rtk.Window` object that was instantiated, or nil if none was
-    -- instantiated.  If you need to access global @{rtk.Window.refs|refs} but don't have
+    -- instantiated.  If you need to access global @{rtk.Widget.refs|refs} but don't have
     -- a reference to a widget available, you can use this field.
     -- @meta read-only
     -- @type rtk.Window|nil
