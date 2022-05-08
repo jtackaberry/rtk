@@ -18,8 +18,8 @@ local log = require('rtk.log')
 
 --- A widget that wraps an `rtk.Image`.
 --
--- `rtk.Image` is a low-level class for managing images and those objects can't be added
--- to containers, but `rtk.ImageBox` are proper widgets and can be.
+-- `rtk.Image` is a low-level class for managing images and therefore can't be added to
+-- containers, while `rtk.ImageBox` can because it is a proper widget.
 --
 -- @example
 --   -- Create an ImageBox widget with photo.jpg that's located in an img
