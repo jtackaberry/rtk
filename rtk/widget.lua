@@ -397,11 +397,11 @@ rtk.Widget.register{
         type='number',
         reflow=rtk.Widget.REFLOW_FULL,
         animate=function(self, anim)
-            -- Ensure if we are animating towards a non-fractional width that we
-            -- don't return 0 < value <= 1.0 because this will result in a relative
-            -- size.
+            -- Ensure if we are animating towards a non-fractional width (including 0)
+            -- that we don't return 0 < value <= 1.0 because this will result in a
+            -- relative size.
             local val = anim.resolve(anim.easingfunc(anim.pct))
-            return (anim.dst > 1.0 and val > 0 and val <= 1.0) and 1.01 or val, val == anim.dst
+            return ((anim.dst > 1.0 or anim.dst == 0) and val > 0 and val <= 1.0) and 1.01 or val, val == anim.dst
         end
     },
     --- Like `w` but for widget height (default `nil`)
