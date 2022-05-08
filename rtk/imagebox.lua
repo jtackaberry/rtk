@@ -211,7 +211,7 @@ function rtk.ImageBox:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, c
     local calc = self.calc
     local x, y = calc.x + offx, calc.y + offy
 
-    if not self.image or y + calc.h < 0 or y > cliph or calc.ghost then
+    if y + calc.h < 0 or y > cliph or calc.ghost then
         -- Widget would not be visible on current drawing target
         return
     end
@@ -219,16 +219,18 @@ function rtk.ImageBox:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, c
     local pre = self._pre
     self:_handle_drawpre(offx, offy, alpha, event)
     self:_draw_bg(offx, offy, alpha, event)
-    calc.image:blit{
-        -- Destination pos
-        dx=x + pre.ix, dy=y + pre.iy,
-        -- Destination dimensions
-        dw=self.iw, dh=self.ih,
-        alpha=calc.alpha * alpha,
-        -- Clip
-        clipw=calc.w,
-        cliph=calc.h,
-    }
+    if calc.image then
+        calc.image:blit{
+            -- Destination pos
+            dx=x + pre.ix, dy=y + pre.iy,
+            -- Destination dimensions
+            dw=self.iw, dh=self.ih,
+            alpha=calc.alpha * alpha,
+            -- Clip
+            clipw=calc.w,
+            cliph=calc.h,
+        }
+    end
     self:_draw_borders(offx, offy, alpha)
     self:_handle_draw(offx, offy, alpha, event)
 end
