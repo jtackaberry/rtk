@@ -1,6 +1,6 @@
 DATE := $(shell date)
-TAG := $(or $(shell git describe --tags | cut -f1 -d- 2>/dev/null), $(shell echo 1.0.0))
+VERSION := $(or $(shell git describe --tags 2>/dev/null), $(shell echo 1.0.0))-dev
 
 build/rtk.lua: rtk/*.lua
 	mkdir -p build
-	python3 tools/luaknit.py rtk=rtk/ -c "This is generated code. See https://reapertoolkit.dev/ for more info.\nversion: $(TAG)-dev\nbuild: $(DATE)" -p "__RTK_VERSION='$(TAG)'" > build/rtk.lua
+	python3 tools/luaknit.py rtk=rtk/ -c "\nWARNING: DEV BUILD!  Use for testing only!\n\nThis is generated code. See https://reapertoolkit.dev/ for more info.\n\nversion: $(VERSION)\nbuild: $(DATE)\n" -p "__RTK_VERSION='$(VERSION)'" > build/rtk.lua
