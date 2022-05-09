@@ -403,14 +403,11 @@ rtk.Window.register{
         calculate=rtk.Reference('pinned')
     },
 
-    [1] = rtk.Attribute{alias='title'},
     --- The title of the window shown in the OS-native window frame (default "REAPER
     -- Application"). This attribute is ignored when docked.
     --
     -- Setting after `open()` is called requires the js_ReaScriptAPI extension, otherwise
     -- the change is ignored.
-    --
-    -- This attribute may be passed as the first positional argument during initialization.
     --
     -- @meta read/write
     -- @type string
