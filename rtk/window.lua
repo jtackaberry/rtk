@@ -872,7 +872,7 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- where, at least on Windows, the OS doesn't update the style until the window's
             -- geometry is updated.  So we need to give it a kick before rediscovering the
             -- new frame size, since on some OSes that can change.
-            local r, x1, y1, x2, y2 = reaper.JS_Window_GetClientRect(self.hwnd)
+            local r, x1, y1, x2, y2 = reaper.JS_Window_GetRect(self.hwnd)
             if r then
                 reaper.JS_Window_Resize(self.hwnd, x2-x1, y2-y1)
                 self:_discover_os_window_frame_size(self.hwnd)
