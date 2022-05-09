@@ -247,8 +247,8 @@ function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, 
     calc.w = (w and w + hpadding) or (fillw and boxw) or math.min(clampw and boxw or math.inf, self.lw + hpadding)
     calc.h = (h and h + vpadding) or (fillh and boxh) or math.min(clamph and boxh or math.inf, self.lh + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.round(rtk.clamp(calc.w, calc.minw, calc.maxw))
-    calc.h = math.round(rtk.clamp(calc.h, calc.minh, calc.maxh))
+    calc.w = math.round(self:_clampw(calc.w))
+    calc.h = math.round(self:_clamph(calc.h))
 end
 
 -- Precalculate positions for _draw()

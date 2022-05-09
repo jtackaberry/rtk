@@ -103,7 +103,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
             )
             ww = ww + clp + crp
             wh = wh + ctp + cbp
-            local minw = (attrs.minw or wcalc.minw or 0) + clp + crp
+            local minw = self:_adjscale((attrs.minw or wcalc.minw or 0) + clp + crp)
             child_maxw = math.min(math.max(child_maxw, ww, minw), inner_maxw)
             child_totalh = child_totalh + wh
             child_geometry[#child_geometry+1] = {x=wx, y=wy, w=ww, h=wh}
@@ -220,6 +220,6 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
 
     inner.w = inner.w + col.w
     calc.x, calc.y = x, y
-    calc.w = (w or inner.w) + lp + rp
-    calc.h = (h or inner.h) + tp + bp
+    calc.w = self:_clampw((w or inner.w) + lp + rp)
+    calc.h = self:_clamph((h or inner.h) + tp + bp)
 end

@@ -1914,7 +1914,8 @@ end
 -- The *bounding box* is our maximum allowed geometry as dictated by the parent container.
 -- Our parent itself has its own bounding box (dictated by its parent container, and so
 -- on) and its job is to manage our position, relative to all our siblings, such that we
--- collectively fit within the parent's box.
+-- collectively fit within the parent's box.  Parents will clamp any offered boxes based
+-- on `minw`/`maxw` and `minh`/`maxh`.
 --
 -- If `fillw` or `fillh` is specified, it requests that the widget consume the entirety
 -- of the bounding box in that dimension.  The semantics of this varies by widget.
@@ -2086,6 +2087,41 @@ function rtk.Widget:_get_padding_and_border()
     return tp+tb, rp+rb, bp+bb, lp+lb
 end
 
+-- Conditionally multiplies the given value with rtk.scale.value if the scalability
+-- attribute allows for full scaling of dimensions.
+function rtk.Widget:_adjscale(val)
+    if not val then
+        return
+    elseif self.calc.scalability & rtk.Widget.FULL ~= rtk.Widget.FULL then
+        return val
+    else
+        return val * rtk.scale.value
+    end
+end
+
+local function _clamp_size(sz, min, max, scalability)
+    if scalability & rtk.Widget.FULL == rtk.Widget.FULL then
+        local scale = rtk.scale.value
+        return rtk.clamp(sz, min and (min * scale), max and (max * scale))
+    else
+        return rtk.clamp(sz, min, max)
+    end
+end
+
+-- Clamps the given width to `minw` and `maxw`, adjusting for UI scale if allowed by the
+-- scalability attribute.  This does not handle fractional dimensions -- the caller must
+-- compute this before invoking.
+function rtk.Widget:_clampw(w)
+    local calc = self.calc
+    return _clamp_size(w, calc.minw, calc.maxw, calc.scalability)
+end
+
+-- Like rtk.Widget:_clampw() but for height, respecting `minh` and `maxh`.
+function rtk.Widget:_clamph(h)
+    local calc = self.calc
+    return _clamp_size(h, calc.minh, calc.maxh, calc.scalability)
+end
+
 --- Returns the top left position of the widget's box relative to its parent based on the
 -- given bounding box position.
 --
@@ -2104,8 +2140,7 @@ function rtk.Widget:_get_box_pos(boxx, boxy)
     end
 end
 
-local function _get_content_dimension(size, bounds, padding, fill, clamp, flags, scale)
-    scale = flags & rtk.Widget.FULL == rtk.Widget.FULL and (rtk.scale.value * (scale or 1)) or scale or 1
+local function _get_content_dimension(size, bounds, padding, fill, clamp, scale)
     if size then
         if bounds and size < -1 then
         -- Relative to the far edge.
@@ -2149,22 +2184,23 @@ end
 -- @tparam bool clamph as in `reflow()`
 -- @tparam number scale if the widget instance's `scalability` flags permit @{FULL|scaling
 --   dimensions} then non-nil return values will be multipled by this amount (in addition
---   to `rtk.scale` which is implcitly included).
+--   to `rtk.scale.value` which is implcitly included).
 -- @treturn number|nil the content width, or nil if caller should use intrinsic width
 -- @treturn number|nil the content height, or nil if caller should use intrinsic height
 function rtk.Widget:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, scale)
     local calc = self.calc
+    scale = self:_adjscale(scale or 1)
     local tp, rp, bp, lp = self:_get_padding_and_border()
-    local w = _get_content_dimension(self.w, boxw, lp + rp, fillw, clampw, calc.scalability, scale)
-    local h = _get_content_dimension(self.h, boxh, tp + bp, fillh, clamph, calc.scalability, scale)
+    local w = _get_content_dimension(self.w, boxw, lp + rp, fillw, clampw, scale)
+    local h = _get_content_dimension(self.h, boxh, tp + bp, fillh, clamph, scale)
     -- rtk.clamp() also tests if min/max are nil so if one of them isn't we'll be testing
     -- these values twice, but as these attributes are usually nil, it optimizes for the
     -- common case by avoiding the function call.
     if w and (calc.minw or calc.maxw) then
-        w = rtk.clamp(w, calc.minw, calc.maxw)
+        w = self:_clampw(w)
     end
     if h and (calc.minh or calc.maxh) then
-        h = rtk.clamp(h, calc.minh, calc.maxh)
+        h = self:_clamph(h)
     end
     return w, h, tp, rp, bp, lp
 end
@@ -2184,9 +2220,9 @@ function rtk.Widget:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
-    -- Our default size is the given box without our padding
-    calc.w = w or (fillw and (boxw - lp - rp) or 0)
-    calc.h = h or (fillh and (boxh - tp - bp) or 0)
+    -- Our default size is the given box without our padding, clamped to min/max dimensions
+    calc.w = w or self:_clampw(fillw and (boxw - lp - rp) or 0)
+    calc.h = h or self:_clamph(fillh and (boxh - tp - bp) or 0)
     return fillw, fillh
 end
 

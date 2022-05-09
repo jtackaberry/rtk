@@ -78,13 +78,13 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                 -- This is an expanded child which was not reflowed in pass 1, so do it now.
                 local child_maxw = rtk.clamprel(
                     (expand_unit_size * expand) - clp - crp - spacing,
-                    attrs.minw or wcalc.minw,
-                    attrs.maxw or wcalc.maxw
+                    attrs._minw,
+                    attrs._maxh
                 )
                 local child_maxh = rtk.clamprel(
                     h - ctp - cbp,
-                    attrs.minh or wcalc.minh,
-                    attrs.maxh or wcalc.maxh
+                    attrs._minh,
+                    attrs._maxh
                 )
                 wx, wy, ww, wh = widget:reflow(
                     0,
@@ -121,7 +121,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
             else
                 -- Non-expanded widget with native size, already reflowed in pass 1.  Just need
                 -- to adjust position.
-                ww = math.max(wcalc.w, attrs.minw or wcalc.minw or 0)
+                ww = math.max(wcalc.w, attrs._minw or 0)
                 wh = attrs.stretch == rtk.Box.STRETCH_FULL and maxh or wcalc.h
                 if need_second_pass then
                     second_pass[#second_pass+1] = {
@@ -148,7 +148,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
             local widget, attrs, offx, offy, child_maxw, wh, ctp, crp, cbp, clp, offset, spacing = table.unpack(widgetinfo)
             if attrs.stretch == rtk.Box.STRETCH_TO_SIBLINGS then
                 -- Widget size depended on siblings, so we need to reflow.
-                wx, wy, ww, wh = widget:reflow(
+                widget:reflow(
                     -- Just use origin as we'll realign based on given offsets later.
                     0, 0,
                     child_maxw, maxh,

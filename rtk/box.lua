@@ -412,6 +412,12 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
             -- alignment unless explicitly defined.
             attrs._halign = attrs.halign or calc.halign
             attrs._valign = attrs.valign or calc.valign
+            -- Similarly, calculated effective min/max cell values, which account for UI
+            -- scale (if allowed by the our scalability).
+            attrs._minw = self:_adjscale(attrs.minw or wcalc.minw)
+            attrs._maxw = self:_adjscale(attrs.maxw or wcalc.maxw)
+            attrs._minh = self:_adjscale(attrs.minh or wcalc.minh)
+            attrs._maxh = self:_adjscale(attrs.maxh or wcalc.maxh)
             -- Fill in the box direction implies expand.
             local implicit_expand
             if orientation == rtk.Box.HORIZONTAL then
@@ -433,13 +439,13 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
                     -- Horizontal box
                     local child_maxw = rtk.clamprel(
                         remaining_size - clp - crp - spacing,
-                        attrs.minw or wcalc.minw,
-                        attrs.maxw or wcalc.maxw
+                        attrs._minw,
+                        attrs._maxw
                     )
                     local child_maxh = rtk.clamprel(
                         h - ctp - cbp,
-                        attrs.minh or wcalc.minh,
-                        attrs.maxh or wcalc.maxh
+                        attrs._minh,
+                        attrs._maxh
                     )
                 _, _, ww, wh, wexpw, wexph = widget:reflow(
                         0,
@@ -460,8 +466,8 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
                     exph = wexph or exph
                     -- We can expand the child to minw/h (for alignment purposes) but can't
                     -- reduce it to maxw/h (if defined) as only viewports support clipping.
-                    ww = math.max(ww, attrs.minw or widget.minw or 0)
-                    wh = math.max(wh, attrs.minh or widget.minh or 0)
+                    ww = math.max(ww, attrs._minw or 0)
+                    wh = math.max(wh, attrs._minh or 0)
                     if wexpw and clampw and ww >= child_maxw and n < #self.children then
                         -- This child is non-expanded but now after reflowing it we
                         -- see that it's reporting as having expanded width, and it's
@@ -480,13 +486,13 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
                     -- Vertical box
                     local child_maxw = rtk.clamprel(
                         w - clp - crp,
-                        attrs.minw or wcalc.minw,
-                        attrs.maxw or wcalc.maxw
+                        attrs._minw,
+                        attrs._maxw
                     )
                     local child_maxh = rtk.clamprel(
                         remaining_size - ctp - cbp - spacing,
-                        attrs.minh or wcalc.minh,
-                        attrs.maxh or wcalc.maxh
+                        attrs._minh,
+                        attrs._maxh
                     )
                     _, _, ww, wh, wexpw, wexph = widget:reflow(
                         0,
@@ -507,8 +513,8 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
                     exph = wexph or exph
                     -- We can expand the child to minw/h (for alignment purposes) but can't
                     -- reduce it to maxw/h (if defined) as only viewports support clipping.
-                    wh = math.max(wh, attrs.minh or widget.minh or 0)
-                    ww = math.max(ww, attrs.minw or widget.minw or 0)
+                    ww = math.max(ww, attrs._minw or 0)
+                    wh = math.max(wh, attrs._minh or 0)
                     if wexph and clamph and wh >= child_maxh and n < #self.children then
                         -- Prevent starvation of subsequent children. See comment above.
                         attrs._calculated_expand = 1

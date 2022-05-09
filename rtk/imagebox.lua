@@ -180,8 +180,8 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     calc.w = (fillw and boxw) or math.min(clampw and boxw or math.inf, self.iw + hpadding)
     calc.h = (fillh and boxh) or math.min(clamph and boxh or math.inf, self.ih + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.round(rtk.clamp(calc.w, self.minw, self.maxw))
-    calc.h = math.round(rtk.clamp(calc.h, self.minh, self.maxh))
+    calc.w = math.round(self:_clampw(calc.w))
+    calc.h = math.round(self:_clamph(calc.h))
 end
 
 -- Precalculate positions for _draw()

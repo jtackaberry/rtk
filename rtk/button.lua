@@ -488,8 +488,8 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
         calc.h = 0
     end
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.round(rtk.clamp(calc.w + hpadding, calc.minw, calc.maxw))
-    calc.h = math.round(rtk.clamp(calc.h + vpadding, calc.minh, calc.maxh))
+    calc.w = math.round(self:_clampw(calc.w + hpadding))
+    calc.h = math.round(self:_clamph(calc.h + vpadding))
 end
 
 -- Precalculate positions for _draw()

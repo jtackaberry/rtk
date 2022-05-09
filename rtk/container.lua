@@ -711,13 +711,17 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
         self._child_index_by_id[widget.id] = n
         if widget.visible == true then
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
+            local minw = self:_adjscale(attrs.minw or wcalc.minw)
+            local maxw = self:_adjscale(attrs.maxw or wcalc.maxw)
+            local minh = self:_adjscale(attrs.minh or wcalc.minh)
+            local maxh = self:_adjscale(attrs.maxh or wcalc.maxh)
             local wx, wy, ww, wh = widget:reflow(
                 0, 0,
                 -- Offered box size takes into account widget's location, we consider
                 -- where they would be offset within our box and offer the space to the
                 -- far edge of the box.
-                rtk.clamprel(inner_maxw - widget.x - clp - crp, attrs.minw or wcalc.minw, attrs.maxw or wcalc.maxw),
-                rtk.clamprel(inner_maxh - widget.y - ctp - cbp, attrs.minh or wcalc.minh, attrs.maxh or wcalc.maxh),
+                rtk.clamprel(inner_maxw - widget.x - clp - crp, minw, maxw),
+                rtk.clamprel(inner_maxh - widget.y - ctp - cbp, minh, maxh),
                 -- We implicitly fill if there's a minimum size defined.
                 attrs.fillw,
                 attrs.fillh,
@@ -731,8 +735,8 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
             -- bounding box to the child, but it may have elected not to use it.  We
             -- size those dimensions back up to minw/minh for alignment purposes below
             -- but don't overwrite the child's size.
-            ww = math.max(ww, attrs.minw or wcalc.minw or 0)
-            wh = math.max(wh, attrs.minh or wcalc.minh or 0)
+            ww = math.max(ww, minw or 0)
+            wh = math.max(wh, minh or 0)
             -- Calculate effective alignment for this cell, which defaults to the container's
             -- alignment unless explicitly defined.
             attrs._halign = attrs.halign or calc.halign
