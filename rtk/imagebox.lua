@@ -134,8 +134,8 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
         local scale = (self.scale or 1) * rtk.scale.value / image.density
         local native_aspect = image.w / image.h
         local aspect = calc.aspect or native_aspect
-        dstw = w or (fillw and (boxw - hpadding))
-        dsth = h or (fillh and (boxh - vpadding))
+        dstw = (w and w-hpadding) or (fillw and (boxw - hpadding))
+        dsth = (h and h-vpadding) or (fillh and (boxh - vpadding))
 
         -- We'll constrain the target image to the bounding box the if scale hasn't been forced
         -- and we have flexibility in one of the dimensions to resize to maintain aspect.
