@@ -688,6 +688,7 @@ function rtk.Window:_run()
     if self.running then
         rtk.defer(self._run, self)
     end
+    self._run_queued = self.running
 end
 
 -- Fetches the resolution of the display where the top left corner of the window appears.
@@ -1063,7 +1064,9 @@ function rtk.Window:open(options)
         gfx.rect(0, 0, w, h, 1)
     end
     self._draw_queued = true
-    self:_run()
+    if not self._run_queued then
+        self:_run()
+    end
 end
 
 function rtk.Window:_close()
@@ -1077,10 +1080,9 @@ end
 -- It is possible to call `open()` again after the window is closed (assuming we haven't
 -- yet terminated obviously).
 function rtk.Window:close()
-    self.running = false
     -- Ensure we don't subsequently try to sync window attrs to a non-existent window.
     self.hwnd = nil
-    gfx.quit()
+    self:_close()
     self:onclose()
 end
 
