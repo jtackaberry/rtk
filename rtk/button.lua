@@ -516,11 +516,8 @@ function rtk.Button:_realize_geometry()
     -- padding.  They'll be adjusted below.
     local lx = lp
     local ix = lx
+    local lw, lh = self.lw, self.lh
 
-    local lw, lh
-    if label then
-        lw, lh = self._font:measure(label)
-    end
     -- Now calculate geometry for surface, label, icon, and tag overlay based on the
     -- different style related attributes.
     --
