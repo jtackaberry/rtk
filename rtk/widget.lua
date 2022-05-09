@@ -2099,7 +2099,8 @@ function rtk.Widget:_adjscale(val)
     end
 end
 
-local function _clamp_size(sz, min, max, scalability)
+local function _clamp_size(sz, min, max, box, scalability)
+    max = box and (max and math.min(box, max) or box)
     if scalability & rtk.Widget.FULL == rtk.Widget.FULL then
         local scale = rtk.scale.value
         return rtk.clamp(sz, min and (min * scale), max and (max * scale))
@@ -2111,15 +2112,15 @@ end
 -- Clamps the given width to `minw` and `maxw`, adjusting for UI scale if allowed by the
 -- scalability attribute.  This does not handle fractional dimensions -- the caller must
 -- compute this before invoking.
-function rtk.Widget:_clampw(w)
+function rtk.Widget:_clampw(w, box)
     local calc = self.calc
-    return _clamp_size(w, calc.minw, calc.maxw, calc.scalability)
+    return _clamp_size(w, calc.minw, calc.maxw, box, calc.scalability)
 end
 
 -- Like rtk.Widget:_clampw() but for height, respecting `minh` and `maxh`.
-function rtk.Widget:_clamph(h)
+function rtk.Widget:_clamph(h, box)
     local calc = self.calc
-    return _clamp_size(h, calc.minh, calc.maxh, calc.scalability)
+    return _clamp_size(h, calc.minh, calc.maxh, box, calc.scalability)
 end
 
 --- Returns the top left position of the widget's box relative to its parent based on the
@@ -2188,7 +2189,6 @@ end
 -- @treturn number|nil the content width, or nil if caller should use intrinsic width
 -- @treturn number|nil the content height, or nil if caller should use intrinsic height
 function rtk.Widget:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, scale)
-    local calc = self.calc
     scale = self:_adjscale(scale or 1)
     local tp, rp, bp, lp = self:_get_padding_and_border()
     local w = _get_content_dimension(self.w, boxw, lp + rp, fillw, clampw, scale)
@@ -2196,6 +2196,7 @@ function rtk.Widget:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, 
     -- rtk.clamp() also tests if min/max are nil so if one of them isn't we'll be testing
     -- these values twice, but as these attributes are usually nil, it optimizes for the
     -- common case by avoiding the function call.
+    local calc = self.calc
     if w and (calc.minw or calc.maxw) then
         w = self:_clampw(w)
     end
