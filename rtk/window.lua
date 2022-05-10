@@ -769,22 +769,6 @@ function rtk.Window:_get_geometry_from_attrs(overrides)
     return math.round(x), math.round(y), math.round(w), math.round(h)
 end
 
--- For dimensions with nil values, determine the calculated size based on the
--- inner contents.
-function rtk.Window:_shrinkwrap()
-    local calc = self.calc
-    if #self.children == 0 then
-        -- There aren't any children, so use the max size for any unspecified dimension,
-        -- absent anything better to pick.
-        calc.w = self.w and calc.w or calc.maxw
-        calc.h = self.h and calc.h or calc.maxh
-    else
-        -- One or both dimensions are nil, so force a reflow with unconstrained size
-        -- in the affected dimensions.
-        self:reflow(rtk.Widget.REFLOW_FULL, not self.w, not self.h)
-    end
-end
-
 function rtk.Window:_sync_window_attrs(overrides)
     local calc = self.calc
     local lastw, lasth = self.w, self.h
@@ -805,7 +789,8 @@ function rtk.Window:_sync_window_attrs(overrides)
     end
 
     if not self.w or not self.h then
-        self:_shrinkwrap()
+        -- Reflow to shrinkwrap nil dimensions
+        self:reflow(rtk.Widget.REFLOW_FULL)
     end
 
     -- Everything below depends on js_ReaScriptAPI.
@@ -1010,7 +995,8 @@ function rtk.Window:open(options)
         options.valign = options.valign or options.align
     end
     if not self.w or not self.h then
-        self:_shrinkwrap()
+        -- Reflow to shrinkwrap nil dimensions
+        self:reflow(rtk.Widget.REFLOW_FULL)
     end
 
     local calc = self.calc
@@ -1443,32 +1429,39 @@ function rtk.Window:reflow(mode, shrinkwrapw, shrinkwraph)
             widget:_realize_geometry()
         end
     else
-        local saved_size
-        local boxw, boxh = calc.w, calc.h
-        if shrinkwrapw or shrinkwraph then
-            saved_size = {self.w, self.h}
-            local _, _, sw, sh = self:_get_display_resolution(true)
-            boxw = shrinkwrapw and (calc.maxw or sw*rtk.scale.framebuffer) or calc.w
-            boxh = shrinkwraph and (calc.maxh or sh*rtk.scale.framebuffer) or calc.h
-            self.w = not shrinkwrapw and self.w or nil
-            self.h = not shrinkwraph and self.h or nil
-        end
-        local _, _, w, h = rtk.Container.reflow(self,
-            -- box
-            0, 0, boxw, boxh,
-            -- fill
-            nil, nil,
-            -- clamp
-            true, true,
-            -- scale
-            rtk.scale.value,
-            -- viewport and window
-            nil, self
-        )
-        self:_realize_geometry()
-        full = true
-        if saved_size then
-            self.w, self.h = table.unpack(saved_size)
+        if #self.children == 0 then
+            -- There aren't any children, so use the min size for any unspecified
+            -- dimension, absent anything better to pick.
+            calc.w = self.w and calc.w or calc.minw
+            calc.h = self.h and calc.h or calc.minh
+        else
+            local saved_size
+            -- One or both dimensions are nil, so force a reflow with unconstrained size
+            -- in the affected dimensions.
+            local boxw, boxh = calc.w, calc.h
+            if not self.w or not self.h then
+                saved_size = {self.w, self.h}
+                local _, _, sw, sh = self:_get_display_resolution(true)
+                boxw = not self.w and (calc.maxw or sw*rtk.scale.framebuffer) or calc.w
+                boxh = not self.h and (calc.maxh or sh*rtk.scale.framebuffer) or calc.h
+            end
+            local _, _, w, h = rtk.Container.reflow(self,
+                -- box
+                0, 0, boxw, boxh,
+                -- fill
+                nil, nil,
+                -- clamp
+                true, true,
+                -- scale
+                rtk.scale.value,
+                -- viewport and window
+                nil, self
+            )
+            self:_realize_geometry()
+            full = true
+            if saved_size then
+                self.w, self.h = table.unpack(saved_size)
+            end
         end
         -- log.debug('rtk: full reflow (%s x %s) in %.3f ms', calc.w, calc.h, (reaper.time_precise() - t0) * 1000)
     end
