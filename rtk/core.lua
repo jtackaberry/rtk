@@ -259,7 +259,10 @@ rtk.scale = setmetatable({
         if not ok then
             return
         end
-        dpi = tonumber(dpi)
+        -- REAPER adjusts the DPI according to REAPER's internal UI scale.  We'll account
+        -- for that explicitly later, so instead we reverse the adjustment to identify
+        -- the actual OS-defined DPI.
+        dpi = math.ceil(tonumber(dpi) / rtk.scale.reaper)
         rtk.scale.system = dpi / 256.0
         if not rtk.scale.framebuffer then
             if rtk.os.mac and dpi == 512 then
