@@ -143,7 +143,7 @@ function rtk.Font:draw(text, x, y, clipw, cliph, flags)
     if rtk.os.mac then
         -- XXX: it's unclear why we need to fudge the extra pixel on OS X but it fixes
         -- alignment.
-        local fudge = 1 * rtk.scale.value
+        local fudge = math.ceil(1 * rtk.scale.value)
         y = y + fudge
         if cliph then
             cliph = cliph - fudge

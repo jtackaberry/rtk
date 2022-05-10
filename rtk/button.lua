@@ -633,6 +633,12 @@ function rtk.Button:_realize_geometry()
             -- Icon is on the right, so adjust clip width to subtract space for icon
             clipw = clipw - (tagw > 0 and tagw or (calc.w - ix + calc.spacing))
         end
+        if rtk.os.mac and icon then
+            -- Magic: for reasons unclear to me, on Mac, the relative position between
+            -- label and icon is wrong.  Here, if there's an icon for this button, we
+            -- shift text down by the scale.
+            ly = ly + math.ceil(rtk.scale.value)
+        end
         cliph = calc.h - ly
     end
     self._pre = {
