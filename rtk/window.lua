@@ -212,9 +212,15 @@ rtk.Window.register{
     w = rtk.Attribute{
         -- Ensure minw is calculated first as we depend on it
         priority=true,
-        -- default=800,
         type='number',
         window_sync=true,
+        -- rtk.Widget divides surface value by rtk.scale.value, which we don't want to do
+        -- for OS window sizes.  We pass the framebuffer scale instead to rtk.Widget's
+        -- animate function, since apart from that scale value the logic is the same
+        -- for rtk.Window.
+        animate=function(self, anim)
+            return rtk.Widget.attributes.w.animate(self, anim, rtk.scale.framebuffer)
+        end,
         calculate=function(self, attr, value, target)
             return value and math.max(self.minw or 0, value) * rtk.scale.framebuffer
         end,
@@ -232,7 +238,9 @@ rtk.Window.register{
     h = rtk.Attribute{
         -- Ensure minw is calculated first as we depend on it
         priority=true,
+        type='number',
         window_sync=true,
+        animate=rtk.Reference('w'),
         calculate=function(self, attr, value, target)
             return math.max(self.minh or 0, value or 0) * rtk.scale.framebuffer
         end,

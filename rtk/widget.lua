@@ -396,13 +396,17 @@ rtk.Widget.register{
     w = rtk.Attribute{
         type='number',
         reflow=rtk.Widget.REFLOW_FULL,
-        animate=function(self, anim)
-            -- Ensure if we are animating towards a non-fractional width (including 0)
-            -- that we don't return 0 < value <= 1.0 because this will result in a
-            -- relative size.
-            local val = anim.resolve(anim.easingfunc(anim.pct))
-            return ((anim.dst > 1.0 or anim.dst == 0) and val > 0 and val <= 1.0) and 1.01 or val, val == anim.dst
-        end
+        animate=function(self, anim, scale)
+            local calcval = anim.resolve(anim.easingfunc(anim.pct))
+            local surfaceval = (anim.pct < 1 and calcval or anim.doneval) / (scale or rtk.scale.value)
+            if anim.dst == 0 or anim.dst > 1 then
+                -- Ensure if we are animating towards a non-fractional width (including 0)
+                -- that we don't return a surface value of 0 < value <= 1.0 because this
+                -- will result in calculation of a relative size.
+                surfaceval = (type(surfaceval) == 'number' and surfaceval > 0 and surfaceval <= 1.0) and 1.01 or surfaceval
+            end
+            return calcval, surfaceval
+        end,
     },
     --- Like `w` but for widget height (default `nil`)
     -- @meta read/write
@@ -1708,7 +1712,7 @@ function rtk.Widget:animate(kwargs)
     kwargs.key = key
     kwargs.widget = self
     kwargs.attrmeta = meta
-    kwargs.stepfunc = meta.animate
+    kwargs.stepfunc = (meta.animate and meta.animate ~= rtk.Attribute.NIL) and meta.animate
     kwargs.calculate = meta.calculate
     if kwargs.dst == rtk.Attribute.DEFAULT then
         if meta.default == rtk.Attribute.FUNCTION then
@@ -1718,6 +1722,8 @@ function rtk.Widget:animate(kwargs)
         end
     end
 
+    -- Flags to track whether src and dst have been converted to calculated variants.
+    local calcsrc, calcdst
     -- Set the done value to the supplied destination value.  We may override
     -- the dst val later if it's width/height set to nil, in which case we want
     -- to ensure that once the animation is complete, the attribute will be
@@ -1738,22 +1744,27 @@ function rtk.Widget:animate(kwargs)
         kwargs.sync_surface_value = true
         -- If src value is nil or fractional and we're animating one of the
         -- dimensions, set the animation src to the current calculated size.
-        if not kwargs.src or kwargs.src <= 1.0 then
+        if not kwargs.src or (kwargs.src <= 1.0 and kwargs.src >= 0) then
             -- Source attribute was nil.  Use the calculated value, interpreting
             -- src as a relative value (if not nil).
-            kwargs.src = ((attr == 'w') and calc.w or calc.h or 0) * (kwargs.src or 1)
+            kwargs.src = calc[attr] * (kwargs.src or 1)
+            calcsrc = true
         end
-        if not kwargs.dst or kwargs.dst <= 1.0 then
+        if not kwargs.dst or (kwargs.dst <= 1.0 and kwargs.dst > 0) then
             -- Another special case.  If we want to animate width or height toward nil
             -- (intrinsic size) or value <= 1.0 (size relative to parent), force a full reflow
             -- to determine new calculated geometry and then animate toward that.
             --
-            -- Remember current values so they can be restored.
+            -- Remember current surface and calculated values so they can be restored.
             local current = self[attr]
-            -- Set the attribute to nil and force full reflow on our window to
-            -- calculate the new geometry in order to determine correct target
-            -- value.
+            local current_calc = calc[attr]
+            -- Set the attribute to nil and force full reflow on our window to calculate
+            -- the new geometry in order to determine correct target value.
             self[attr] = kwargs.dst
+            -- Also generate the calculated variant in case the widget's reflow function
+            -- depends upon previous calculated value (as can happen with rtk.Window, for
+            -- example).
+            calc[attr] = meta.calculate and meta.calculate(self, attr, kwargs.dst, {}) or kwargs.dst
             local window = self:_slow_get_window()
             if not window then
                 -- Trying to animate the geometry of a widget that's not parented
@@ -1762,23 +1773,25 @@ function rtk.Widget:animate(kwargs)
                 return rtk.Future():resolve(self)
             end
             window:reflow(rtk.Widget.REFLOW_FULL)
-            kwargs.dst = (calc[attr] or 0) / rtk.scale.value
-            -- Now restore original calculated dimension.  Unfortunately we need to
-            -- do another full reflow, because all the other widgets in the scene
-            -- would have also been reflowed around our new target geometry.
+            kwargs.dst = calc[attr] or 0
+            calcdst = true
+            doneval = kwargs.dst
+            -- Now restore original vales for this dimension.  Unfortunately we need to do
+            -- another full reflow, because all the other widgets in the scene would also
+            -- have been reflowed around our new target geometry.
             self[attr] = current
+            calc[attr] = current_calc
             window:reflow(rtk.Widget.REFLOW_FULL)
         end
-    else
-        if meta.calculate then
-            -- We pass an empty table here in case the attribute is a shorthand attr (like
-            -- padding) that injects other calculated attributes (like tpadding, etc.)  We
-            -- are just fishing for the calculated dst value, we don't want to actually
-            -- change our current calculated attributes.
-            kwargs.dst = meta.calculate(self, attr, kwargs.dst, {})
-            -- Update doneval now that we've got a calculated value.
-            doneval = kwargs.dst or rtk.Attribute.DEFAULT
-        end
+    end
+    if not calcdst and meta.calculate then
+        -- We pass an empty table here in case the attribute is a shorthand attr (like
+        -- padding) that injects other calculated attributes (like tpadding, etc.)  We
+        -- are just fishing for the calculated dst value, we don't want to actually
+        -- change our current calculated attributes.
+        kwargs.dst = meta.calculate(self, attr, kwargs.dst, {})
+        -- Update doneval now that we've got a calculated value.
+        doneval = kwargs.dst or rtk.Attribute.DEFAULT
     end
     -- As earlier, but the slow path: now that we've calculated the dst value,
     -- avoid scheduling a new animation with the same dst.
@@ -1798,7 +1811,7 @@ function rtk.Widget:animate(kwargs)
         -- want to start from the current mid-animation value, not the current animation's
         -- dst value.
         kwargs.src = self:calc(attr, true)
-    elseif meta.calculate then
+    elseif not calcsrc and meta.calculate then
         kwargs.src = meta.calculate(self, attr, kwargs.src, {})
     end
     return rtk.queue_animation(kwargs)

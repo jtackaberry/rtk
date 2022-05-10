@@ -249,7 +249,8 @@ local _table_stepfuncs = {
 
 -- Execute the next step of all queued animations.
 --
--- Called from rtk.Window:_update()
+-- Called from rtk.Window:_update() and returns true if any animations were
+-- stepped, so _update() knows it needs to redraw.
 function rtk._do_animations(now)
     -- Calculate frame rate (rtk.fps)
     if not rtk._frame_times then
@@ -277,9 +278,9 @@ function rtk._do_animations(now)
             local attr = anim.attr
             local finished = anim.pct >= 1.0
             local elapsed = now - anim._start_time
-            local newval
+            local newval, surfaceval
             if anim.stepfunc then
-                newval = anim.stepfunc(target, anim)
+                newval, surfaceval = anim.stepfunc(target, anim)
             else
                 newval = anim.resolve(anim.easingfunc(anim.pct))
             end
@@ -300,7 +301,15 @@ function rtk._do_animations(now)
                     -- 4x) due to all the indirect callbacks and event handlers.  Set the
                     -- calculated value directly, but still use the attribute's calc function
                     -- if it exists.
-                    local value = anim.calculate and anim.calculate(widget, attr, newval, widget.calc) or newval
+                    local value = newval
+                    if surfaceval == nil and anim.calculate then
+                        -- If no surface value was returned by stepfunc() then we infer it wasn't
+                        -- a widget attribute animate function and call out to the attr's calculate
+                        -- function instead, whose result we use as both the calculated and surface
+                        -- value.
+                        value = anim.calculate(widget, attr, newval, widget.calc)
+                        surfaceval = value
+                    end
                     widget.calc[attr] = value
                     -- We don't want to override the surface value with the mid-animation
                     -- calculated value, but we do that if specifically requested via the
@@ -308,12 +317,12 @@ function rtk._do_animations(now)
                     -- want to be able to animate these but reflow acts on the surface
                     -- values (as the point of reflow is to calculate geometry).
                     if anim.sync_surface_value then
-                        widget[attr] = value
+                        widget[attr] = surfaceval
                     end
                 else
                     -- However for the final value, we *do* use onattr() so that the
                     -- relevant event handlers get called.
-                    widget:attr(attr, anim.doneval)
+                    widget:attr(attr, surfaceval or anim.doneval)
                 end
                 -- What we lose by not calling onattr() for each intermediate step is the
                 -- automatic reflow provided by onattr.  So a bit of a kludge here, where
@@ -401,11 +410,11 @@ end
 --      animate something other than a widget attribute.
 --   * `target`: the target table against which the animation is occurring.  This defaults
 --      to `widget` if nil.
---   * `stepfunc`: a function invoked to calculate the next step of the animation,
---      which is manditory when src/dst are not numbers, or 1, 2, 3, or 4 element tables.
---      The function takes two arguments `(target, anim)` which are the same as described
---      in the `update` field above. The function must return the attribute value for the
---      next frame in the animation.
+--   * `stepfunc`: a function invoked to yield the next step of the animation, which
+--      is manditory when src/dst are neither scalar numbers nor tables containing
+--      numbers. The function takes two arguments `(target, anim)` which are the same as
+--      described in the `update` field above. The function must return the attribute
+--      value for the next frame in the animation.
 --   * `doneval`: when the animation is finished, the target attribute will be set to this
 --     final value.  Defaults to `dst` if not specified.
 --
