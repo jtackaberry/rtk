@@ -134,8 +134,8 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
         local scale = (self.scale or 1) * rtk.scale.value / image.density
         local native_aspect = image.w / image.h
         local aspect = calc.aspect or native_aspect
-        dstw = (w and w-hpadding) or (fillw and (boxw - hpadding))
-        dsth = (h and h-vpadding) or (fillh and (boxh - vpadding))
+        dstw = (w and w-hpadding) or (fillw and boxw-hpadding)
+        dsth = (h and h-vpadding) or (fillh and boxh-vpadding)
 
         -- We'll constrain the target image to the bounding box the if scale hasn't been forced
         -- and we have flexibility in one of the dimensions to resize to maintain aspect.
@@ -180,8 +180,8 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     calc.w = (fillw and boxw) or math.min(clampw and boxw or math.inf, self.iw + hpadding)
     calc.h = (fillh and boxh) or math.min(clamph and boxh or math.inf, self.ih + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.round(self:_clampw(calc.w))
-    calc.h = math.round(self:_clamph(calc.h))
+    calc.w = math.ceil(self:_clampw(calc.w))
+    calc.h = math.ceil(self:_clamph(calc.h))
 end
 
 -- Precalculate positions for _draw()

@@ -437,8 +437,8 @@ function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     calc.w = w and (w + hpadding) or boxw
     calc.h = h and (h + vpadding) or (size + self.lh + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.round(rtk.clamp(calc.w, minw, calc.maxw))
-    calc.h = math.round(rtk.clamp(calc.h, minh, calc.maxh))
+    calc.w = math.ceil(rtk.clamp(calc.w, minw, calc.maxw))
+    calc.h = math.ceil(rtk.clamp(calc.h, minh, calc.maxh))
     -- If there's no explicit width then here we indicate that we have consumed
     -- fillw.  TODO: needs adjustment when vertical slider support is added.
     return not w, false

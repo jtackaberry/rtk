@@ -112,7 +112,7 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
     child_totalh = child_totalh + (#self.children - 1) * vspacing
 
     -- All columns are equal size based on the widest child.
-    local col_width = child_maxw
+    local col_width = math.ceil(child_maxw)
     local num_columns = math.floor((inner_maxw + hspacing) / (col_width + hspacing))
     -- If flowbox height is specified use that as a fixed column height, otherwise
     -- calculate a column height that fits all the children within num_columns.

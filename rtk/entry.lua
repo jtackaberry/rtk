@@ -359,8 +359,8 @@ function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
 
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
-    calc.w = self:_clampw((w or maxw) + lp + rp)
-    calc.h = self:_clamph((h or maxh) + tp + bp)
+    calc.w = math.ceil(self:_clampw((w or maxw) + lp + rp))
+    calc.h = math.ceil(self:_clamph((h or maxh) + tp + bp))
     -- Remember calculated padding as we use that in many functions.
     self._ctp, self._crp, self._cbp, self._clp = tp, rp, bp, lp
 
