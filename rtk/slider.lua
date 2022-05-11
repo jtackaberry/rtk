@@ -389,10 +389,10 @@ function rtk.Slider:_handle_attr(attr, value, oldval, trigger, reflow, sync)
 end
 
 
-function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
     local hpadding = lp + rp
     local vpadding = tp + bp
     local lh = 0
@@ -402,8 +402,8 @@ function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
 
     -- Use the first tick label as a proxy for all labels when testing for validity.
     if calc.step and calc.ticklabels and (not segments or not segments[1].isvalid()) then
-        local lmaxw = (clampw or fillw) and (boxw - hpadding) or w or math.inf
-        local lmaxh = (clamph or fillh) and (boxh - vpadding) or h or math.inf
+        local lmaxw = (clampw or (fillw and greedyw)) and (boxw - hpadding) or w or math.inf
+        local lmaxh = (clamph or (fillh and greedyh)) and (boxh - vpadding) or h or math.inf
         segments = {}
         -- Avoid ipairs() so we can handle nil elements
         for n=1, #calc.ticklabels do
@@ -434,7 +434,11 @@ function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     local minh = math.max(calc.minh or 0, calc.thumbsize*2, calc.tracksize) * rtk.scale.value
     -- Intrinsic size
     local size = math.max(calc.thumbsize * 2, calc.ticksize, calc.tracksize) * rtk.scale.value
-    calc.w = w and (w + hpadding) or boxw
+    -- Sliders are intrinsically greedy and fill their bounding box unless explicitly
+    -- constrained with a fixed dimension.  However if greedyw/h is false, it means we're
+    -- autosizing and so we don't want to automatically consume the box in that dimension.
+    -- In that case we fall back to *some* kind of reasonable fixed size.
+    calc.w = w and (w + hpadding) or (greedyw and boxw or 50)
     calc.h = h and (h + vpadding) or (size + self.lh + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
     calc.w = math.ceil(rtk.clamp(calc.w, minw, calc.maxw))

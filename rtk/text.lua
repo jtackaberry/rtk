@@ -219,17 +219,17 @@ function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     return ok
 end
 
-function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags)
 
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
     local hpadding = lp + rp
     local vpadding = tp + bp
 
-    local lmaxw = (clampw or fillw) and (boxw - hpadding) or w or math.inf
-    local lmaxh = (clamph or fillh) and (boxh - vpadding) or h or math.inf
+    local lmaxw = (clampw or (fillw and greedyw)) and (boxw - hpadding) or w or math.inf
+    local lmaxh = (clamph or (fillh and greedyh)) and (boxh - vpadding) or h or math.inf
     -- Avoid re-laying out the string if nothing relevant has changed.
     local seg = self._segments
     if not seg or seg.boxw ~= lmaxw or not seg.isvalid() then
@@ -244,8 +244,8 @@ function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, 
         )
     end
     -- Text objects support clipping, so we respect our bounding box when clamping is requested.
-    calc.w = (w and w + hpadding) or (fillw and boxw) or math.min(clampw and boxw or math.inf, self.lw + hpadding)
-    calc.h = (h and h + vpadding) or (fillh and boxh) or math.min(clamph and boxh or math.inf, self.lh + vpadding)
+    calc.w = (w and w + hpadding) or (fillw and greedyw and boxw) or math.min(clampw and boxw or math.inf, self.lw + hpadding)
+    calc.h = (h and h + vpadding) or (fillh and greedyh and boxh) or math.min(clamph and boxh or math.inf, self.lh + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
     calc.w = math.ceil(self:_clampw(calc.w))
     calc.h = math.ceil(self:_clamph(calc.h))

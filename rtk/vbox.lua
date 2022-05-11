@@ -35,7 +35,7 @@ end
 
 -- Second pass over all children
 -- TODO: wayyyy too much duplication here with rtk.HBox._reflow_step2().
-function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, uiscale, viewport, window, tp, rp, bp, lp)
+function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
     local offset = 0
     local spacing = 0
     -- List of widgets and attrs whose height (or valign) depends on the height of siblings,
@@ -45,12 +45,14 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
         local widget, attrs = table.unpack(widgetattrs)
         local wcalc = widget.calc
         if widget == rtk.Box.FLEXSPACE then
-            local previous = offset
-            offset = offset + expand_unit_size * (attrs.expand or 1)
-            spacing = 0
-            -- Ensure box size reflects flexspace in case this is the last child in the box.
-            maxh = math.max(maxh, offset)
-            self:_set_cell_box(attrs, lp, tp + previous, maxw, offset - previous)
+            if greedyh then
+                local previous = offset
+                offset = offset + expand_unit_size * (attrs.expand or 1)
+                spacing = 0
+                -- Ensure box size reflects flexspace in case this is the last child in the box.
+                maxh = math.max(maxh, offset)
+                self:_set_cell_box(attrs, lp, tp + previous, maxw, offset - previous)
+            end
         elseif widget.visible == true then
             local wx, wy, ww, wh
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
@@ -64,7 +66,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                 -- (in which case alignment would just depend on the bounding box which we
                 -- already know).
                 (attrs._halign and attrs._halign ~= rtk.Widget.LEFT and
-                 not attrs.fillw and
+                 not (attrs.fillw and greedyw) and
                  attrs.stretch ~= rtk.Box.STRETCH_FULL)
             )
             local offx = lp + clp
@@ -87,15 +89,17 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     0,
                     child_maxw,
                     child_maxh,
-                    attrs.fillw,
+                    attrs.fillw ,
                     attrs.fillh,
                     clampw,
                     clamph,
                     uiscale,
                     viewport,
-                    window
+                    window,
+                    greedyw,
+                    greedyh
                 )
-                if attrs.stretch == rtk.Box.STRETCH_FULL then
+                if attrs.stretch == rtk.Box.STRETCH_FULL and greedyw then
                     -- Just sets cell width. If stretch is siblings then we'll do a second pass.
                     ww = maxw
                 end
@@ -117,7 +121,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
             else
                 -- Non-expanded widget with native size, already reflowed in pass 1.  Just need
                 -- to adjust position.
-                ww = attrs.stretch == rtk.Box.STRETCH_FULL and maxw or wcalc.w
+                ww = attrs.stretch == rtk.Box.STRETCH_FULL and greedyw and maxw or wcalc.w
                 wh = math.max(wcalc.h, attrs._minh or 0)
                 if need_second_pass then
                     second_pass[#second_pass+1] = {
@@ -154,7 +158,9 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     clamph,
                     uiscale,
                     viewport,
-                    window
+                    window,
+                    greedyw,
+                    greedyh
                 )
             end
             self:_align_child(widget, attrs, offx, offy, maxw, child_maxh, crp, cbp)

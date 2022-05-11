@@ -147,11 +147,11 @@ function rtk.Popup:_handle_event(clparentx, clparenty, event, clipped, listen)
     end
 end
 
-function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local anchor = calc.anchor
     if anchor then
-        y = anchor.clienty
+        local y = anchor.clienty
         -- Before we reflow ourself, constrain the box height to fit either above or
         -- below the anchor, depending on which has more room.
         if y < window.h / 2 then
@@ -166,7 +166,7 @@ function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
         end
     end
 
-    rtk.Viewport._reflow(self, boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window)
+    rtk.Viewport._reflow(self, boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window, greedyw, greedyh)
 
     if anchor then
         -- We don't know if the anchor has been reflowed before or after us, which means

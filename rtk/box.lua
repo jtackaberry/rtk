@@ -329,10 +329,10 @@ function rtk.Box:_validate_child(child)
     end
 end
 
-function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
     -- Our default size is the given box without our padding
     local inner_maxw = w or (boxw - lp - rp)
     local inner_maxh = h or (boxh - tp - bp)
@@ -348,7 +348,8 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
     local innerw, innerh, expand_unit_size, expw, exph = self:_reflow_step1(
         inner_maxw, inner_maxh,
         clampw, clamph,
-        uiscale, viewport, window
+        uiscale, viewport, window,
+        greedyw, greedyh
     )
     if self.orientation == rtk.Box.HORIZONTAL then
         expw = (expand_unit_size > 0) or expw
@@ -362,6 +363,7 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
         clampw, clamph,
         expand_unit_size,
         uiscale, viewport, window,
+        greedyw, greedyh,
         tp, rp, bp, lp
     )
 
@@ -376,8 +378,8 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
     -- size.  Here we report our explicitly defined size if specified, and if not then
     -- allow the overflow to occur and let our parent deal with it (maybe it's able to
     -- clip us, e.g. a viewport)
-    innerw = w or math.max(innerw, fillw and inner_maxw or 0)
-    innerh = h or math.max(innerh, fillh and inner_maxh or 0)
+    innerw = w or math.max(innerw, fillw and greedyw and inner_maxw or 0)
+    innerh = h or math.max(innerh, fillh and greedyh and inner_maxh or 0)
     -- Calculate border box to include our padding
     calc.w = innerw + lp + rp
     calc.h = innerh + tp + bp
@@ -387,10 +389,17 @@ end
 
 -- First pass over non-expanded children to compute available width/height
 -- remaining to spread between expanded children.
-function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
+function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local orientation = calc.orientation
-    local remaining_size = orientation == rtk.Box.HORIZONTAL and w or h
+    local remaining_size, greedy
+    if orientation == rtk.Box.HORIZONTAL then
+        remaining_size = w
+        greedy = greedyw
+    else
+        remaining_size = h
+        greedy = greedyh
+    end
 
     local expand_units = 0
     local maxw, maxh = 0, 0
@@ -421,9 +430,9 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
             -- Fill in the box direction implies expand.
             local implicit_expand
             if orientation == rtk.Box.HORIZONTAL then
-                implicit_expand = attrs.fillw
+                implicit_expand = attrs.fillw and greedyw
             else
-                implicit_expand = attrs.fillh
+                implicit_expand = attrs.fillh and greedyh
             end
             attrs._calculated_expand = attrs.expand or (implicit_expand and 1) or 0
             if attrs._calculated_expand == 0 and implicit_expand then
@@ -431,7 +440,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
             end
 
             -- Reflow at 0,0 coords just to get the native dimensions.  Will adjust position in second pass.
-            if attrs._calculated_expand == 0 then
+            if attrs._calculated_expand == 0 or not greedy then
                 local ww, wh = 0, 0
                 local wexpw, wexph
                 local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
@@ -452,15 +461,17 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
                         0,
                         child_maxw,
                         child_maxh,
-                        attrs.fillw,
+                        attrs.fillw and greedyw,
                         -- If stretching to siblings we don't fill at this stage, we'll fill
                         -- in the subclass step2 implementation
-                        attrs.fillh and attrs.stretch ~= rtk.Box.STRETCH_TO_SIBLINGS,
+                        attrs.fillh and greedyh and attrs.stretch ~= rtk.Box.STRETCH_TO_SIBLINGS,
                         clampw,
                         clamph,
                         uiscale,
                         viewport,
-                        window
+                        window,
+                        greedyw,
+                        greedyh
                     )
                     expw = wexpw or expw
                     exph = wexph or exph
@@ -501,13 +512,15 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
                         child_maxh,
                         -- If stretching to siblings we don't fill at this stage, we'll fill
                         -- in the subclass step2 implementation
-                        attrs.fillw and attrs.stretch ~= rtk.Box.STRETCH_TO_SIBLINGS,
-                        attrs.fillh,
+                        attrs.fillw and greedyw and attrs.stretch ~= rtk.Box.STRETCH_TO_SIBLINGS,
+                        attrs.fillh and greedyh,
                         clampw,
                         clamph,
                         uiscale,
                         viewport,
-                        window
+                        window,
+                        greedyw,
+                        greedyh
                     )
                     expw = wexpw or expw
                     exph = wexph or exph
@@ -521,8 +534,8 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
                     end
 
                 end
-                expw = expw or attrs.fillw
-                exph = exph or attrs.fillh
+                expw = expw or (attrs.fillw and greedyw)
+                exph = exph or (attrs.fillh and greedyh)
                 if attrs._calculated_expand == 0 and wcalc.position & rtk.Widget.POSITION_INFLOW ~= 0 then
                     maxw = math.max(maxw, ww + clp + crp)
                     maxh = math.max(maxh, wh + ctp + cbp)
@@ -542,9 +555,9 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window)
             -- Stretch applies to the opposite orientation of the box, unlike expand
             -- which is the same orientation.  So e.g. stretch in a VBox will force the
             -- box's width to fill its parent.
-            if orientation == rtk.Box.VERTICAL and attrs.stretch == rtk.Box.STRETCH_FULL then
+            if orientation == rtk.Box.VERTICAL and attrs.stretch == rtk.Box.STRETCH_FULL and greedyw then
                 maxw = w
-            elseif orientation == rtk.Box.HORIZONTAL and attrs.stretch == rtk.Box.STRETCH_FULL then
+            elseif orientation == rtk.Box.HORIZONTAL and attrs.stretch == rtk.Box.STRETCH_FULL and greedyh then
                 maxh = h
             end
             spacing = (attrs.spacing or self.spacing) * rtk.scale.value

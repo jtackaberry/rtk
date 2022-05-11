@@ -1972,7 +1972,7 @@ end
 --   implies true here as well, but there are cases when fillw is false but the widget
 --   decides to use all offered space anyway (e.g. for boxes with expand=1).
 -- @treturn bool true if the widget expanded to use all of boxh
-function rtk.Widget:reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Widget:reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     -- Note that parent containers invoke this method, not the internal `_reflow()`.
     local expw, exph
     if not boxx then
@@ -1989,8 +1989,8 @@ function rtk.Widget:reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
     else
         self.viewport = viewport
         self.window = window
-        self.box = {boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window}
-        expw, exph = self:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+        self.box = {boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh}
+        expw, exph = self:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     end
     local calc = self.calc
     self:onreflow()
@@ -2230,10 +2230,10 @@ end
 -- not precompute any values to be used by `_draw()` that depend on geometry.  Use
 -- `_realize_geometry()` for that instead, as the parent will invoke that method after
 -- laying out the child (whether or not any modifications were made)
-function rtk.Widget:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Widget:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
     -- Our default size is the given box without our padding, clamped to min/max dimensions
     calc.w = w or self:_clampw(fillw and (boxw - lp - rp) or 0)
     calc.h = h or self:_clamph(fillh and (boxh - tp - bp) or 0)

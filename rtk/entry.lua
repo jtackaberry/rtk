@@ -333,7 +333,7 @@ function rtk.Entry:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     return true
 end
 
-function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local maxw, maxh = nil, nil
     if self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags) then
@@ -358,7 +358,7 @@ function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
     end
 
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
     calc.w = math.ceil(self:_clampw((w or maxw) + lp + rp))
     calc.h = math.ceil(self:_clamph((h or maxh) + tp + bp))
     -- Remember calculated padding as we use that in many functions.

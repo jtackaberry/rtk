@@ -279,10 +279,10 @@ function rtk.Viewport:_sync_child_refs(child, action)
 end
 
 
-function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
     local hpadding = lp + rp
     local vpadding = tp + bp
 
@@ -329,7 +329,10 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
             uiscale,
             -- Set the child's viewport to us
             self,
-            window
+            window,
+            -- Unlike fill which we force to false, we do propagate the greedy flags to
+            -- ensure fill children don't balloon us to our box.
+            greedyw, greedyh
         )
         if calc.halign == rtk.Widget.CENTER then
             wx = wx + math.max(0, inner_maxw - ccalc.w) / 2
@@ -349,8 +352,8 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
         -- the viewport, clamping to the viewport's box.  We take the ceiling because technically
         -- dimensions could be fractional (thanks to rtk.scale) but we need to ensure we create
         -- a backing store image with integer dimensions.
-        innerw = math.ceil(rtk.clamp(ww + wx, fillw and inner_maxw, inner_maxw))
-        innerh = math.ceil(rtk.clamp(wh + wy, fillh and inner_maxh, inner_maxh))
+        innerw = math.ceil(rtk.clamp(ww + wx, fillw and greedyw and inner_maxw, inner_maxw))
+        innerh = math.ceil(rtk.clamp(wh + wy, fillh and greedyh and inner_maxh, inner_maxh))
     else
         -- Without a child to define influence our size, default to the child bounding
         -- box.

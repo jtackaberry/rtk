@@ -401,10 +401,10 @@ function rtk.Button:_reflow_get_max_label_size(boxw, boxh)
     end
 end
 
-function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
 
     local icon = calc.icon
     if icon and uiscale ~= self._last_reflow_scale then
@@ -444,8 +444,8 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     local vpadding = tp + bp
     if calc.label then
         -- Calculate the viewable portion of the label
-        local lwmax = w or ((clampw or fillw) and (boxw - hpadding) or math.inf)
-        local lhmax = h or ((clamph or fillh) and (boxh - vpadding) or math.inf)
+        local lwmax = w or ((clampw or (fillw and greedyw)) and (boxw - hpadding) or math.inf)
+        local lhmax = h or ((clamph or (fillh and greedyh)) and (boxh - vpadding) or math.inf)
         if icon then
             -- Both label and icon are specified.  Determine number of pixels used for
             -- spacing based on appearance.

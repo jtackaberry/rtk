@@ -686,10 +686,10 @@ function rtk.Container:_set_cell_box(attrs, x, y, w, h)
     }
 end
 
-function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local x, y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, nil)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph, nil)
     -- Our default size is the given box without our padding
     local inner_maxw = w or (boxw - lp - rp)
     local inner_maxh = h or (boxh - tp - bp)
@@ -729,7 +729,9 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
                 clamph or attrs.maxh ~= nil,
                 uiscale,
                 viewport,
-                window
+                window,
+                greedyw,
+                greedyh
             )
             -- If minw/minh is specified, we will have offered at least this size of
             -- bounding box to the child, but it may have elected not to use it.  We

@@ -62,10 +62,10 @@ function rtk.FlowBox:initialize(attrs, ...)
     rtk.Container.initialize(self, attrs, self.class.attributes.defaults, ...)
 end
 
-function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local x, y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph)
+    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
     -- Our default size is the given box without our padding
     local inner_maxw = w or (boxw - lp - rp)
     local inner_maxh = h or (boxh - tp - bp)
@@ -99,7 +99,9 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
                 clampw, clamph,
                 uiscale,
                 viewport,
-                window
+                window,
+                greedyw,
+                greedyh
             )
             ww = ww + clp + crp
             wh = wh + ctp + cbp
@@ -181,7 +183,9 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
                 clampw, clamph,
                 uiscale,
                 viewport,
-                window
+                window,
+                greedyw,
+                greedyh
             )
             wh = math.max(wh, attrs.minh or 0)
             if col.h + wh > col_height then

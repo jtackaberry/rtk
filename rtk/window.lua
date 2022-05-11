@@ -1405,8 +1405,8 @@ function rtk.Window:queue_mouse_refresh()
     self._mouse_refresh_queued = true
 end
 
-function rtk.Window:_reflow(boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window)
-    rtk.Container._reflow(self, boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window)
+function rtk.Window:_reflow(boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
+    rtk.Container._reflow(self, boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     -- The semantics of the x, y properties are different for Windows, where they refer to
     -- the OS window coordinates rather than internal widget coordinates.  So override the
     -- calculated x/y to offset to 0.
@@ -1416,7 +1416,7 @@ end
 
 -- If full is false, only specific widgets are reflowed, which assumes their geometry
 -- has not changed.
-function rtk.Window:reflow(mode, shrinkwrapw, shrinkwraph)
+function rtk.Window:reflow(mode)
     local calc = self.calc
     local widgets = self._reflow_widgets
     local full = false
@@ -1455,7 +1455,9 @@ function rtk.Window:reflow(mode, shrinkwrapw, shrinkwraph)
                 -- scale
                 rtk.scale.value,
                 -- viewport and window
-                nil, self
+                nil, self,
+                -- greedy fill
+                self.w ~= nil, self.h ~= nil
             )
             self:_realize_geometry()
             full = true

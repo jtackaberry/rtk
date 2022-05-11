@@ -39,7 +39,7 @@ end
 -- TODO: there is too much in common here with VBox:_reflow_step2().  This needs
 -- to be refactored better, by using more tables with indexes rather than unpacking
 -- to separate variables.
-function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, uiscale, viewport, window, tp, rp, bp, lp)
+function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
     local offset = 0
     local spacing = 0
     -- List of widgets and attrs whose height (or valign) depends on the height of siblings,
@@ -49,12 +49,14 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
         local widget, attrs = table.unpack(widgetattrs)
         local wcalc = widget.calc
         if widget == rtk.Box.FLEXSPACE then
-            local previous = offset
-            offset = offset + expand_unit_size * (attrs.expand or 1)
-            spacing = 0
-            -- Ensure box size reflects flexspace in case this is the last child in the box.
-            maxw = math.max(maxw, offset)
-            self:_set_cell_box(attrs, lp + previous, tp, offset - previous, maxh)
+            if greedyw then
+                local previous = offset
+                offset = offset + expand_unit_size * (attrs.expand or 1)
+                spacing = 0
+                -- Ensure box size reflects flexspace in case this is the last child in the box.
+                maxw = math.max(maxw, offset)
+                self:_set_cell_box(attrs, lp + previous, tp, offset - previous, maxh)
+            end
         elseif widget.visible == true then
             local wx, wy, ww, wh
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
@@ -68,13 +70,13 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                 -- case alignment would just depend on the bounding box which we already
                 -- know).
                 (attrs._valign and attrs._valign ~= rtk.Widget.TOP and
-                 not attrs.fillh and
+                 not (attrs.fillh and greedyh) and
                  attrs.stretch ~= rtk.Box.STRETCH_FULL)
             )
             local offx = offset + lp + clp + spacing
             local offy = tp + ctp
             local expand = attrs._calculated_expand
-            if expand and expand > 0 then
+            if expand and greedyw and expand > 0 then
                 -- This is an expanded child which was not reflowed in pass 1, so do it now.
                 local child_maxw = rtk.clamprel(
                     (expand_unit_size * expand) - clp - crp - spacing,
@@ -97,9 +99,11 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     clamph,
                     uiscale,
                     viewport,
-                    window
+                    window,
+                    greedyw,
+                    greedyh
                 )
-                if attrs.stretch == rtk.Box.STRETCH_FULL then
+                if attrs.stretch == rtk.Box.STRETCH_FULL and greedyh then
                     -- Just sets cell height. If stretch is siblings then we'll do a second pass.
                     wh = maxh
                 end
@@ -122,7 +126,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                 -- Non-expanded widget with native size, already reflowed in pass 1.  Just need
                 -- to adjust position.
                 ww = math.max(wcalc.w, attrs._minw or 0)
-                wh = attrs.stretch == rtk.Box.STRETCH_FULL and maxh or wcalc.h
+                wh = attrs.stretch == rtk.Box.STRETCH_FULL and greedyh and maxh or wcalc.h
                 if need_second_pass then
                     second_pass[#second_pass+1] = {
                         widget, attrs, offx, offy, ww, wh, ctp, crp, cbp, clp, offset, spacing
@@ -158,7 +162,9 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     clamph,
                     uiscale,
                     viewport,
-                    window
+                    window,
+                    greedyw,
+                    greedyh
                 )
             end
             self:_align_child(widget, attrs, offx, offy, child_maxw, maxh, crp, cbp)

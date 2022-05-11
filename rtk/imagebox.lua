@@ -113,13 +113,13 @@ function rtk.ImageBox:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     return ret
 end
 
-function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window)
+function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     local w, h, tp, rp, bp, lp = self:_get_content_size(
         boxw, boxh,
         fillw, fillh,
-        clampw, clamph,
+        clampw and greedyw, clamph and greedyh,
         self.scale or 1
     )
     local dstw, dsth = 0, 0
@@ -134,8 +134,8 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
         local scale = (self.scale or 1) * rtk.scale.value / image.density
         local native_aspect = image.w / image.h
         local aspect = calc.aspect or native_aspect
-        dstw = (w and w-hpadding) or (fillw and boxw-hpadding)
-        dsth = (h and h-vpadding) or (fillh and boxh-vpadding)
+        dstw = (w and w-hpadding) or ((fillw and greedyw) and boxw-hpadding)
+        dsth = (h and h-vpadding) or ((fillh and greedyh) and boxh-vpadding)
 
         -- We'll constrain the target image to the bounding box the if scale hasn't been forced
         -- and we have flexibility in one of the dimensions to resize to maintain aspect.
@@ -177,8 +177,8 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     self.ih = math.round(math.max(0, dsth))
 
     -- Images support clipping, so we respect our bounding box when clamping is requested.
-    calc.w = (fillw and boxw) or math.min(clampw and boxw or math.inf, self.iw + hpadding)
-    calc.h = (fillh and boxh) or math.min(clamph and boxh or math.inf, self.ih + vpadding)
+    calc.w = (fillw and greedyw and boxw) or math.min(clampw and boxw or math.inf, self.iw + hpadding)
+    calc.h = (fillh and greedyh and boxh) or math.min(clamph and boxh or math.inf, self.ih + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
     calc.w = math.ceil(self:_clampw(calc.w))
     calc.h = math.ceil(self:_clamph(calc.h))
