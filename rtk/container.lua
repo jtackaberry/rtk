@@ -788,8 +788,8 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
 
     calc.x = x
     calc.y = y
-    calc.w = (w or innerw) + lp + rp
-    calc.h = (h or innerh) + tp + bp
+    calc.w = self:_clampw((w or innerw) + lp + rp, clampw and boxw)
+    calc.h = self:_clamph((h or innerh) + tp + bp, clamph and boxh)
 end
 
 function rtk.Container:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)

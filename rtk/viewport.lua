@@ -363,8 +363,8 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
 
     -- Only need to add child margin back in if we're using child's size.  If using our own
     -- size, w/h will be non-nil and that already incorporates child margin.
-    calc.w = (w or (innerw + scrollw + hmargin)) + hpadding
-    calc.h = (h or (innerh + scrollh + vmargin)) + vpadding
+    calc.w = self:_clampw((w or (innerw + scrollw + hmargin)) + hpadding, clampw and boxw)
+    calc.h = self:_clamph((h or (innerh + scrollh + vmargin)) + vpadding, clamph and boxh)
 
     if not self._backingstore then
         self._backingstore = rtk.Image(innerw, innerh)

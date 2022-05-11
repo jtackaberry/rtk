@@ -381,9 +381,8 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
     innerw = w or math.max(innerw, fillw and greedyw and inner_maxw or 0)
     innerh = h or math.max(innerh, fillh and greedyh and inner_maxh or 0)
     -- Calculate border box to include our padding
-    calc.w = innerw + lp + rp
-    calc.h = innerh + tp + bp
-
+    calc.w = self:_clampw(innerw + lp + rp, clampw and boxw)
+    calc.h = self:_clamph(innerh + tp + bp, clamph and boxh)
     return expw, exph
 end
 

@@ -1406,6 +1406,18 @@ function rtk.Window:queue_mouse_refresh()
     self._mouse_refresh_queued = true
 end
 
+-- These clamp functions are called by the base class (rtk.Container)  _reflow().  For
+-- rtk.Window, we can't clamp the size to minw/minh because the window can be resized by
+-- external forces. So the only time we're willing to clamp is when the calculated size is
+-- nil, which means this is our first autosize reflow.
+function rtk.Window:_clampw(w, box)
+    return self.calc.w and w or rtk.Container._clampw(self, w, box)
+end
+
+function rtk.Window:_clamph(h, box)
+    return self.calc.h and h or rtk.Container._clamph(self, h, box)
+end
+
 function rtk.Window:_reflow(boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     rtk.Container._reflow(self, boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     -- The semantics of the x, y properties are different for Windows, where they refer to
@@ -1438,13 +1450,14 @@ function rtk.Window:reflow(mode)
         else
             local saved_size
             -- One or both dimensions are nil, so force a reflow with unconstrained size
-            -- in the affected dimensions.
+            -- in the affected dimensions.  Be aware that calc.w/calc.h can be nil here,
+            -- if it's the very first autosize reflow being done via open().
             local boxw, boxh = calc.w, calc.h
             if not self.w or not self.h then
                 saved_size = {self.w, self.h}
-                local _, _, sw, sh = self:_get_display_resolution(true)
-                boxw = not self.w and (calc.maxw or sw*rtk.scale.framebuffer) or calc.w
-                boxh = not self.h and (calc.maxh or sh*rtk.scale.framebuffer) or calc.h
+                local _, _, sw, sh = self:_get_display_resolution(true, not calc.borderless)
+                boxw = not self.w and (calc.maxw or sw*rtk.scale.framebuffer) or calc.w or calc.minw
+                boxh = not self.h and (calc.maxh or sh*rtk.scale.framebuffer) or calc.h or calc.minh
             end
             local _, _, w, h = rtk.Container.reflow(self,
                 -- box

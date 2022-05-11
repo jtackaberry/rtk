@@ -224,6 +224,6 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
 
     inner.w = inner.w + col.w
     calc.x, calc.y = x, y
-    calc.w = self:_clampw((w or inner.w) + lp + rp)
-    calc.h = self:_clamph((h or inner.h) + tp + bp)
+    calc.w = self:_clampw((w or inner.w) + lp + rp, clampw and boxw)
+    calc.h = self:_clamph((h or inner.h) + tp + bp, clamph and boxh)
 end
