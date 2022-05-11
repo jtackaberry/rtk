@@ -701,8 +701,10 @@ function rtk.Window:_run()
 end
 
 -- Fetches the resolution of the display where the top left corner of the window appears.
+-- If 'working' is true, the working area on the desktop is requested.  If frame is true,
+-- the dimensions are subtracted by the space needed to accommodate a window frame.
 -- Returns {x, y, w, h} of the display, where y is relative to bottom edge on Mac
-function rtk.Window:_get_display_resolution(working)
+function rtk.Window:_get_display_resolution(working, frame)
     -- Here we use user-provided attributes instead of calculated values in case a move was
     -- requested.
     local x = math.floor(self.x)
@@ -715,22 +717,27 @@ function rtk.Window:_get_display_resolution(working)
     -- This is in fact a native function, despite the odd naming.
     -- https://forum.cockos.com/showthread.php?t=195629
     local l, t, r, b = reaper.my_getViewport(0, 0, 0, 0, x, y, w, h, working and 1 or 0)
-    return l, t, r - l, math.abs(b - t)
+    local sw = r - l
+    local sh = math.abs(b - t)
+    if frame then
+        local borderless = self.calc.borderness
+        sw = sw - (borderless and 0 or self._os_window_frame_width)
+        sh = sh - (borderless and 0 or self._os_window_frame_height)
+    end
+    return l, t, sw, sh
 end
 
 function rtk.Window:_get_geometry_from_attrs(overrides)
-    -- open() calls us before gfx.init() is called, which means we may not know the
-    -- framebuffer scale yet.  It's ok to fallback to 1 though, because if it's nil, the
-    -- calculated w/h will be initialized to the user-supplied prescaled size anyway. It
-    -- only gets adjusted to the doubled size on retina displays after the next _update()
-    -- call.
+    -- rtk.scale.framebuffer shouldn't be nil as we infer it on startup, but this is
+    -- defensive.
     local scale = rtk.scale.framebuffer or 1
     local x = self.x
     local y = self.y
+    local calc = self.calc
     -- Use calculated values here (rather than self.w/h) to ensure we respect minw/minh
     -- clamping done by those attrs' calculate funcitons.
-    local w = self.calc.w / scale
-    local h = self.calc.h / scale
+    local w = calc.w / scale
+    local h = calc.h / scale
     if overrides then
         -- This returns nil if the resolution can't be determined.
         local sx, sy, sw, sh = self:_get_display_resolution(true)
@@ -762,6 +769,8 @@ function rtk.Window:_get_geometry_from_attrs(overrides)
             if overrides.constrain then
                 x = rtk.clamp(x, sx, sx + sw - w)
                 y = rtk.clamp(y, sy, sy + sh - h)
+                -- Use surface/non-calculated forms of minw/minh as we're dealing with OS window pixels
+                -- not gfx buffer pixels.
                 w = rtk.clamp(w, self.minw or 0, sw - (x - sx))
                 h = rtk.clamp(h, self.minh or 0, sh - (rtk.os.mac and y-sy-h or y-sy))
             end
@@ -990,17 +999,27 @@ function rtk.Window:open(options)
     if self.running or rtk._quit then
         return
     end
+    local calc = self.calc
     rtk.window = self
     if options then
         options.halign = options.halign or options.align
         options.valign = options.valign or options.align
+    end
+    if not calc.borderless and self._os_window_frame_width == 0 then
+        -- Our own window isn't borderless, so in case we need to do shrinkwrapping next,
+        -- we want to make sure we have some way to account for the window frame size. Our
+        -- window isn't open yet, so we use REAPER's window as a proxy for what our border
+        -- may look like.  Unfortunately this isn't perfect: at least on Windows, the
+        -- REAPER main window frame is bigger than gfx windows, so this will mean windows
+        -- aren't properly sized/centered.  But it's somewhat better than overflowing the
+        -- display.
+        self:_discover_os_window_frame_size(rtk.reaper_hwnd)
     end
     if not self.w or not self.h then
         -- Reflow to shrinkwrap nil dimensions
         self:reflow(rtk.Widget.REFLOW_FULL)
     end
 
-    local calc = self.calc
     self.running = true
     gfx.ext_retina = 1
     -- Initialize the gfx.clear to the right background color.
@@ -1210,9 +1229,11 @@ function rtk.Window:_setup_borderless()
         local mx, my = reaper.GetMousePosition()
         local dx = mx - this._drag_start_mx
         local dy = (my - this._drag_start_my) * (rtk.os.mac and -1 or 1)
-        -- Clamp dimensions so the window can't be resized down to nothing.
-        local w = math.max(self.calc.minw, this._drag_start_ww + dx)
-        local h = math.max(self.calc.minh, this._drag_start_wh + dy)
+        -- Clamp dimensions so the window can't be resized down to nothing. Use
+        -- surface/non-calculated forms of minw/minh as we're dealing with OS window
+        -- pixels not gfx buffer pixels.
+        local w = math.max(self.minw or 0, this._drag_start_ww + dx)
+        local h = math.max(self.minh or 0, this._drag_start_wh + dy)
         reaper.JS_Window_Resize(self.hwnd, w, h)
         -- Immediately paint the background on the expanded area (if any) to avoid
         -- flicker.
@@ -1252,6 +1273,9 @@ end
 -- we're able to use JS_Window_SetPosition() elsewhere, as it expects dimensions
 -- that include the window frame.
 function rtk.Window:_discover_os_window_frame_size(hwnd)
+    if not reaper.JS_Window_GetClientSize then
+        return
+    end
     local _, w, h = reaper.JS_Window_GetClientSize(hwnd)
     local _, l, t, r, b = reaper.JS_Window_GetRect(hwnd)
     self._os_window_frame_width = (r - l) - w
