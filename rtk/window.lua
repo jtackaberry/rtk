@@ -557,7 +557,8 @@ function rtk.Window:initialize(attrs, ...)
     -- For borderless windows
     self._resize_grip = nil
     self._move_grip = nil
-    -- Calculated in _get_hwnd() if jsReascriptAPI exists
+    -- Calculated in _get_hwnd() if jsReascriptAPI exists. These are display pixels, not
+    -- framebuffer pixels.
     self._os_window_frame_width = 0
     self._os_window_frame_height = 0
     -- Stored geometry of the undocked window so that it can be restored when
@@ -914,8 +915,8 @@ function rtk.Window:_sync_window_attrs(overrides)
             -- FIXME: if our initial size is based on alignment options passed to open(),
             -- we should not add frame size.
             if not calc.borderless then
-                sw = w + self._os_window_frame_width / rtk.scale.framebuffer
-                sh = h + self._os_window_frame_height / rtk.scale.framebuffer
+                sw = w + self._os_window_frame_width
+                sh = h + self._os_window_frame_height
             end
             sw = math.ceil(sw)
             sh = math.ceil(sh)
@@ -1255,8 +1256,8 @@ function rtk.Window:_discover_os_window_frame_size(hwnd)
     local _, l, t, r, b = reaper.JS_Window_GetRect(hwnd)
     self._os_window_frame_width = (r - l) - w
     self._os_window_frame_height = math.abs(b - t) - h
-    self._os_window_frame_width = self._os_window_frame_width * rtk.scale.framebuffer
-    self._os_window_frame_height = self._os_window_frame_height * rtk.scale.framebuffer
+    self._os_window_frame_width = self._os_window_frame_width
+    self._os_window_frame_height = self._os_window_frame_height
 end
 
 
@@ -2185,8 +2186,7 @@ function rtk.Window:get_normalized_y()
         return self.y
     else
         local _, _, _, sh = self:_get_display_resolution()
-        local offset = gfx.h + self._os_window_frame_height
-        return sh - self.y - offset/rtk.scale.framebuffer
+        return sh - self.y - gfx.h/rtk.scale.framebuffer - self._os_window_frame_height
     end
 end
 
