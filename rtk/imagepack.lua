@@ -479,9 +479,9 @@ function rtk.ImagePack:get(name, style)
         _, densities = self:_get_densities(name, otherstyle)
         if not densities then
             -- Nothing registered under the other style.  Try the nil style as a last resort.
-            -- We'll be recoloring it anyway.
+            -- Nil styles are not recolored, but it's better than failing outright.
             _, densities = self:_get_densities(name, nil)
-            recolor = true
+            recolor = false
         end
     end
     if not densities then

@@ -951,7 +951,6 @@ local function _postprocess_theme()
     -- Resolve all theme hex string color values to RGBA tables.
     for k, v in pairs(rtk.theme) do
         if type(v) == 'string' and v:byte(1) == 35 then
-            local x = {rtk.color.rgba(v)}
             rtk.theme[k] = {rtk.color.rgba(v)}
         end
     end
@@ -963,16 +962,18 @@ end
 -- This should be called early in program execution, at least before any rtk objects are
 -- created that would depend on this path.
 --
--- Paths added with a non-nil iconstyle (either `light` or `dark`) are called *icon paths*
--- and will be searched by `rtk.Image.icon()`.  Here, `light` means light colored
--- icons that are suitable for low luminance themes, while `dark` are dark colored icons
--- appropriate for high luminance themes.
+-- If a non-nil iconstyle is provided, this indicates that the given path contains either
+-- `light` icons (suitable for dark themes) or `dark` icons (suitable for light themes).
+-- When loading an icon image via `rtk.Image.icon()` (which is often done automatically
+-- when passing icon names to widget icon attributes, for example with `rtk.Button.icon`),
+-- paths registered for the appropriate iconstyle are searched first.
 --
--- Paths registered *without* an icon style will be searched by `rtk.Image:load()`.
---
--- It is possible to register icon paths for only one icon style, in which case the
--- existing icon will be re-tinted if necessary.  See `rtk.Image.icon()` for more
--- details.
+-- If an icon has been requested that's not found in any path for the required icon style
+-- but *is* found in a path for opposite icon style, then rtk will automatically recolor
+-- the icon monochromatically (to either white or black) to match the required icon style.
+-- This recoloring is only ever done for icons found in paths that were registered here
+-- with a non-nil icon style.  Images found in paths with nil iconstyle will not be
+-- recolored.
 --
 -- If a non-absolute path is specified, then it will be relative to `rtk.script_path`.
 --
@@ -981,17 +982,23 @@ end
 --   which luminance the icons within the path are, and in which case path is searched
 --   by `rtk.Image.icon()`.  If nil, the path is searched by `rtk.Image:load()`
 function rtk.add_image_search_path(path, iconstyle)
+    -- Ensure given path is normalized with a terminating separator
+    path = path:gsub('[/\\]$', '') .. '/'
     if not path:match('^%a:') and not path:match('^[\\/]') then
+        -- Given path is non-absolute, so resolve it as relative to script path
         path = rtk.script_path .. path
     end
     if iconstyle then
         assert(iconstyle == 'dark' or iconstyle == 'light', 'iconstyle must be either light or dark')
-        local paths = rtk._image_paths[iconstyle] or {}
-        paths[#paths+1] = path
-        rtk._image_paths[iconstyle] = paths
     else
-        rtk._image_paths[#rtk._image_paths+1] = path
+        iconstyle = 'nostyle'
     end
+    local paths = rtk._image_paths[iconstyle]
+    if not paths then
+        paths = {}
+        rtk._image_paths[iconstyle] = paths
+    end
+    paths[#paths+1] = path
 end
 
 --- Initializes the UI theme.

@@ -52,6 +52,7 @@ rtk.log = require('rtk.log')
 
 local function init()
     rtk.script_path = ({reaper.get_action_context()})[2]:match('^.+[\\//]')
+    rtk._image_paths.fallback = {rtk.script_path}
     rtk.reaper_hwnd = reaper.GetMainHwnd()
 
     -- Detect system architecture

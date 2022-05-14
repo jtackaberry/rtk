@@ -65,51 +65,79 @@ rtk.Image.static.ids = rtk.IndexManager(0, 1023)
 --
 -- @section functions
 
-
-local function _search_image_paths_list(fname, paths)
+-- Searches the given image paths for a filename, attempting to load it in the provided
+-- image id.  If the load was successful, the fully qualified path is returned.  If
+-- no valid image could be loaded in any path, then nil is returned.
+local function _search_image_paths_list(id, fname, paths)
     if not paths or #paths == 0 then
         return
     end
     -- Fast path, check first registered directory
-    local path = string.format('%s/%s', paths[1], fname)
-    if rtk.file.exists(path) then
+    local path = paths[1] .. fname
+    local r = gfx.loadimg(id, path)
+    if r ~= -1 then
         return path
     end
     -- Wasn't in the first one.  Loop through remaining.
     if #paths > 1 then
         for i = 2, #paths do
-            path = string.format('%s/%s', paths[i], fname)
-            if rtk.file.exists(path) then
+            path = paths[i] .. fname
+            r = gfx.loadimg(id, path)
+            if r ~= -1 then
                 return path
             end
         end
     end
 end
 
--- Searches all registered image paths for the given filename and with
--- the given icon style if defined.  Returns the discovered path and
--- a bool to indicate whether the icon was found in the given iconstyle
--- path or the other one (such that the image will need to be recolored).
-function rtk.Image.static._search_image_paths(fname, style)
+-- Searches for and loads an image file within the nostyle and fallback image paths. If
+-- successful, path is returned, otherwise nil.
+function rtk.Image.static._search_image_paths_nostyle(id, fname)
+    local path = _search_image_paths_list(id, fname, rtk._image_paths.nostyle)
+    return path or _search_image_paths_list(id, fname, rtk._image_paths.fallback)
+end
+
+-- Searches for and loads an image file within the registered image paths for a specific
+-- icon style.  If successful, the full path and the style is returned, otherwise nil.
+function rtk.Image.static._search_image_paths_style(id, fname, style)
+    local path = _search_image_paths_list(id, fname, rtk._image_paths[style])
+    if path then
+        return path, style
+    end
+end
+
+
+-- Searches all registered image paths for the given filename and with the given icon
+-- style if defined, and loads it in the given REAPER image id.  If successful, returns
+-- the full path of the discovered image and a string indicating which icon style the
+-- given image was loaded from (or nil if found in nostyle/fallback).
+--
+-- Path search order is:
+--   * no style given: nostyle, fallback, theme style, other theme style
+--   * style given: style, nostyle, fallback, other style
+function rtk.Image.static._search_image_paths(id, fname, style)
+    local path, gotstyle
     if not style then
-        local path = _search_image_paths_list(fname, rtk._image_paths)
-        if path then
-            return path, true
+        -- No style given, first check nostyle and fallback paths
+        path, gotstyle = rtk.Image._search_image_paths_nostyle(id, fname)
+        if not path then
+            -- Set style here in case we need search other style below.
+            style = rtk.theme.iconstyle
+            path, gotstyle = rtk.Image._search_image_paths_style(id, fname, style)
         end
-        -- Image not found in non-icon paths, search icon paths as a
-        -- last resort.
-        style = rtk.theme.iconstyle
+    else
+        -- Style given, so start by searching for that.
+        path, gotstyle = rtk.Image._search_image_paths_style(id, fname, style)
+        if not path then
+            -- Search nostyle/fallback paths
+            path, gotstyle = rtk.Image._search_image_paths_nostyle(id, fname)
+        end
     end
-    local path = _search_image_paths_list(fname, rtk._image_paths[style])
-    if path then
-        return path, true
+    if not path then
+        local other = (style == 'light') and 'dark' or 'light'
+        path, gotstyle = rtk.Image._search_image_paths_style(id, fname, other)
     end
-    -- Nothing found in the requested style, search through the other one.
-    local otherstyle = style == 'light' and 'dark' or 'light'
-    local path = _search_image_paths_list(fname, rtk._image_paths[otherstyle])
-    if path then
-        return path, false
-    end
+    return path, gotstyle
 end
 
 
@@ -118,9 +146,9 @@ end
 -- located in any of the image paths added via `rtk.add_image_search_path()`.
 --
 -- The `style` argument dictates the requested icon luminance (namely, `dark` or `light`).
--- Icons registered via an `rtk.ImagePack` can be assigned a style, and likewise image
--- paths added with `rtk.add_image_search_path()` can indicate the icon style found in
--- that path.
+-- and if not specified defaults to the current theme's icon style. Icons registered via
+-- an `rtk.ImagePack` can be assigned a style, and likewise image paths added with
+-- `rtk.add_image_search_path()` can indicate the style of icons found within that path.
 --
 -- If no icon is found for the requested `style`, then the other style will be searched
 -- as a fallback method.  In this case, the icon will be recolored to be black if `style`
@@ -142,7 +170,8 @@ end
 -- @example
 --    local img = rtk.Image.icon('undo', 'light')
 --
--- @tparam string name Filename of the icon without the extension
+-- @tparam string name Filename of the icon.  If the file extension is omitted (which is
+--   preferred but not required) then `.png` is assumed.
 -- @tparam string|nil style Either `dark` or `light` indicating the icon luminance.  If
 --   nil then the current theme icon style will be assumed.
 -- @treturn rtk.Image|nil newly loaded image, or nil if icon could not be found (in which case
@@ -150,10 +179,9 @@ end
 -- @meta static
 function rtk.Image.static.icon(name, style)
     style = style or rtk.theme.iconstyle
-    local img
     local pack = rtk.Image._icons[name]
     if pack then
-        img = pack:get(name, style)
+        local img = pack:get(name, style)
         if img then
             return img
         end
@@ -161,21 +189,24 @@ function rtk.Image.static.icon(name, style)
         -- to convert it.  This really should never happen, but as a last resort, search the
         -- image paths for a single image file with this name.
     end
-    local path, matched = rtk.Image._search_image_paths(name .. '.png', style)
-    if path then
-        img = rtk.Image():load(path)
-        if not matched then
+    if not name:find('%.[%w_]+$') then
+        name = name .. '.png'
+    end
+    local img, gotstyle = rtk.Image():_load(name, style)
+    if img then
+        -- The style we got isn't the one we wanted, so recolor it.
+        if gotstyle and gotstyle ~= style then
             img:recolor(style == 'light' and '#ffffff' or '#000000')
         end
         img.style = style
     end
     if not img then
-        log.error('rtk: rtk.Image.icon("%s"): icon not found in any icon path', name)
+        log.error('rtk: rtk.Image.icon("%s"): icon could not be loaded from any image path', name)
     end
     return img
 end
 -- Preserve old API
-rtk.Image.static.make_icon=rtk.Image.static.icon
+rtk.Image.static.make_icon = rtk.Image.static.icon
 
 --- Returns an icon with a red question mark that can be used to indicate icon
 -- load failure without aborting the program.
@@ -359,35 +390,32 @@ end
 -- @treturn rtk.Image|nil returns self if the load was successful for method chaining,
 --   otherwise if the load failed then nil is returned.
 function rtk.Image:load(path, density)
-    local found = path
-    if not rtk.file.exists(path) then
-        -- Check relative to the script.  rtk.script_path always has trailing path sep.
-        found  = rtk.script_path .. path
-        if not rtk.file.exists(found) then
-            -- Hunt for the file in registered icon paths.
-            found = rtk.Image._search_image_paths(path)
-        end
+    local ok, gotstyle = self:_load(path, nil, density)
+    if ok then
+        return self
+    else
+        log.warning('rtk: rtk.Image:load("%s"): no such file found in any search paths', path)
     end
-    self._path = found
+end
+
+function rtk.Image:_load(fname, style, density)
     local id = self.id
     -- Only allocate a new candidate id if we don't already have one (or do have one
     -- but don't actually own it).
     if not id or self._ref then
         id = rtk.Image.static.ids:next()
     end
-    local res = gfx.loadimg(id, found)
-    if res ~= -1 then
+    local path, gotstyle = rtk.Image._search_image_paths(id, fname, style)
+    if path then
         self.id = id
-        self.path = found
-        self.w, self.h = gfx.getimgdim(self.id)
+        self.path = path
+        self.w, self.h = gfx.getimgdim(id)
         self.density = density or 1.0
-        return self
+        return self, gotstyle
     else
         rtk.Image.static.ids:release(id)
         self.w, self.h = nil, nil
         self.id = nil
-        log.warning('rtk: rtk.Image:load("%s"): no such file found in any search paths', path)
-        return nil
     end
 end
 

@@ -23,8 +23,8 @@ local log = require('rtk.log')
 --
 -- @example
 --   -- Create an ImageBox widget with photo.jpg that's located in an img
---   -- directory up from the current script.
---   local img = rtk.ImageBox{rtk.Image():load('../img/photo.jpg'), border='2px black'}
+--   -- directory up a level from the current script.
+--   local img = rtk.ImageBox{'../img/photo.jpg', border='2px black'}
 --   -- Add the image centered to the window
 --   window:add(img, {halign='center', valign='center'})
 --   -- Just a bit of fun ...
@@ -42,15 +42,18 @@ rtk.ImageBox.register{
 
     --- The image (default nil).
     --
-    -- This is typically an `rtk.Image`, but a string can also be provided which refers to
-    -- an icon name (without file extension) in an icon path previously registered with
-    -- `rtk.add_image_search_path()`. See `rtk.Image.icon()` for more details.
+    -- Either an existing `rtk.Image`, or a string that refers to a file in an image path
+    -- that was previously registered with `rtk.add_image_search_path()`.  If a string is
+    -- provided then a new `rtk.Image` is automatically created and the
+    -- @{rtk.Widget.calc|calculated value} of this attribute will contain this `rtk.Image`
+    -- instance.
     --
     -- This attribute may be passed as the first positional argument during initialization.
     -- (In other words, `rtk.ImageBox{img}` is equivalent to `rtk.ImageBox{image=img}`.)
     --
-    -- If `image` is nil, nothing is drawn and the ImageBox takes up no space in its container.
-    -- The `image` attribute can be assigned later.
+    -- If `image` is nil, nothing is drawn and the ImageBox takes up no space in its
+    -- container, notwithstanding `minw` or `minh` which will still be respected. The
+    -- `image` attribute can be assigned later.
     --
     -- @type rtk.Image|string|nil
     -- @meta read/write
