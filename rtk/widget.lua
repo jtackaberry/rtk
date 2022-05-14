@@ -1962,7 +1962,10 @@ end
 -- @tparam number uiscale the current `rtk.scale.value` at the time of reflow
 -- @tparam rtk.Viewport viewport the viewport the widget is rendered into
 -- @tparam rtk.Window window the window the widget is ultimately parented within
---
+-- @tparam bool greedyw if false avoid greedily expanding up to boxw even if fillw
+--   is true, while if true (as is usually the case), allow expansion.  Greediness
+--   is disabled when windows are doing an autosize reflow.
+-- @tparam bool greedyh like `greedyw` but for height
 -- @treturn number calculated x position of widget relative to parent
 -- @treturn number calculated y position of widget relative to parent
 -- @treturn number calculated width of widget
