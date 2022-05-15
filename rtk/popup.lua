@@ -260,7 +260,7 @@ end
 function rtk.Popup:open(attrs)
     local calc = self.calc
     local anchor = calc.anchor
-    self.closed = false
+    self:sync('opened', true)
     if not attrs and not anchor then
         -- Without an anchor and attrs to tell us otherwise, default to centered on
         -- screen.
@@ -298,10 +298,10 @@ end
 
 --- Closes the popup.
 function rtk.Popup:close()
-    if not self.calc.visible or self.closed then
+    if not self.calc.visible or not self.calc.opened then
         return
     end
-    self.closed = true
+    self:sync('opened', false)
     self:animate{attr='alpha', dst=0, duration=0.15}
         :done(function()
             self:hide()
