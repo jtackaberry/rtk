@@ -258,6 +258,9 @@ end
 --   available cell attributes.
 -- @treturn rtk.Popup returns self for method chaining
 function rtk.Popup:open(attrs)
+    if self:onopen() == false then
+        return
+    end
     local calc = self.calc
     local anchor = calc.anchor
     self:sync('opened', true)
@@ -301,6 +304,9 @@ function rtk.Popup:close()
     if not self.calc.visible or not self.calc.opened then
         return
     end
+    if self:onclose() == false then
+        return
+    end
     self:sync('opened', false)
     self:animate{attr='alpha', dst=0, duration=0.15}
         :done(function()
@@ -310,3 +316,31 @@ function rtk.Popup:close()
         end)
     rtk.reset_modal()
 end
+
+
+
+--- Event Handlers.
+--
+-- See also @{widget.handlers|handlers for rtk.Widget}.
+--
+-- @section popup.handlers
+
+
+--- Called just before the popup is opened.
+--
+-- This event handler has the opportunity block the popup from opening by
+-- returning false.
+--
+-- @treturn bool Returning false will block the popup from opening, while
+--   any other return value will allow it to be opened.
+function rtk.Popup:onopen() end
+
+
+--- Called just before the popup is closed.
+--
+-- This event handler has the opportunity block the popup from closing by
+-- returning false.
+--
+-- @treturn bool Returning false will block the popup from closing, while
+--   any other return value will allow its closure.
+function rtk.Popup:onclose() end

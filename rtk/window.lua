@@ -1978,7 +1978,7 @@ function rtk.Window:_update()
         -- assumption is that clicking inside a modal widget will result in the event
         -- being handled, so an unhandled touch activation event (MOUSEUP for touchscroll,
         -- MOUSEDOWN otherwise) implies the user clicked outside it.
-        if not event.handled and rtk.is_modal() and
+        if not event.handled and rtk.is_modal() and not event.simulated and
            ((focus_changed and not self.is_focused) or event.type == rtk._touch_activate_event) then
             for _, widget in pairs(rtk._modal) do
                 widget:_release_modal(event)
