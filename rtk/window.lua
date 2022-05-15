@@ -1094,6 +1094,8 @@ end
 -- It is possible to call `open()` again after the window is closed (assuming we haven't
 -- yet terminated obviously).
 function rtk.Window:close()
+    local event = rtk.Event{type=rtk.Event.WINDOWCLOSE}
+    self:_handle_window_event(event, reaper.time_precise())
     -- Ensure we don't subsequently try to sync window attrs to a non-existent window.
     self.hwnd = nil
     self:_close()

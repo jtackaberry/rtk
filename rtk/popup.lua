@@ -233,9 +233,9 @@ function rtk.Popup:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
     rtk.Viewport._draw(self, offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)
 end
 
-function rtk.Popup:_release_modal()
+function rtk.Popup:_release_modal(event)
     if self.calc.autoclose then
-        self:close()
+        self:_close(event)
     end
 end
 
@@ -301,10 +301,14 @@ end
 
 --- Closes the popup.
 function rtk.Popup:close()
+    return self:_close()
+end
+
+function rtk.Popup:_close(event)
     if not self.calc.visible or not self.calc.opened then
         return
     end
-    if self:onclose() == false then
+    if self:onclose(event) == false then
         return
     end
     self:sync('opened', false)
@@ -315,6 +319,11 @@ function rtk.Popup:close()
             self.window:remove(self)
         end)
     rtk.reset_modal()
+end
+
+function rtk.Popup:_handle_windowclose(event)
+    self:onclose(event)
+    self:sync('opened', false)
 end
 
 
@@ -338,9 +347,16 @@ function rtk.Popup:onopen() end
 
 --- Called just before the popup is closed.
 --
--- This event handler has the opportunity block the popup from closing by
--- returning false.
+-- The event argument indicates the type of event that is causing the
+-- popup to close, if any.  This could be `rtk.Event.MOUSEDOWN` because
+-- the user clicked outside the popup and `autoclose` was true, or it
+-- could be `rtk.Event.WINDOWCLOSE` because the main window is closing.
+-- Except in the latter case, this event handler may block closure of the
+-- popup by returning false.  In the case of `rtk.Event.WINDOWCLOSE`, this
+-- can't be aborted and the return value is ignored.
 --
+-- @tparam rtk.Event|nil event the event, if any, that is causing the popup
+--   to close.  It is nil when the popup is programmatically closed.
 -- @treturn bool Returning false will block the popup from closing, while
 --   any other return value will allow its closure.
-function rtk.Popup:onclose() end
+function rtk.Popup:onclose(event) end

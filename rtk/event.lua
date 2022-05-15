@@ -45,6 +45,9 @@ rtk.Event.static.KEY = 5
 -- To handle dropped files globally, add the @{rtk.Widget:ondropfile|ondropfile} callback
 -- to the `rtk.Window` itself.
 rtk.Event.static.DROPFILE = 6
+--- The main window is just about to close.  This is a notification-only event as
+-- currently there is no way to abort closure of the main window.
+rtk.Event.static.WINDOWCLOSE = 7
 
 rtk.Event.static.typenames = {
     [rtk.Event.MOUSEDOWN] = 'mousedown',
@@ -53,6 +56,7 @@ rtk.Event.static.typenames = {
     [rtk.Event.MOUSEWHEEL] = 'mousewheel',
     [rtk.Event.KEY] = 'key',
     [rtk.Event.DROPFILE] = 'dropfile',
+    [rtk.Event.WINDOWCLOSE] = 'windowclose',
 }
 
 --- Class API

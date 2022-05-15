@@ -2774,6 +2774,9 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
             self.window:request_mouse_cursor(calc.cursor)
         end
     end
+    if event.type == rtk.Event.WINDOWCLOSE then
+        self:_handle_windowclose(event)
+    end
     -- Indicates we listened to the event.
     return true
 end
@@ -3398,4 +3401,11 @@ function rtk.Widget:ondropfile(event) end
 
 function rtk.Widget:_handle_dropfile(event)
     return self:ondropfile(event)
+end
+
+
+-- Called just before the main window closes.
+--
+-- Internal only event for now.
+function rtk.Widget:_handle_windowclose(event)
 end
