@@ -1527,6 +1527,10 @@ end
 
 --- Check if the widget currently has focus.
 --
+-- This simply just checks is this widget is the same as `rtk.focused`.  In
+-- rtk, exactly one (or zero) widgets can grab focus.  A container that holds
+-- a focused widget is not itself considered focused.
+--
 -- A widget obtains focus when it is `autofocus` and the mouse clicks on it
 -- (and the widget is using the default `onmousedown()` handler), or if
 -- `focus()` is explicitly called.
