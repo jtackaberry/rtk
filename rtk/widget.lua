@@ -285,11 +285,11 @@ rtk.Widget.register{
     -- width to the widget (more on that later), then once the widget reflows
     -- `widget:calc('w')` will return the calculated width in pixels.
     --
-    -- In most cases the value you store in the attribute -- what rtk calls the *surface*
+    -- In most cases the value you store in the attribute -- what rtk calls the *exterior*
     -- value -- remains the way you set it, and rtk internally uses the calculated
     -- variants.  However, whenever a user interacts with a widget in that affects an
-    -- attribute, the new value is synced back to both the calculated version *and* the
-    -- surface value.  For example, `rtk.Entry.caret` is modified when the user moves
+    -- attribute, the new value is synced back to both the calculated value *and* the
+    -- exterior value.  For example, `rtk.Entry.caret` is modified when the user moves
     -- where the caret is positioned.  Or `rtk.Window.w` is updated when the user resizes
     -- the width of the window.
     --
@@ -367,11 +367,19 @@ rtk.Widget.register{
     --- Left position of widget relative to parent in pixels (default `0`)
     -- @meta read/write
     -- @type number
-    x = rtk.Attribute{default=0, reflow=rtk.Widget.REFLOW_FULL},
+    x = rtk.Attribute{
+        default=0,
+        reflow=rtk.Widget.REFLOW_FULL,
+        reflow_uses_exterior_value=true,
+    },
     --- Top position of widget relative to parent in pixels (default `0`)
     -- @meta read/write
     -- @type number
-    y = rtk.Attribute{default=0, reflow=rtk.Widget.REFLOW_FULL},
+    y = rtk.Attribute{
+        default=0,
+        reflow=rtk.Widget.REFLOW_FULL,
+        reflow_uses_exterior_value=true,
+    },
     --- Width of widget in pixels, or as a fraction of parent's width (default `nil`).
     -- Where:
     --   * values between 0.0 and 1.0 (inclusive) are considered a ratio of the parent width
@@ -396,16 +404,17 @@ rtk.Widget.register{
     w = rtk.Attribute{
         type='number',
         reflow=rtk.Widget.REFLOW_FULL,
+        reflow_uses_exterior_value=true,
         animate=function(self, anim, scale)
-            local calcval = anim.resolve(anim.easingfunc(anim.pct))
-            local surfaceval = (anim.pct < 1 and calcval or anim.doneval) / (scale or rtk.scale.value)
+            local calculated = anim.resolve(anim.easingfunc(anim.pct))
+            local exterior = (anim.pct < 1 and calculated or anim.doneval) / (scale or rtk.scale.value)
             if anim.dst == 0 or anim.dst > 1 then
                 -- Ensure if we are animating towards a non-fractional width (including 0)
-                -- that we don't return a surface value of 0 < value <= 1.0 because this
+                -- that we don't return a exterior value of 0 < value <= 1.0 because this
                 -- will result in calculation of a relative size.
-                surfaceval = (type(surfaceval) == 'number' and surfaceval > 0 and surfaceval <= 1.0) and 1.01 or surfaceval
+                exterior = (type(exterior) == 'number' and exterior > 0 and exterior <= 1.0) and 1.01 or exterior
             end
-            return calcval, surfaceval
+            return calculated, exterior
         end,
     },
     --- Like `w` but for widget height (default `nil`)
@@ -414,6 +423,7 @@ rtk.Widget.register{
     h = rtk.Attribute{
         type='number',
         reflow=rtk.Widget.REFLOW_FULL,
+        reflow_uses_exterior_value=true,
         animate=rtk.Reference('w'),
     },
     --- The z-index, or "stack level" that defines what the order the widget will be drawn
@@ -431,11 +441,11 @@ rtk.Widget.register{
     -- an `rtk.Viewport`.
     -- @meta read/write
     -- @type number|nil
-    minw = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
+    minw = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL, reflow_uses_exterior_value=true},
     --- Like `minw` but for height (default `nil`)
     -- @meta read/write
     -- @type number|nil
-    minh = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
+    minh = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL, reflow_uses_exterior_value=true},
     --- The maximum width in pixels the widget is allowed to have, or nil for no maximum
     -- (default nil).  This will constrain a widget's width if it is added to a container
     -- with the @{rtk.Container.fillw|fillw}=true cell attribute, or if the widget has
@@ -443,11 +453,11 @@ rtk.Widget.register{
     -- `maxw`.
     -- @meta read/write
     -- @type number|nil
-    maxw = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
+    maxw = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL, reflow_uses_exterior_value=true},
     --- Like `maxw` but for height (default `nil`)
     -- @meta read/write
     -- @type number|nil
-    maxh = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL},
+    maxh = rtk.Attribute{type='number', reflow=rtk.Widget.REFLOW_FULL, reflow_uses_exterior_value=true},
 
     --- Horizontal alignment of contents within the widget's calculated width
     -- (default `LEFT`).  See @{alignmentconst|alignment constants}.
@@ -1661,9 +1671,9 @@ end
 --
 -- During an animation, the attribute's calculated value is updated to reflect each
 -- individual step of the animation, and this can be fetched by calling `calc()` with the
--- `instant` argument set to true.  However, the surface value -- that is, the direct
+-- `instant` argument set to true.  However, the exterior value -- that is, the direct
 -- fields of the widget object, such as `button.color` or `box.alpha` -- are not updated
--- during the animation.  Surface attributes are updated either at the start of end of the
+-- during the animation.  Exterior attributes are updated either at the start of end of the
 -- animation, depending on what makes sense in the context of the attribute.
 --
 -- @code
@@ -1718,6 +1728,11 @@ function rtk.Widget:animate(kwargs)
     kwargs.attrmeta = meta
     kwargs.stepfunc = (meta.animate and meta.animate ~= rtk.Attribute.NIL) and meta.animate
     kwargs.calculate = meta.calculate
+    -- Exterior values are normally only updated at the end of the animation.  In some
+    -- cases, such as x/y/w/h, where the exterior value is used during reflow instead of
+    -- the calculated value (because the act of calculating geometry _is_ a reflow),
+    -- we need the animation step function to also sync the exterior value.
+    kwargs.sync_exterior_value = meta.reflow_uses_exterior_value
     if kwargs.dst == rtk.Attribute.DEFAULT then
         if meta.default == rtk.Attribute.FUNCTION then
             kwargs.dst = meta.default_func(self, attr)
@@ -1739,13 +1754,6 @@ function rtk.Widget:animate(kwargs)
     -- which will be passed to attr() when the animation finishes.
     local doneval = kwargs.dst or rtk.Attribute.DEFAULT
     if attr == 'w' or attr == 'h' then
-        -- Normally we don't update the surface value until the very end of the
-        -- animation.  But for w/h attrs, because the surface values are used
-        -- during reflow to calculate geometry, we make an exception.  Otherwise
-        -- every widget's _reflow() implementation would need to lookup active
-        -- animations and fetch the doneval, which doesn't seem worth the overhead
-        -- for such an improbable event.
-        kwargs.sync_surface_value = true
         -- If src value is nil or fractional and we're animating one of the
         -- dimensions, set the animation src to the current calculated size.
         if not kwargs.src or (kwargs.src <= 1.0 and kwargs.src >= 0) then
@@ -1759,7 +1767,7 @@ function rtk.Widget:animate(kwargs)
             -- (intrinsic size) or value <= 1.0 (size relative to parent), force a full reflow
             -- to determine new calculated geometry and then animate toward that.
             --
-            -- Remember current surface and calculated values so they can be restored.
+            -- Remember current exterior and calculated values so they can be restored.
             local current = self[attr]
             local current_calc = calc[attr]
             -- Set the attribute to nil and force full reflow on our window to calculate

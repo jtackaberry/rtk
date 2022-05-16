@@ -137,14 +137,14 @@ rtk.Attribute = {
     -- so it can also be used to hold custom state between invocations.
     --
     -- The animation function must return two values: the new calculated value of that
-    -- attribute, and the corresponding new surface value (or "decalculated" value).  For
+    -- attribute, and the corresponding new exterior value (or "decalculated" value).  For
     -- example, animating width or height may need to be adjusted by the scale factor in
-    -- the calculated value, but the surface value is before scaling.  The surface value
+    -- the calculated value, but the exterior value is before scaling.  The exterior value
     -- must not be nil -- return `rtk.Attribute.NIL` if needed.
     --
     -- If an attribute does not define an animate function, then calculate() will be called
     -- instead (if it exists), and the returned value will be used both as the calculated
-    -- value during the animation, as well as the surface value.
+    -- value during the animation, as well as the exterior value.
     -- @type function|nil
     animate = nil,
     --- An optional custom function to fetch the current calculated value for the attribute.

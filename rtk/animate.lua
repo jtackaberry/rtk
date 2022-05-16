@@ -278,9 +278,9 @@ function rtk._do_animations(now)
             local attr = anim.attr
             local finished = anim.pct >= 1.0
             local elapsed = now - anim._start_time
-            local newval, surfaceval
+            local newval, exterior
             if anim.stepfunc then
-                newval, surfaceval = anim.stepfunc(target, anim)
+                newval, exterior = anim.stepfunc(target, anim)
             else
                 newval = anim.resolve(anim.easingfunc(anim.pct))
             end
@@ -302,27 +302,27 @@ function rtk._do_animations(now)
                     -- calculated value directly, but still use the attribute's calc function
                     -- if it exists.
                     local value = newval
-                    if surfaceval == nil and anim.calculate then
-                        -- If no surface value was returned by stepfunc() then we infer it wasn't
+                    if exterior == nil and anim.calculate then
+                        -- If no exterior value was returned by stepfunc() then we infer it wasn't
                         -- a widget attribute animate function and call out to the attr's calculate
-                        -- function instead, whose result we use as both the calculated and surface
+                        -- function instead, whose result we use as both the calculated and exterior
                         -- value.
                         value = anim.calculate(widget, attr, newval, widget.calc)
-                        surfaceval = value
+                        exterior = value
                     end
                     widget.calc[attr] = value
-                    -- We don't want to override the surface value with the mid-animation
+                    -- We don't want to override the exterior value with the mid-animation
                     -- calculated value, but we do that if specifically requested via the
-                    -- sync_surface_value flag, which is used for w/h attributes as we
-                    -- want to be able to animate these but reflow acts on the surface
+                    -- sync_exterior_value flag, which is used for w/h attributes as we
+                    -- want to be able to animate these but reflow acts on the exterior
                     -- values (as the point of reflow is to calculate geometry).
-                    if anim.sync_surface_value then
-                        widget[attr] = surfaceval
+                    if anim.sync_exterior_value then
+                        widget[attr] = exterior or value
                     end
                 else
                     -- However for the final value, we *do* use onattr() so that the
                     -- relevant event handlers get called.
-                    widget:attr(attr, surfaceval or anim.doneval)
+                    widget:attr(attr, exterior or anim.doneval)
                 end
                 -- What we lose by not calling onattr() for each intermediate step is the
                 -- automatic reflow provided by onattr.  So a bit of a kludge here, where

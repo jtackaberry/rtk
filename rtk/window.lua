@@ -1232,7 +1232,7 @@ function rtk.Window:_setup_borderless()
         local dx = mx - this._drag_start_mx
         local dy = (my - this._drag_start_my) * (rtk.os.mac and -1 or 1)
         -- Clamp dimensions so the window can't be resized down to nothing. Use
-        -- surface/non-calculated forms of minw/minh as we're dealing with OS window
+        -- exterior/non-calculated forms of minw/minh as we're dealing with OS window
         -- pixels not gfx buffer pixels.
         local w = math.max(self.minw or 0, this._drag_start_ww + dx)
         local h = math.max(self.minh or 0, this._drag_start_wh + dy)
@@ -1331,7 +1331,7 @@ function rtk.Window:_handle_dock_change(dockstate)
     local was_docked = (self._dockstate & 0x01) ~= 0
     calc.docked = dockstate & 0x01 ~= 0
     calc.dock = (dockstate >> 8) & 0xff
-    -- Also sync to surface attributes
+    -- Also sync to exterior attributes
     self:sync('dock', calc.dock)
     self:sync('docked', calc.docked)
     self._dockstate = dockstate
@@ -1646,7 +1646,7 @@ function rtk.Window:_update()
     if x ~= self.x or y ~= self.y then
         local lastx, lasty = self.x, self.y
         -- Note that calc.x/y are not set as they are always 0 for rtk.Windows (in order
-        -- for container layout to work).  Instead we just sync the surface attributes,
+        -- for container layout to work).  Instead we just sync the exterior attributes,
         -- forcing the computed values to 0.
         self:sync('x', x, 0)
         self:sync('y', y, 0)
@@ -1660,7 +1660,7 @@ function rtk.Window:_update()
     -- being false.
     local resized = gfx.w ~= calc.w or gfx.h ~= calc.h
     if resized and self.visible then
-        -- Update both surface *and* calculated for the newly discovered size. Otherwise
+        -- Update both exterior *and* calculated for the newly discovered size. Otherwise
         -- attr's calculate function would be called and would clamp to minw/minh, but this
         -- must be avoided because gfx.w/gfx.h is authoritative.
         local last_w, last_h = self.w, self.h
