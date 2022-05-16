@@ -1036,8 +1036,12 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
         if self._caretctr % 32 < 16 and showcursor then
             -- Draw caret
             local curx = x + self._positions[calc.caret] + lp - self._loffset
-            self:setcolor(calc.textcolor, alpha)
-            gfx.line(curx, y + tp, curx, y + calc.h - bp, 0)
+            -- Ensure the entry box is big enough to hold the cursor, otherwise we may
+            -- draw outside our box.
+            if curx > x and curx < x + calc.w - lp then
+                self:setcolor(calc.textcolor, alpha)
+                gfx.line(curx, y + tp, curx, y + calc.h - bp, 0)
+            end
         end
     else
         self._blinking = false
