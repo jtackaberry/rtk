@@ -729,12 +729,14 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
         self._child_index_by_id[widget.id] = n
         if widget.visible == true then
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
-            -- This adjusts scale of non-relative values when scalability is full,
-            -- leaving relative values untouched.
-            attrs._minw = self:_adjscale(attrs.minw, uiscale, inner_maxw)
-            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, inner_maxw)
-            attrs._minh = self:_adjscale(attrs.minh, uiscale, inner_maxh)
-            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, inner_maxh)
+            -- Calculate effective min/max cell values, which adjusts the scale of
+            -- non-relative values when scalability is full, and converts relative sizes
+            -- to absolute values relative to the box (inner_maxw/h in this case) when
+            -- reflow is greedy.
+            attrs._minw = self:_adjscale(attrs.minw, uiscale, greedyw and inner_maxw)
+            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, greedyh and inner_maxw)
+            attrs._minh = self:_adjscale(attrs.minh, uiscale, greedyh and inner_maxh)
+            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, greedyh and inner_maxh)
             local wx, wy, ww, wh = widget:reflow(
                 0, 0,
                 -- Offered box size takes into account widget's location, we consider

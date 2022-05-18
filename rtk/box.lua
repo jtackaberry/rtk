@@ -422,13 +422,14 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
             -- alignment unless explicitly defined.
             attrs._halign = attrs.halign or calc.halign
             attrs._valign = attrs.valign or calc.valign
-            -- Similarly, calculated effective min/max cell values, which account for UI
-            -- scale (if allowed by the our scalability).  The true here indicates that
-            -- relative values are left untouched, as we will clamprel() those later.
-            attrs._minw = self:_adjscale(attrs.minw, uiscale, w)
-            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, w)
-            attrs._minh = self:_adjscale(attrs.minh, uiscale, h)
-            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, h)
+            -- Calculate effective min/max cell values, which adjusts the scale of
+            -- non-relative values when scalability is full, and converts relative sizes
+            -- to absolute values relative to the box (w/h in this case) when reflow is
+            -- greedy.
+            attrs._minw = self:_adjscale(attrs.minw, uiscale, greedyw and w)
+            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, greedyw and w)
+            attrs._minh = self:_adjscale(attrs.minh, uiscale, greedyh and h)
+            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, greedyh and h)
 
             -- Fill in the box direction implies expand.
             local implicit_expand

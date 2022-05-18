@@ -91,10 +91,14 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
         local wcalc = widget.calc
         if wcalc.visible == true and wcalc.position & rtk.Widget.POSITION_INFLOW ~= 0 then
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
-            attrs._minw = self:_adjscale(attrs.minw, uiscale, inner_maxw)
-            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, inner_maxw)
-            attrs._minh = self:_adjscale(attrs.minh, uiscale, inner_maxh)
-            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, inner_maxh)
+            -- Calculate effective min/max cell values, which adjusts the scale of
+            -- non-relative values when scalability is full, and converts relative sizes
+            -- to absolute values relative to the box (w/h in this case) when reflow is
+            -- greedy.
+            attrs._minw = self:_adjscale(attrs.minw, uiscale, greedyw and inner_maxw)
+            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, greedyw and inner_maxw)
+            attrs._minh = self:_adjscale(attrs.minh, uiscale, greedyh and inner_maxh)
+            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, greedyh and inner_maxh)
             local wx, wy, ww, wh = widget:reflow(
                 0,
                 0,
