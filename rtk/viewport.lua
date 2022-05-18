@@ -635,12 +635,11 @@ function rtk.Viewport:_handle_scrollbar(event, hoffset, voffset, gutteronly, nat
                 return false
             end
         end
-        local innerh = calc.h - pre.tp - pre.bp
         local target
         if natural then
             target = calc.scroll_top + (voffset - event.y)
         else
-            local pct = rtk.clamp(event.y - self.clienty - voffset, 0, innerh) / innerh
+            local pct = rtk.clamp(event.y - self.clienty - voffset, 0, calc.h) / calc.h
             target = pct * (self.child.calc.h)
         end
         -- Explicitly don't smooth scroll with scollbar movements.
