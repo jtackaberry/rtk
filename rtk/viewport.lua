@@ -282,13 +282,15 @@ end
 function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
+    )
     local hpadding = lp + rp
     local vpadding = tp + bp
 
     -- Determine bounding box for child
-    local inner_maxw = w or (boxw - hpadding)
-    local inner_maxh = h or (boxh - vpadding)
+    local inner_maxw = rtk.clamp(w or (boxw - hpadding), minw, maxw)
+    local inner_maxh = rtk.clamp(h or (boxh - vpadding), minh, maxh)
 
     -- Amount of the inner box we need to steal from children for scrollbar.  Only
     -- do so if scrollbar is always visible.
@@ -363,8 +365,8 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
 
     -- Only need to add child margin back in if we're using child's size.  If using our own
     -- size, w/h will be non-nil and that already incorporates child margin.
-    calc.w = self:_clampw((w or (innerw + scrollw + hmargin)) + hpadding, clampw and boxw)
-    calc.h = self:_clamph((h or (innerh + scrollh + vmargin)) + vpadding, clamph and boxh)
+    calc.w = rtk.clamp((w or (innerw + scrollw + hmargin)) + hpadding, minw, maxw)
+    calc.h = rtk.clamp((h or (innerh + scrollh + vmargin)) + vpadding, minh, maxh)
 
     if not self._backingstore then
         self._backingstore = rtk.Image(innerw, innerh)

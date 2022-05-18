@@ -177,10 +177,22 @@ rtk.Container.register{
     -- the cell (default 0).
     -- @type number
     lpadding = nil,
-    --- The minimum cell width allowed for the child widget.  This doesn't mean the
-    -- widget will be this width, rather just that the container will allow the widget at
-    -- least this amount of space.  To ensure the widget itself is at least this width,
+    --- The minimum cell width allowed for the child widget.  This doesn't necessarily mean
+    -- the widget will be this width, rather just that the container will allow the widget
+    -- at least this amount of space.  To ensure the widget itself is at least this width,
     -- also specify `fillw`.
+    --
+    -- Relative values are supported, so for example a value of `0.5` indicates the
+    -- child widget in this cell should be offered a box width that is 50% of the
+    -- containers own width.
+    --
+    -- This is distinct from the @{rtk.Widget.minw|minw widget attribute} in that the
+    -- `minw` cell attribute dictates how much space the container offers to the child
+    -- (its box), while `rtk.Widget.minw` controls how much of that box it will use. In
+    -- other words, the two combine together. For example, if the minw cell attribute is
+    -- `200`, and the minw widget attribute is 0.5, then the effective minimum width for
+    -- the widget will be 100px.
+    --
     -- @type number|nil
     minw = nil,
     --- Like `minw` but for height.
@@ -189,6 +201,10 @@ rtk.Container.register{
     --- The maximum cell width allowed for the child widget.  Unless the widget explicitly
     -- defines a larger width for itself, it is expected to shrink or clip as needed
     -- to fit within this value.
+    --
+    -- As with `minw`, relative values are supported and may be combined with the
+    -- @{rtk.Widget.maxw|maxw widget attribute}.
+    --
     -- @type number|nil
     maxw = nil,
     --- Like `maxw` but for height.
@@ -689,10 +705,12 @@ end
 function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local x, y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph, nil)
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph, nil, greedyw, greedyh
+    )
     -- Our default size is the given box without our padding
-    local inner_maxw = w or (boxw - lp - rp)
-    local inner_maxh = h or (boxh - tp - bp)
+    local inner_maxw = rtk.clamp(w or (boxw - lp - rp), minw, maxw)
+    local inner_maxh = rtk.clamp(h or (boxh - tp - bp), minh, maxh)
     -- Our current inner size that grows as each child is laid out
     local innerw = w or 0
     local innerh = h or 0
@@ -711,17 +729,19 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
         self._child_index_by_id[widget.id] = n
         if widget.visible == true then
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
-            local minw = self:_adjscale(attrs.minw or wcalc.minw)
-            local maxw = self:_adjscale(attrs.maxw or wcalc.maxw)
-            local minh = self:_adjscale(attrs.minh or wcalc.minh)
-            local maxh = self:_adjscale(attrs.maxh or wcalc.maxh)
+            -- This adjusts scale of non-relative values when scalability is full,
+            -- leaving relative values untouched.
+            attrs._minw = self:_adjscale(attrs.minw, uiscale, inner_maxw)
+            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, inner_maxw)
+            attrs._minh = self:_adjscale(attrs.minh, uiscale, inner_maxh)
+            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, inner_maxh)
             local wx, wy, ww, wh = widget:reflow(
                 0, 0,
                 -- Offered box size takes into account widget's location, we consider
                 -- where they would be offset within our box and offer the space to the
                 -- far edge of the box.
-                rtk.clamprel(inner_maxw - widget.x - clp - crp, minw, maxw),
-                rtk.clamprel(inner_maxh - widget.y - ctp - cbp, minh, maxh),
+                rtk.clamp(inner_maxw - widget.x - clp - crp, attrs._minw, attrs._maxw),
+                rtk.clamp(inner_maxh - widget.y - ctp - cbp, attrs._minh, attrs._maxh),
                 -- We implicitly fill if there's a minimum size defined.
                 attrs.fillw,
                 attrs.fillh,
@@ -737,8 +757,8 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
             -- bounding box to the child, but it may have elected not to use it.  We
             -- size those dimensions back up to minw/minh for alignment purposes below
             -- but don't overwrite the child's size.
-            ww = math.max(ww, minw or 0)
-            wh = math.max(wh, minh or 0)
+            ww = math.max(ww, attrs._minw or 0)
+            wh = math.max(wh, attrs._minh or 0)
             -- Calculate effective alignment for this cell, which defaults to the container's
             -- alignment unless explicitly defined.
             attrs._halign = attrs.halign or calc.halign
@@ -788,8 +808,8 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
 
     calc.x = x
     calc.y = y
-    calc.w = self:_clampw((w or innerw) + lp + rp, clampw and boxw)
-    calc.h = self:_clamph((h or innerh) + tp + bp, clamph and boxh)
+    calc.w = math.ceil(rtk.clamp((w or innerw) + lp + rp, minw, maxw))
+    calc.h = math.ceil(rtk.clamp((h or innerh) + tp + bp, minh, maxh))
 end
 
 function rtk.Container:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)

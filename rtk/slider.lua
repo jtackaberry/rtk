@@ -392,7 +392,9 @@ end
 function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
+    )
     local hpadding = lp + rp
     local vpadding = tp + bp
     local lh = 0
@@ -430,8 +432,8 @@ function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     self.lh = lh
 
     -- Enusre the slider is at least big enough to fit the thumbs
-    local minw = math.max(calc.minw or 0, #calc.value * calc.thumbsize*2) * rtk.scale.value
-    local minh = math.max(calc.minh or 0, calc.thumbsize*2, calc.tracksize) * rtk.scale.value
+    minw = math.max(minw or 0, math.max(calc.minw or 0, #calc.value * calc.thumbsize*2) * rtk.scale.value)
+    minh = math.max(minh or 0, math.max(calc.minh or 0, calc.thumbsize*2, calc.tracksize) * rtk.scale.value)
     -- Intrinsic size
     local size = math.max(calc.thumbsize * 2, calc.ticksize, calc.tracksize) * rtk.scale.value
     -- Sliders are intrinsically greedy and fill their bounding box unless explicitly
@@ -441,8 +443,8 @@ function rtk.Slider:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     calc.w = w and (w + hpadding) or (greedyw and boxw or 50)
     calc.h = h and (h + vpadding) or (size + self.lh + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.ceil(rtk.clamp(calc.w, minw, calc.maxw))
-    calc.h = math.ceil(rtk.clamp(calc.h, minh, calc.maxh))
+    calc.w = math.ceil(rtk.clamp(calc.w, minw, maxw))
+    calc.h = math.ceil(rtk.clamp(calc.h, minh, maxh))
     -- If there's no explicit width then here we indicate that we have consumed
     -- fillw.  TODO: needs adjustment when vertical slider support is added.
     return not w, false

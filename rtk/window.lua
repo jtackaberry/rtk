@@ -45,6 +45,29 @@ local log = require('rtk.log')
 --  -- Now open the window which itself is top-center on the screen.
 --  window:open{halign='center', valign='top'}
 --
+--
+-- ### Internal vs External Geometry Changes
+--
+-- The geometry of the window is controlled by the `x`, `y`, `w`, `h`, `minw`, `maxw`,
+-- `minh`, and `maxh` attributes.  These attributes influence how the window should be
+-- initially positioned and sized, but of course changes to the window's position and
+-- size can come from external causes, such as the user resizing the window via the OS
+-- window border, or REAPER modifying the dimensions of the window when it's docked
+-- or undocked.
+--
+-- When a geometry change originates from an external cause like this, the above
+-- attributes become passive and don't force any changes back onto the window's geometry.
+-- The `x`, `y`, `w`, and `h` attributes are automatically updated to reflect this
+-- externally caused change.  However, `minw`, `maxw`, `minh`, and `maxh` are left the way
+-- you set them.
+--
+-- After the window is opened, the `minw`, `maxw`, `minh`, and `maxh` only exert any
+-- influence on the window geometry if any of the eight geometry-related attributes are
+-- changed programmatically, such as via `attr()`.  Programmatically setting any of these
+-- attributes will cause all the min/max constraints to be reevaluated and enforced at
+-- that time, but thereafter become inert again when it comes to externally caused changes
+-- to position or size.
+--
 -- ### Closing the Window
 --
 -- Out of the box, undocked (i.e. floating) windows will be closed when the user hits the
@@ -138,12 +161,19 @@ rtk.Window.register{
     -- window size, but the calculated versions account for scaling on Retina displays, and
     -- also factor in a reduction for any padding.
 
-    --- The x screen coordinate of the window when undocked (default 0).  When this attribute
+    --- The x screen coordinate of the window when undocked (default nil).  When this attribute
     -- is @{rtk.Widget.attr|set} the window will be moved only if it's undocked, but when
     -- an undocked window is moved by the user, this attribute is also updated to reflect
     -- the current screen position.
     --
     -- Setting after `open()` is called requires the js_ReaScriptAPI extension.
+    --
+    -- If this attribute is nil (as is default) at the time `open()` is called, the window
+    -- will be automatically horizontally centered on the primary display and this
+    -- attribute will be updated to reflect the new actual screen x coordinate.  If you
+    -- wish to center the window on a display other than primary, then you'll need to
+    -- reflect the display position in the `x` and `y` attributes and pass the center
+    -- alignment option to `open()` instead.
     --
     -- Tip: you can call @{rtk.Widget.move|move}() to set both `x` and `y` at the same time.
     --
@@ -158,11 +188,17 @@ rtk.Window.register{
     x = rtk.Attribute{
         -- Unlike normal x/y coords for widgets, window position doesn't affect layout
         type='number',
+        default=rtk.Attribute.NIL,
         reflow=rtk.Widget.REFLOW_NONE,
         redraw=false,
         window_sync=true,
     },
-    --- Like `x` but for the y screen coordinate (default 0).
+    --- Like `x` but for the y screen coordinate (default nil).
+    --
+    -- As with `x`, if this attribute is nil (as is default) at the time `open()` is
+    -- called, the window will be automatically vertically centered on the system's
+    -- primary display and this attribute will be updated to reflect the new actual screen
+    -- y coordinate.
     --
     -- Whereas on Windows and Linux the `y` coordinate is relative the top of the screen
     -- (so `y=0` refers to the top edge of the screen), on Mac this is inverted such that
@@ -176,6 +212,7 @@ rtk.Window.register{
     -- @type number
     y = rtk.Attribute{
         type='number',
+        default=rtk.Attribute.NIL,
         reflow=rtk.Widget.REFLOW_NONE,
         redraw=false,
         window_sync=true,
@@ -214,7 +251,8 @@ rtk.Window.register{
         priority=true,
         type='number',
         window_sync=true,
-        -- rtk.Widget divides surface value by rtk.scale.value, which we don't want to do
+        reflow_uses_exterior_value=true,
+        -- rtk.Widget divides exterior value by rtk.scale.value, which we don't want to do
         -- for OS window sizes.  We pass the framebuffer scale instead to rtk.Widget's
         -- animate function, since apart from that scale value the logic is the same
         -- for rtk.Window.
@@ -222,7 +260,8 @@ rtk.Window.register{
             return rtk.Widget.attributes.w.animate(self, anim, rtk.scale.framebuffer)
         end,
         calculate=function(self, attr, value, target)
-            return value and math.max(self.minw or 0, value) * rtk.scale.framebuffer
+            -- Adjust values by framebuffer scale.  Min/max clamping is done during reflow.
+            return value and value * rtk.scale.framebuffer
         end,
     },
     --- Like `w` but for the window height (default nil).
@@ -240,10 +279,9 @@ rtk.Window.register{
         priority=true,
         type='number',
         window_sync=true,
+        reflow_uses_exterior_value=true,
         animate=rtk.Reference('w'),
-        calculate=function(self, attr, value, target)
-            return math.max(self.minh or 0, value or 0) * rtk.scale.framebuffer
-        end,
+        calculate=rtk.Reference('w'),
     },
     --- Minimum allowed width for the window when undocked (default 100).
     --
@@ -263,9 +301,8 @@ rtk.Window.register{
     -- @type number
     minw = rtk.Attribute{
         default=100,
-        calculate=function(self, attr, value, target)
-            return value and value * rtk.scale.framebuffer or 0
-        end,
+        window_sync=true,
+        reflow_uses_exterior_value=true,
     },
     --- Like `minw`, but is the minimum height allowed for the window when undocked
     -- (default 30).
@@ -274,7 +311,8 @@ rtk.Window.register{
     -- @type number
     minh = rtk.Attribute{
         default=30,
-        calculate=rtk.Reference('minw'),
+        window_sync=true,
+        reflow_uses_exterior_value=true,
     },
     --- Maximum width allowed for the undocked window when `w` is nil to autosize the width
     -- based on the child widgets (default 800).
@@ -298,12 +336,8 @@ rtk.Window.register{
     -- @meta read/write
     -- @type number|nil
     maxw = rtk.Attribute{
-        default=800,
-        calculate=function(self, attr, value, target)
-            -- Unlike minw/minh, allow calculated max to be nil, which elsewhere implies
-            -- to use display size.
-            return value and value * rtk.scale.framebuffer
-        end,
+        window_sync=true,
+        reflow_uses_exterior_value=true,
     },
 
     --- Like `maxw` but is the maximum height allowed for the undocked window when `h` is
@@ -312,8 +346,8 @@ rtk.Window.register{
     -- @meta read/write
     -- @type number|nil
     maxh = rtk.Attribute{
-        default=600,
-        calculate=rtk.Reference('maxw'),
+        window_sync=true,
+        reflow_uses_exterior_value=true,
     },
 
     --- Sets the visibility of the detached window when undocked (default true).  This
@@ -552,7 +586,7 @@ function rtk.Window:initialize(attrs, ...)
     self._mouse_refresh_queued = false
     -- If true, we update OS window attributes on the next update().  This is true when
     -- one of the attributes with window_sync=true are set.
-    self._sync_window_attrs_on_update = false
+    self._sync_window_attrs_on_update = true
 
     -- For borderless windows
     self._resize_grip = nil
@@ -707,8 +741,8 @@ end
 function rtk.Window:_get_display_resolution(working, frame)
     -- Here we use user-provided attributes instead of calculated values in case a move was
     -- requested.
-    local x = math.floor(self.x)
-    local y = math.floor(self.y)
+    local x = math.floor(self.x or 0)
+    local y = math.floor(self.y or 0)
     -- self.w/h could be nil if we're reflowing for shrinkwrap logic, in which case we
     -- just use whichever display has the top-left corner of the window (or bottom-left
     -- on Mac).
@@ -727,53 +761,78 @@ function rtk.Window:_get_display_resolution(working, frame)
     return l, t, sw, sh
 end
 
+function rtk.Window:_get_relative_size_from_display(w, h)
+    local sz = w or h
+    if sz > 0 and sz <= 1.0 then
+        local _, _, sw, sh = self:_get_display_resolution(true, not self.calc.borderless)
+        return w and sw*w or sh*h
+    else
+        return sz
+    end
+end
+
 function rtk.Window:_get_geometry_from_attrs(overrides)
+    overrides = overrides or {}
     -- rtk.scale.framebuffer shouldn't be nil as we infer it on startup, but this is
     -- defensive.
     local scale = rtk.scale.framebuffer or 1
+    local minw, maxw, minh, maxh, sx, sy, sw, sh = self:_get_min_max_sizes()
+    if not sh then
+        -- _get_min_max_sizes() did not need to clamp so it didn't fetch display resolution.
+        -- Do that ourselves.
+        sx, sy, sw, sh = self:_get_display_resolution(true, not self.calc.borderless)
+    end
+    local calc = self.calc
     local x = self.x
     local y = self.y
-    local calc = self.calc
+    -- If x or y is nil, then we assume center alignment on the primary display.
+    if not x then
+        x = 0
+        overrides.halign = rtk.Widget.CENTER
+    end
+    if not y then
+        y = 0
+        overrides.valign = rtk.Widget.CENTER
+    end
     -- Use calculated values here (rather than self.w/h) to ensure we respect minw/minh
     -- clamping done by those attrs' calculate funcitons.
-    local w = calc.w / scale
-    local h = calc.h / scale
-    if overrides then
-        -- This returns nil if the resolution can't be determined.
-        local sx, sy, sw, sh = self:_get_display_resolution(true)
-        if sw and sh then
-            if overrides.halign == rtk.Widget.LEFT then
-                x = sx
-            elseif overrides.halign == rtk.Widget.CENTER then
-                x = sx + (overrides.x or 0) + (sw - w) / 2
-            elseif overrides.halign == rtk.Widget.RIGHT then
-                x = sx + (overrides.x or 0) + (sw - w)
+    local w = rtk.isrel(self.w) and (self.w * sw) or (calc.w / scale)
+    local h = rtk.isrel(self.h) and (self.h * sh) or (calc.h / scale)
+    w = rtk.clamp(w, minw and minw / scale, maxw and maxw / scale)
+    h = rtk.clamp(h, minh and minh / scale, maxh and maxh / scale)
+    -- This returns nil if the resolution can't be determined.
+    if sw and sh then
+        if overrides.halign == rtk.Widget.LEFT then
+            x = sx
+        elseif overrides.halign == rtk.Widget.CENTER then
+            x = sx + (overrides.x or 0) + (sw - w) / 2
+        elseif overrides.halign == rtk.Widget.RIGHT then
+            x = sx + (overrides.x or 0) + (sw - w)
+        end
+        if rtk.os.mac then
+            if overrides.valign == rtk.Widget.TOP then
+                y = sy + (overrides.y or 0) + (sh - h)
+            elseif overrides.valign == rtk.Widget.CENTER then
+                y = sy + (overrides.y or 0) + (sh - h) / 2
+            elseif overrides.valign == rtk.Widget.BOTTOM then
+                y = sy + (overrides.y or 0)
             end
-            if rtk.os.mac then
-                if overrides.valign == rtk.Widget.TOP then
-                    y = sy + (overrides.y or 0) + (sh - h)
-                elseif overrides.valign == rtk.Widget.CENTER then
-                    y = sy + (overrides.y or 0) + (sh - h) / 2
-                elseif overrides.valign == rtk.Widget.BOTTOM then
-                    y = sy + (overrides.y or 0)
-                end
-            else
-                if overrides.valign == rtk.Widget.TOP then
-                    y = sy
-                elseif overrides.valign == rtk.Widget.CENTER then
-                    y = sy + (overrides.y or 0) + (sh - h) / 2
-                elseif overrides.valign == rtk.Widget.BOTTOM then
-                    y = sy + (overrides.y or 0) + (sh - h)
-                end
+        else
+            if overrides.valign == rtk.Widget.TOP then
+                y = sy
+            elseif overrides.valign == rtk.Widget.CENTER then
+                y = sy + (overrides.y or 0) + (sh - h) / 2
+            elseif overrides.valign == rtk.Widget.BOTTOM then
+                y = sy + (overrides.y or 0) + (sh - h)
             end
-            if overrides.constrain then
-                x = rtk.clamp(x, sx, sx + sw - w)
-                y = rtk.clamp(y, sy, sy + sh - h)
-                -- Use surface/non-calculated forms of minw/minh as we're dealing with OS window pixels
-                -- not gfx buffer pixels.
-                w = rtk.clamp(w, self.minw or 0, sw - (x - sx))
-                h = rtk.clamp(h, self.minh or 0, sh - (rtk.os.mac and y-sy-h or y-sy))
-            end
+        end
+        if overrides.constrain then
+            x = rtk.clamp(x, sx, sx + sw - w)
+            y = rtk.clamp(y, sy, sy + sh - h)
+            -- Use exterior/non-calculated forms of minw/minh as we're dealing with OS window pixels
+            -- not gfx buffer pixels.
+            w = rtk.clamp(w, self.minw or 0, sw - (x - sx))
+            h = rtk.clamp(h, self.minh or 0, sh - (rtk.os.mac and y-sy-h or y-sy))
         end
     end
     return math.round(x), math.round(y), math.round(w), math.round(h)
@@ -1108,10 +1167,6 @@ function rtk.Window:_setup_borderless()
         -- Already setup
         return
     end
-    -- rtk.callafter(1, function()
-    --     self:attr('x', 500)
-    --     self:attr('y', 100)
-    -- end)
     local calc = self.calc
     -- Use a blank spacer at the top of the window with a low z-index as the
     -- move grip.  ondragstart() will not be invoked if a higher z-level
@@ -1392,23 +1447,6 @@ function rtk.Window:queue_blit()
     self._blits_queued = self._blits_queued + 2
 end
 
-
--- Whereas rtk.Widget:_get_content_size() determines its size based on self.w/self.h,
--- rtk.Window's w/h attributes are pre gfxbuffer/window ratio, so we need to adjust for
--- that.
---
--- Moreover, we don't have the luxury of dictating window size.  While we respect
--- minw and minh in the w/h attribute calculate functions, if _update() has synced
--- w/h based on actual window geometry, it is what it is.  So we return the calculated
--- values, which compensate for the gfx-win ratio.
-function rtk.Window:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, scale)
-    local tp, rp, bp, lp = self:_get_padding_and_border()
-    local calc = self.calc
-    -- Tolerate self.w or self.h being nil, which means we want to discover the
-    -- container's intrinsic size for shrinkwrapping.
-    return self.w and (calc.w - lp - rp) or nil, self.h and (calc.h - tp - bp) or nil, tp, rp, bp, lp
-end
-
 --- Queues a simulated mousemove event on next update to cause widgets to refresh the
 -- mouse hover state.
 --
@@ -1432,25 +1470,52 @@ function rtk.Window:queue_mouse_refresh()
     self._mouse_refresh_queued = true
 end
 
--- These clamp functions are called by the base class (rtk.Container)  _reflow().  For
--- rtk.Window, we can't clamp the size to minw/minh because the window can be resized by
--- external forces. So the only time we're willing to clamp is when the calculated size is
--- nil, which means this is our first autosize reflow.
-function rtk.Window:_clampw(w, box)
-    return self.calc.w and w or rtk.Container._clampw(self, w, box)
+-- Whereas rtk.Widget:_get_content_size() determines its size based on self.w/self.h,
+-- rtk.Window's w/h attributes are pre gfxbuffer/window ratio, so we need to adjust for
+-- that.
+--
+-- Moreover, we don't have the luxury of dictating window size.  While we respect
+-- minw and minh in the w/h attribute calculate functions, if _update() has synced
+-- w/h based on actual window geometry, it is what it is.  So we return the calculated
+-- values, which compensate for the gfx-win ratio.
+function rtk.Window:_get_content_size(boxw, boxh, fillw, fillh, clampw, clamph, scale, greedyw, greedyh)
+    local calc = self.calc
+    local tp, rp, bp, lp = self:_get_padding_and_border()
+    -- Tolerate self.w or self.h being nil, which means we want to discover the
+    -- container's intrinsic size for shrinkwrapping.
+    local w = rtk.isrel(self.w) and (self.w * boxw) or (self.w and (calc.w - lp - rp)) or nil
+    local h = rtk.isrel(self.h) and (self.h * boxh) or (self.h and (calc.h - tp - bp)) or nil
+    local minw, maxw, minh, maxh = self:_get_min_max_sizes(boxw, boxh, greedyw, greedyh, scale)
+    return w, h, tp, rp, bp, lp, minw, maxw, minh, maxh
 end
 
-function rtk.Window:_clamph(h, box)
-    return self.calc.h and h or rtk.Container._clamph(self, h, box)
+function rtk.Window:_get_min_max_sizes(boxw, boxh, greedyw, greedyh, scale)
+    if not self._sync_window_attrs_on_update then
+        -- We're not reflowing because of a programmatic change to a window related
+        -- attribute, so we return no min/max values to ensure the window does not try to
+        -- snap to these values during external events such as resizing, which would
+        -- result in a battle between what we think the window geometry should be vs what
+        -- it actually is.
+        return
+    end
+    local calc = self.calc
+    local sx, sy, sw, sh = self:_get_display_resolution(true, not calc.borderless)
+    scale = rtk.scale.framebuffer
+    -- These are not adjusted for padding by default, which is what we want here.  The
+    -- window size needs to include internal padding.  Window min/max is always greedy, so
+    -- force greedy arguments to true.
+    local minw, maxw, minh, maxh = rtk.Container._get_min_max_sizes(self, sw*scale, sh*scale, true, true, scale)
+    return minw, maxw, minh, maxh, sx, sy, sw, sh
 end
 
 function rtk.Window:_reflow(boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
+    local calc = self.calc
     rtk.Container._reflow(self, boxx, boxy, boxw, boxh, fillw, filly, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     -- The semantics of the x, y properties are different for Windows, where they refer to
     -- the OS window coordinates rather than internal widget coordinates.  So override the
-    -- calculated x/y to offset to 0.
-    self.calc.x = 0
-    self.calc.y = 0
+    -- calculated x/y, which the superclass may have adjusted, to offset to 0.
+    calc.x = 0
+    calc.y = 0
 end
 
 -- If full is false, only specific widgets are reflowed, which assumes their geometry
@@ -1479,11 +1544,10 @@ function rtk.Window:reflow(mode)
             -- in the affected dimensions.  Be aware that calc.w/calc.h can be nil here,
             -- if it's the very first autosize reflow being done via open().
             local boxw, boxh = calc.w, calc.h
-            if not self.w or not self.h then
-                saved_size = {self.w, self.h}
+            if not self.w or not self.h or rtk.isrel(self.w) or rtk.isrel(self.h) then
                 local _, _, sw, sh = self:_get_display_resolution(true, not calc.borderless)
-                boxw = not self.w and (calc.maxw or sw*rtk.scale.framebuffer) or calc.w or calc.minw
-                boxh = not self.h and (calc.maxh or sh*rtk.scale.framebuffer) or calc.h or calc.minh
+                boxw = (rtk.isrel(self.w) or not self.w) and sw*rtk.scale.framebuffer or boxw
+                boxh = (rtk.isrel(self.h) or not self.h) and sh*rtk.scale.framebuffer or boxh
             end
             local _, _, w, h = rtk.Container.reflow(self,
                 -- box
@@ -1501,9 +1565,6 @@ function rtk.Window:reflow(mode)
             )
             self:_realize_geometry()
             full = true
-            if saved_size then
-                self.w, self.h = table.unpack(saved_size)
-            end
         end
         -- log.debug('rtk: full reflow (%s x %s) in %.3f ms', calc.w, calc.h, (reaper.time_precise() - t0) * 1000)
     end

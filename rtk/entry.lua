@@ -335,7 +335,7 @@ end
 
 function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
-    local maxw, maxh = nil, nil
+    local lmaxw, lmaxh = nil, nil
     if self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags) then
         -- Font changed, so ensure we recalculate all character positions.
         self._dirty_positions = 1
@@ -350,17 +350,19 @@ function rtk.Entry:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
         -- that's big enough to ensure we can safely support textwidth worth of any
         -- character.
         local charwidth, _ = gfx.measurestr('W')
-        maxw, maxh = charwidth * calc.textwidth, self._font.texth
+        lmaxw, lmaxh = charwidth * calc.textwidth, self._font.texth
     else
         -- No hints given on dimensions, so make something up from whole cloth for our
         -- intrinsic size, preferring the placeholder if it exists.
-        maxw, maxh = gfx.measurestr(calc.placeholder or "Dummy string!")
+        lmaxw, lmaxh = gfx.measurestr(calc.placeholder or "Dummy string!")
     end
 
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
-    calc.w = math.ceil(self:_clampw((w or maxw) + lp + rp))
-    calc.h = math.ceil(self:_clamph((h or maxh) + tp + bp))
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
+    )
+    calc.w = math.ceil(rtk.clamp((w or lmaxw) + lp + rp, minw, maxw))
+    calc.h = math.ceil(rtk.clamp((h or lmaxh) + tp + bp, minh, maxh))
     -- Remember calculated padding as we use that in many functions.
     self._ctp, self._crp, self._cbp, self._clp = tp, rp, bp, lp
 

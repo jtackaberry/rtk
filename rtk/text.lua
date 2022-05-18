@@ -224,7 +224,9 @@ function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, 
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
     self._font:set(calc.font, calc.fontsize, calc.fontscale, calc.fontflags)
 
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
+    )
     local hpadding = lp + rp
     local vpadding = tp + bp
 
@@ -247,8 +249,8 @@ function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, 
     calc.w = (w and w + hpadding) or (fillw and greedyw and boxw) or math.min(clampw and boxw or math.inf, self.lw + hpadding)
     calc.h = (h and h + vpadding) or (fillh and greedyh and boxh) or math.min(clamph and boxh or math.inf, self.lh + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.ceil(self:_clampw(calc.w))
-    calc.h = math.ceil(self:_clamph(calc.h))
+    calc.w = math.ceil(rtk.clamp(calc.w, minw, maxw))
+    calc.h = math.ceil(rtk.clamp(calc.h, minh, maxh))
 end
 
 -- Precalculate positions for _draw()

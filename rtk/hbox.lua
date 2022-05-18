@@ -78,16 +78,8 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
             local expand = attrs._calculated_expand
             if expand and greedyw and expand > 0 then
                 -- This is an expanded child which was not reflowed in pass 1, so do it now.
-                local child_maxw = rtk.clamprel(
-                    (expand_unit_size * expand) - clp - crp - spacing,
-                    attrs._minw,
-                    attrs._maxh
-                )
-                local child_maxh = rtk.clamprel(
-                    h - ctp - cbp,
-                    attrs._minh,
-                    attrs._maxh
-                )
+                local child_maxw = rtk.clamp((expand_unit_size * expand) - clp - crp - spacing, attrs._minw, attrs._maxh)
+                local child_maxh = rtk.clamp(h - ctp - cbp, attrs._minh, attrs._maxh)
                 wx, wy, ww, wh = widget:reflow(
                     0,
                     0,
@@ -141,7 +133,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
             end
             maxw = math.max(maxw, offset)
             maxh = math.max(maxh, wh + ctp + cbp)
-            spacing = (attrs.spacing or self.spacing) * rtk.scale.value
+            spacing = (attrs.spacing or self.spacing) * uiscale
             if not need_second_pass then
                 widget:_realize_geometry()
             end

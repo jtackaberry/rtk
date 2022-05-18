@@ -65,10 +65,12 @@ end
 function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local x, y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
+    )
     -- Our default size is the given box without our padding
-    local inner_maxw = w or (boxw - lp - rp)
-    local inner_maxh = h or (boxh - tp - bp)
+    local inner_maxw = rtk.clamp(w or (boxw - lp - rp), minw, maxw)
+    local inner_maxh = rtk.clamp(h or (boxh - tp - bp), minh, maxh)
     -- If we have a constrained width or height, ensure we tell children to clamp to it
     -- regardless of what our parent told us.
     clampw = clampw or w ~= nil or fillw
@@ -89,11 +91,15 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
         local wcalc = widget.calc
         if wcalc.visible == true and wcalc.position & rtk.Widget.POSITION_INFLOW ~= 0 then
             local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
+            attrs._minw = self:_adjscale(attrs.minw, uiscale, inner_maxw)
+            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, inner_maxw)
+            attrs._minh = self:_adjscale(attrs.minh, uiscale, inner_maxh)
+            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, inner_maxh)
             local wx, wy, ww, wh = widget:reflow(
                 0,
                 0,
-                inner_maxw,
-                inner_maxh,
+                rtk.clamp(inner_maxw, attrs._minw, attrs._maxw),
+                rtk.clamp(inner_maxh, attrs._minh, attrs._maxh),
                 nil,
                 nil,
                 clampw, clamph,
@@ -105,9 +111,8 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
             )
             ww = ww + clp + crp
             wh = wh + ctp + cbp
-            local minw = self:_adjscale((attrs.minw or wcalc.minw or 0) + clp + crp)
-            child_maxw = math.min(math.max(child_maxw, ww, minw), inner_maxw)
-            child_totalh = child_totalh + wh
+            child_maxw = math.min(math.max(child_maxw, ww, attrs._minw or 0), inner_maxw)
+            child_totalh = child_totalh + math.max(wh, attrs._minh or 0)
             child_geometry[#child_geometry+1] = {x=wx, y=wy, w=ww, h=wh}
         end
     end
@@ -224,6 +229,6 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
 
     inner.w = inner.w + col.w
     calc.x, calc.y = x, y
-    calc.w = self:_clampw((w or inner.w) + lp + rp, clampw and boxw)
-    calc.h = self:_clamph((h or inner.h) + tp + bp, clamph and boxh)
+    calc.w = math.ceil(rtk.clamp((w or inner.w) + lp + rp, minw, maxw))
+    calc.h = math.ceil(rtk.clamp((h or inner.h) + tp + bp, minh, maxh))
 end

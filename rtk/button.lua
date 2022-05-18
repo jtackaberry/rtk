@@ -404,7 +404,9 @@ end
 function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
+    )
 
     local icon = calc.icon
     if icon and uiscale ~= self._last_reflow_scale then
@@ -488,8 +490,8 @@ function rtk.Button:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
         calc.h = 0
     end
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.ceil(self:_clampw(calc.w + hpadding, clampw and boxw))
-    calc.h = math.ceil(self:_clamph(calc.h + vpadding, clamph and boxh))
+    calc.w = math.ceil(rtk.clamp(calc.w + hpadding, minw, maxw))
+    calc.h = math.ceil(rtk.clamp(calc.h + vpadding, minh, maxh))
 end
 
 -- Precalculate positions for _draw()

@@ -332,10 +332,12 @@ end
 function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(boxw, boxh, fillw and greedyw, fillh and greedyh, clampw, clamph)
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
+    )
     -- Our default size is the given box without our padding
-    local inner_maxw = w or (boxw - lp - rp)
-    local inner_maxh = h or (boxh - tp - bp)
+    local inner_maxw = rtk.clamp(w or (boxw - lp - rp), minw, maxw)
+    local inner_maxh = rtk.clamp(h or (boxh - tp - bp), minh, maxh)
     -- If we have a constrained width or height, ensure we tell children to clamp to it
     -- regardless of what our parent told us.
     clampw = clampw or w ~= nil or fillw
@@ -380,9 +382,9 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
     -- clip us, e.g. a viewport)
     innerw = w or math.max(innerw, fillw and greedyw and inner_maxw or 0)
     innerh = h or math.max(innerh, fillh and greedyh and inner_maxh or 0)
-    -- Calculate border box to include our padding
-    calc.w = self:_clampw(innerw + lp + rp, clampw and boxw)
-    calc.h = self:_clamph(innerh + tp + bp, clamph and boxh)
+    -- Calculate border box to include our padding and re-clamp to min/max
+    calc.w = math.ceil(rtk.clamp(innerw + lp + rp, minw, maxw))
+    calc.h = math.ceil(rtk.clamp(innerh + tp + bp, minh, maxh))
     return expw, exph
 end
 
@@ -421,11 +423,13 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
             attrs._halign = attrs.halign or calc.halign
             attrs._valign = attrs.valign or calc.valign
             -- Similarly, calculated effective min/max cell values, which account for UI
-            -- scale (if allowed by the our scalability).
-            attrs._minw = self:_adjscale(attrs.minw or wcalc.minw)
-            attrs._maxw = self:_adjscale(attrs.maxw or wcalc.maxw)
-            attrs._minh = self:_adjscale(attrs.minh or wcalc.minh)
-            attrs._maxh = self:_adjscale(attrs.maxh or wcalc.maxh)
+            -- scale (if allowed by the our scalability).  The true here indicates that
+            -- relative values are left untouched, as we will clamprel() those later.
+            attrs._minw = self:_adjscale(attrs.minw, uiscale, w)
+            attrs._maxw = self:_adjscale(attrs.maxw, uiscale, w)
+            attrs._minh = self:_adjscale(attrs.minh, uiscale, h)
+            attrs._maxh = self:_adjscale(attrs.maxh, uiscale, h)
+
             -- Fill in the box direction implies expand.
             local implicit_expand
             if orientation == rtk.Box.HORIZONTAL then
@@ -445,16 +449,8 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
                 local ctp, crp, cbp, clp = self:_get_cell_padding(widget, attrs)
                 if orientation == rtk.Box.HORIZONTAL then
                     -- Horizontal box
-                    local child_maxw = rtk.clamprel(
-                        remaining_size - clp - crp - spacing,
-                        attrs._minw,
-                        attrs._maxw
-                    )
-                    local child_maxh = rtk.clamprel(
-                        h - ctp - cbp,
-                        attrs._minh,
-                        attrs._maxh
-                    )
+                    local child_maxw = rtk.clamp(remaining_size - clp - crp - spacing, attrs._minw, attrs._maxw)
+                    local child_maxh = rtk.clamp(h - ctp - cbp, attrs._minh, attrs._maxh)
                 _, _, ww, wh, wexpw, wexph = widget:reflow(
                         0,
                         0,
@@ -494,16 +490,8 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
                     end
                 else
                     -- Vertical box
-                    local child_maxw = rtk.clamprel(
-                        w - clp - crp,
-                        attrs._minw,
-                        attrs._maxw
-                    )
-                    local child_maxh = rtk.clamprel(
-                        remaining_size - ctp - cbp - spacing,
-                        attrs._minh,
-                        attrs._maxh
-                    )
+                    local child_maxw = rtk.clamp(w - clp - crp, attrs._minw, attrs._maxw)
+                    local child_maxh = rtk.clamp(remaining_size - ctp - cbp - spacing, attrs._minh, attrs._maxh)
                     _, _, ww, wh, wexpw, wexph = widget:reflow(
                         0,
                         0,

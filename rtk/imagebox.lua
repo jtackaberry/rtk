@@ -78,6 +78,7 @@ rtk.ImageBox.register{
     -- @type number|nil
     -- @meta read/write
     scale = rtk.Attribute{
+        default=rtk.Attribute.NIL,
         reflow=rtk.Widget.REFLOW_FULL,
     },
 
@@ -119,11 +120,8 @@ end
 function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
-    local w, h, tp, rp, bp, lp = self:_get_content_size(
-        boxw, boxh,
-        fillw, fillh,
-        clampw and greedyw, clamph and greedyh,
-        self.scale or 1
+    local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
+        boxw, boxh, fillw, fillh, clampw, clamph, self.scale or 1, greedyw, greedyh
     )
     local dstw, dsth = 0, 0
     local hpadding = lp + rp
@@ -134,7 +132,7 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
             image:refresh_scale()
             self._last_reflow_scale = uiscale
         end
-        local scale = (self.scale or 1) * rtk.scale.value / image.density
+        local scale = (self.scale or 1) * uiscale / image.density
         local native_aspect = image.w / image.h
         local aspect = calc.aspect or native_aspect
         dstw = (w and w-hpadding) or ((fillw and greedyw) and boxw-hpadding)
@@ -183,8 +181,8 @@ function rtk.ImageBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     calc.w = (fillw and greedyw and boxw) or math.min(clampw and boxw or math.inf, self.iw + hpadding)
     calc.h = (fillh and greedyh and boxh) or math.min(clamph and boxh or math.inf, self.ih + vpadding)
     -- Finally, apply min/max and round to ensure alignment to pixel boundaries.
-    calc.w = math.ceil(self:_clampw(calc.w))
-    calc.h = math.ceil(self:_clamph(calc.h))
+    calc.w = math.ceil(rtk.clamp(calc.w, minw, maxw))
+    calc.h = math.ceil(rtk.clamp(calc.h, minh, maxh))
 end
 
 -- Precalculate positions for _draw()

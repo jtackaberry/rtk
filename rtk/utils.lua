@@ -133,6 +133,10 @@ function rtk.clamprel(value, min, max)
     end
 end
 
+function rtk.isrel(value)
+    return value and value > 0 and value <= 1.0
+end
+
 --- Determines whether the given point lies within the given rectangle.
 --
 -- @tparam number x the x coordinate of the point to test
