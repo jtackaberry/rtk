@@ -386,7 +386,9 @@ function rtk.Viewport:_realize_geometry()
     if self.child then
         local innerh = self._backingstore.h
         local ch = self.child.calc.h
-        if calc.vscrollbar ~= rtk.Viewport.SCROLLBAR_NEVER and ch > innerh then
+        -- Calculate scrollbar parameters even if vscrollbar=never so that scrolling by
+        -- mousewheel or API still works.
+        if ch > innerh then
             self._vscrollx = calc.x + calc.w - calc.scrollbar_size * rtk.scale.value - calc.vscrollbar_offset
             self._vscrolly = calc.y + calc.h * calc.scroll_top / ch + tp
             self._vscrollh = calc.h * innerh  / ch
