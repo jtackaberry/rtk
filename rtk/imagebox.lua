@@ -46,7 +46,9 @@ rtk.ImageBox.register{
     -- that was previously registered with `rtk.add_image_search_path()`.  If a string is
     -- provided then a new `rtk.Image` is automatically created and the
     -- @{rtk.Widget.calc|calculated value} of this attribute will contain this `rtk.Image`
-    -- instance.
+    -- instance, where `rtk.Image.icon()` is used to load the image and the ImageBox's
+    -- `bg` attribute is used between either light or dark variants of the image (if
+    -- available).
     --
     -- This attribute may be passed as the first positional argument during initialization.
     -- (In other words, `rtk.ImageBox{img}` is equivalent to `rtk.ImageBox{image=img}`.)
@@ -113,6 +115,8 @@ function rtk.ImageBox:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     if attr == 'image' and value then
         -- Ensure next reflow calls refresh_scale() on the image.
         self._last_reflow_scale = nil
+    elseif attr == 'bg' and type(self.image) == 'string' then
+        self:attr('image', self.image, true, rtk.Widget.REFLOW_NONE)
     end
     return ret
 end
