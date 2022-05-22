@@ -110,8 +110,11 @@ function rtk.FlowBox:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamp
                 uiscale,
                 viewport,
                 window,
-                greedyw,
-                greedyh
+                -- Perform a non-greedy reflow on the first pass to allow children to use
+                -- fill/expand.  Otherwise a greedy reflow with fill/expand children would
+                -- force us down to a single column.
+                false,
+                false
             )
             ww = ww + clp + crp
             wh = wh + ctp + cbp
