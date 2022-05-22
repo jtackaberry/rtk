@@ -1135,7 +1135,7 @@ function rtk.add_modal(...)
     end
     local widgets = {...}
     for _, widget in ipairs(widgets) do
-        rtk._modal[widget.id] = widget
+        rtk._modal[widget.id] = {widget, rtk.tick}
     end
 end
 

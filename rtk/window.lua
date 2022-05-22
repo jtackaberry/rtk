@@ -1938,6 +1938,7 @@ function rtk.Window:_update()
                 end
                 -- Record current time the button was pressed
                 buttonstate.time = now
+                buttonstate.tick = rtk.tick
                 -- Also keep track of the order the buttons were pressed, so when we
                 -- generate a simulated mousedown later we can use an appropriate value
                 -- for event.button.
@@ -2046,14 +2047,34 @@ function rtk.Window:_update()
         -- last event generated above.
         if not event.handled and rtk.is_modal() and
            ((focus_changed and not self.is_focused) or event.type == rtk._touch_activate_event) then
-            for _, widget in pairs(rtk._modal) do
-                widget:_release_modal(event)
+            for _, info in pairs(rtk._modal) do
+                local widget, modaltick = table.unpack(info)
+                -- Don't ask the widget to release modal if it was set to modal in the
+                -- same tick as the most recent mousedown event (which is actually the
+                -- current event when touchscroll is disabled).  This can happen, for
+                -- example, when touchscroll is enabled and an rtk.Popup is opened in
+                -- response to mousedown.  We don't want the mouseup to immediately close
+                -- when mouseup occurs.
+                local state = rtk.mouse.state[event.button]
+                -- If state is nil, then this must have been a loss of focus by the window rather
+                -- than a mouse click.  In this case we always want to release modal.
+                local downtick = state and state.tick
+                if modaltick ~= downtick then
+                    widget:_release_modal(event)
+                end
             end
         end
         if not event.handled and rtk.focused and event.type == rtk._touch_activate_event then
             -- Unhandled click, blur focused widget.
             rtk.focused:blur(event, nil)
         end
+        if event.type == rtk.Event.MOUSEUP then
+            rtk.mouse.state[event.button] = nil
+            if event.buttons == 0 then
+                -- Clear on mouseup if no more buttons are held.  We want to do this *after*
+                -- _handle_event() above to ensure mouseup handlers can test rtk._pressed_widgets
+                -- to see if a widget receiving mouseup had previously received mousedown.
+                rtk._pressed_widgets = nil
             end
         end
         -- If the current cursor is undefined, it means no widgets requested a custom cursor,
@@ -2125,13 +2146,6 @@ function rtk.Window:_handle_window_event(event, now, suppress)
     -- log.info('handle window: %s %s', self.title, event)
     assert(event.type ~= rtk.Event.MOUSEDOWN or event.button ~= 0)
     if event.type == rtk.Event.MOUSEUP then
-        rtk.mouse.state[event.button] = nil
-        if event.buttons == 0 then
-            -- Clear on mouseup if no more buttons are held.  We want to do this *after*
-            -- _handle_event() above to ensure mouseup handlers can test rtk._pressed_widgets
-            -- to see if a widget receiving mouseup had previously received mousedown.
-            rtk._pressed_widgets = nil
-        end
         self._last_mouseup_time = event.time
         rtk._drag_candidates = nil
         if rtk.dnd.dropping then
