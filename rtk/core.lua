@@ -878,11 +878,15 @@ rtk.themes = {
         --- background color of `rtk.Popup` widgets (if nil defaults to `bg`).
         -- @type colortype|nil
         popup_bg = nil,
+        --- default overlay of the window when `rtk.Popup` is opened (defaults to
+        -- `#00000040`, which is black at 25% opacity).
+        -- @type colortype|nil
+        popup_overlay = '#00000040',
         --- a multiplier to the value channel (in HSV colorspace) of the window background
         -- (`bg`) to be used as the `rtk.Popup` background when `popup_bg` is not
         -- specified.
         -- @type number
-        popup_bg_brightness = 1.5,
+        popup_bg_brightness = 1.3,
         --- the color of the shadow for `rtk.Popup` (alpha channel is respected)
         -- @type colortype
         popup_shadow = '#11111166',

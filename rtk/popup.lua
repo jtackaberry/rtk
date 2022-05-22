@@ -112,16 +112,24 @@ rtk.Popup.register{
     },
 
     --- If set, paints an overlay over top of the window in the given color before drawing
-    -- the popup (default nil).  The alpha channel of this color is respected, so if you
-    -- want a translucent overlay specify a lower alpha (e.g. `#00000055`).
+    -- the popup, which defaults to the theme's @{rtk.themes.popup_overlay|`popup_overlay`}
+    -- if nil (default).  The alpha channel of this color is respected, so if you want a
+    -- translucent overlay specify a lower alpha (e.g. `#00000055`).
     --
     -- This option is useful for things like alert boxes and is a good visual cue that
-    -- focus has been stolen by the popup, but may not mix well with `anchor` because the
-    -- overlay will be drawn over the anchor widget as well.
+    -- focus has been stolen by the popup.
+    --
+    -- This attribute is ignored if `anchor` is defined, because otherwise the overlay would
+    -- be painted over the anchor widget.
     --
     -- @type colortype|nil
     -- @meta read/write
-    overlay = rtk.Reference('bg'),
+    overlay = rtk.Attribute{
+        default=function(self, attr)
+            return rtk.theme.popup_overlay
+        end,
+        calculate=rtk.Reference('bg'),
+    },
 
     --- Allows automatically closing the popup if the mouse is clicked outside the popup
     -- bounds or when the `rtk.Window` loses focus, depending on the setting (default
@@ -254,8 +262,10 @@ function rtk.Popup:_realize_geometry()
 end
 
 function rtk.Popup:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)
-    if self.calc.overlay then
-        self:setcolor(self.calc.overlay, alpha)
+    -- Only draw the overlay when there's no anchor, otherwise we would paint over the
+    -- anchor widget.
+    if self.overlay and not self.anchor then
+        self:setcolor(self.calc.overlay or self.calc.bg, alpha)
         gfx.rect(0, 0, self.window.calc.w, self.window.calc.h, 1)
     end
     -- This is a bit cheeky, and breaks the architecture of rtk (wherein calculated geometry
