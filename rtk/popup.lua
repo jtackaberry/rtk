@@ -52,6 +52,33 @@ local rtk = require('rtk.core')
 -- @inherits rtk.Viewport
 rtk.Popup = rtk.class('rtk.Popup', rtk.Viewport)
 
+
+--- Autoclose constants.
+--
+-- Used with the `autoclose` attribute to influence how the popup should be closed in
+-- response to events that occur outside the popup area.
+--
+-- @section autocloseconst
+-- @compact
+
+--- Autoclose is disabled.  If the mouse is clicked outside the popup, it will not
+-- be automatically closed.  To close it you must explicitly call `close()`.  This
+-- is an alias of `false`.
+-- @meta 'disabled'
+rtk.Popup.AUTOCLOSE_DISABLED = 0
+--- Autoclose when the mouse is clicked outside the popup but still within the
+-- bounds of the `rtk.Window`.  This is an alias of `true`, and is the default
+-- setting for the `autoclose` attribute.
+-- @meta 'local'
+rtk.Popup.AUTOCLOSE_LOCAL = 1
+--- Autoclose when the mouse is clicked anywhere on the screen outside the popup,
+-- which includes when the mouse is clicked outside the `rtk.Window` or when the
+-- `rtk.Window` loses focus.
+-- @meta 'global'
+rtk.Popup.AUTOCLOSE_GLOBAL = 2
+
+--- Class API
+--- @section api
 rtk.Popup.register{
     --- A widget against which to anchor the popup (default nil). The popup will be placed
     -- below the widget if there is sufficient room, otherwise will be placed above it,
@@ -96,13 +123,22 @@ rtk.Popup.register{
     -- @meta read/write
     overlay = rtk.Reference('bg'),
 
-    --- If true, the popup will automatically close if the mouse is clicked outside the popup
-    -- or when the `rtk.Window` loses focus (default true).
+    --- Allows automatically closing the popup if the mouse is clicked outside the popup
+    -- bounds or when the `rtk.Window` loses focus, depending on the setting (default
+    -- @{rtk.Popup.AUTOCLOSE_LOCAL|local}).
     --
-    -- @type boolean
+    -- @type autocloseconst
     -- @meta read/write
-    autoclose = true,
-
+    autoclose = rtk.Attribute{
+        default=rtk.Popup.AUTOCLOSE_LOCAL,
+        calculate={
+            ['disabled']=rtk.Popup.AUTOCLOSE_DISABLED,
+            ['local']=rtk.Popup.AUTOCLOSE_LOCAL,
+            ['global']=rtk.Popup.AUTOCLOSE_GLOBAL,
+            [true]=rtk.Popup.AUTOCLOSE_LOCAL,
+            [false]=rtk.Popup.AUTOCLOSE_DISABLED,
+        }
+    },
     --- True when the popup is `open`.  Calling `close()` will set to false.
     -- @type boolean
     -- @meta read-only
@@ -234,7 +270,8 @@ function rtk.Popup:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
 end
 
 function rtk.Popup:_release_modal(event)
-    if self.calc.autoclose then
+    local ac = self.calc.autoclose
+    if ac == rtk.Popup.AUTOCLOSE_GLOBAL or (ac == rtk.Popup.AUTOCLOSE_LOCAL and not event.simulated) then
         self:_close(event)
     end
 end
