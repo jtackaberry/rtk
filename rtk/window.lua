@@ -1975,29 +1975,29 @@ function rtk.Window:_update()
     end
     local blitted = false
     if event and calc.visible then
-        if self._reflow_queued and not self._sync_window_attrs_on_update then
-            -- One of the event handlers has requested a reflow.  It'd happen on the
-            -- next update() but we do it now before drawing just to avoid potential
-            -- flickering. The exception is if we're pending an a sync of window
-            -- attributes which could affect the window geometry which we'd need to
-            -- learn on next full update.
-            if self:reflow() then
-                -- We have performed a full reflow, which means some of the widgets
-                -- may have changed positions.  Here we inject a mousemove event to
-                -- cause any widgets which now, after potentially having been
-                -- repositioned, have been moved under the mouse cursor, so they
-                -- can properly draw their current hover state.
-                --
-                -- Also reset the cursor now that we're going to push a new simulated
-                -- event through the widget tree, in case a mouseup or onclick handler
-                -- will change the cursor of the widget the mouse is over.
-                calc.cursor = rtk.mouse.cursors.UNDEFINED
-                self:_handle_window_event(self:_get_mousemove_event(true), now)
-            end
-        end
         -- Also check self._draw_queued in case the above simulated mousemove generated a
         -- queued draw
         if need_draw or self._draw_queued then
+            if self._reflow_queued then
+                -- One of the event handlers has requested a reflow.  It'd happen on the
+                -- next update() but we do it now before drawing just to avoid potential
+                -- flickering. The exception is if we're pending an a sync of window
+                -- attributes which could affect the window geometry which we'd need to
+                -- learn on next full update.
+                if self:reflow() then
+                    -- We have performed a full reflow, which means some of the widgets
+                    -- may have changed positions.  Here we inject a mousemove event to
+                    -- cause any widgets which now, after potentially having been
+                    -- repositioned, have been moved under the mouse cursor, so they
+                    -- can properly draw their current hover state.
+                    --
+                    -- Also reset the cursor now that we're going to push a new simulated
+                    -- event through the widget tree, in case a mouseup or onclick handler
+                    -- will change the cursor of the widget the mouse is over.
+                    calc.cursor = rtk.mouse.cursors.UNDEFINED
+                    self:_handle_window_event(self:_get_mousemove_event(true), now)
+                end
+            end
             -- A no-op if the size hasn't changed.
             self._backingstore:resize(calc.w, calc.h, false)
             self._backingstore:pushdest()
