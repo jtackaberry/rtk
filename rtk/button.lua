@@ -122,8 +122,7 @@ rtk.Button.register{
         reflow=rtk.Widget.REFLOW_FULL,
     },
 
-    --- Button surface color, which defaults to the theme's @{rtk.themes.button|`button`} value if
-    -- nil (default).
+    --- Button surface color, which defaults to the theme's @{rtk.themes.button|`button`} color.
     --
     -- ![](../img/button-red-surface.png)
     -- @type colortype|nil
@@ -161,13 +160,13 @@ rtk.Button.register{
     -- @meta read/write
     textcolor = rtk.Attribute{
         -- We don't include a default for textcolor because we want to keep it as nil to
-        -- enable the logic to assign textc olor based on button luma.
+        -- enable the logic to assign text color based on button luma.
         default=nil,
         calculate=rtk.Reference('bg'),
     },
 
     --- Text color for `flat` buttons (when the label is not drawn over top a button surface),
-    -- which defaults to current theme @{rtk.themes.text|text color} if nil (default)
+    -- which defaults to current theme @{rtk.themes.text|text color}.
     -- @type colortype|nil
     -- @meta read/write
     textcolor2 = rtk.Attribute{
@@ -302,7 +301,7 @@ rtk.Button.register{
     hover = false,
 
     --- The name of the font face (e.g. `'Calibri`'), which uses the @{rtk.themes.button_font|global button
-    -- default} if nil (default nil).
+    -- font} by default.
     -- @type string|nil
     -- @meta read/write
     font = rtk.Attribute{
@@ -312,7 +311,7 @@ rtk.Button.register{
         reflow=rtk.Widget.REFLOW_FULL,
     },
     --- The pixel size of the button font (e.g. 18), which uses the @{rtk.themes.button_font|global button
-    -- default} if nil (default nil).
+    -- font size} by default.
     -- @type number|nil
     -- @meta read/write
     fontsize = rtk.Attribute{

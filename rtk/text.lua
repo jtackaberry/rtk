@@ -153,7 +153,7 @@ rtk.Text.register{
         reflow=rtk.Widget.REFLOW_FULL,
     },
     --- The name of the font face (e.g. `'Calibri`'), which uses the @{rtk.themes.text_font|global text
-    -- default} if nil (default nil).
+    -- font} by default.
     -- @type string|nil
     -- @meta read/write
     font = rtk.Attribute{
@@ -163,7 +163,7 @@ rtk.Text.register{
         reflow=rtk.Widget.REFLOW_FULL,
     },
     --- The pixel size of the text font (e.g. 18), which uses the @{rtk.themes.text_font|global text
-    -- default} if nil (default nil).
+    -- font size} by default.
     -- @meta read/write
     -- @type number|nil
     fontsize = rtk.Attribute{

@@ -133,8 +133,7 @@ rtk.Entry.register{
         default=nil,
         reflow=rtk.Widget.REFLOW_FULL,
     },
-    --- Color of text value, which defaults to the theme's @{rtk.themes.text|`text`} value if
-    -- nil (default).
+    --- Color of text value, which defaults to the theme's @{rtk.themes.text|`text`} value.
     --
     -- @type colortype|nil
     -- @meta read/write
@@ -145,8 +144,8 @@ rtk.Entry.register{
         calculate=rtk.Reference('bg')
     },
     --- Color of border when the mouse is `hovering` over the rtk.Entry region, which
-    -- defaults to the theme's @{rtk.themes.entry_border_hover|`entry_border_hover`}
-    -- value if nil (default).
+    -- defaults to the theme's @{rtk.themes.entry_border_hover|`entry_border_hover`}.
+    -- To disable hover border, set this attribute to nil (via `rtk.Attribute.NIL`)
     --
     -- @type colortype|nil
     -- @meta read/write
@@ -160,7 +159,8 @@ rtk.Entry.register{
         end,
     },
     --- Color of border when the widget is `focused`, which defaults to the theme's
-    -- @{rtk.themes.entry_border_focused|`entry_border_focused`} value if nil (default).
+    -- @{rtk.themes.entry_border_focused|`entry_border_focused`} value.
+    -- To disable focused border, set this attribute to nil (via `rtk.Attribute.NIL`)
     --
     -- @type colortype|nil
     -- @meta read/write
@@ -193,7 +193,7 @@ rtk.Entry.register{
     },
 
     --- The name of the font face (e.g. `'Calibri`'), which uses the @{rtk.themes.entry_font|global
-    -- text entry default} if nil (default nil).
+    -- text entry font} by default.
     -- @type string|nil
     -- @meta read/write
     font = rtk.Attribute{
@@ -203,7 +203,7 @@ rtk.Entry.register{
         end
     },
     --- The pixel size of the entry font (e.g. 18), which uses the @{rtk.themes.entry_font|global
-    -- text entry default} if nil (default nil).
+    -- text entry font size} by default.
     -- @type number|nil
     -- @meta read/write
     fontsize = rtk.Attribute{

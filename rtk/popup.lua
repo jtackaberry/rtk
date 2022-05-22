@@ -112,8 +112,8 @@ rtk.Popup.register{
     },
 
     --- If set, paints an overlay over top of the window in the given color before drawing
-    -- the popup, which defaults to the theme's @{rtk.themes.popup_overlay|`popup_overlay`}
-    -- if nil (default).  The alpha channel of this color is respected, so if you want a
+    -- the popup, which uses the theme's @{rtk.themes.popup_overlay|`popup_overlay`}
+    -- by default.  The alpha channel of this color is respected, so if you want a
     -- translucent overlay specify a lower alpha (e.g. `#00000055`).
     --
     -- This option is useful for things like alert boxes and is a good visual cue that

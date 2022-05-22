@@ -161,8 +161,8 @@ rtk.Slider.register{
     },
 
     --- Overall slider color, affecting the thumb (unless overridden by `thumbcolor`) plus
-    -- the active portion drawn over the track, which defaults to the theme's
-    -- @{rtk.themes.slider|`slider`} value if nil (default).
+    -- the active portion drawn over the track, which uses the theme's
+    -- @{rtk.themes.slider|`slider`} value by default.
     --
     -- @type colortype|nil
     -- @meta read/write
@@ -174,8 +174,8 @@ rtk.Slider.register{
         calculate=rtk.Reference('bg'),
     },
 
-    --- Track color along which the thumbs are dragged, which defaults to the theme's
-    -- @{rtk.themes.slider_track|`slider_track`} value if nil (default).
+    --- Track color along which the thumbs are dragged, which uses the theme's
+    -- @{rtk.themes.slider_track|`slider_track`} value by default.
     --
     -- @type colortype|nil
     -- @meta read/write
@@ -196,7 +196,7 @@ rtk.Slider.register{
         reflow=rtk.Widget.REFLOW_FULL,
     },
 
-    --- The color of thumb handles, which defaults to `color` if not defined (as is default).
+    --- The color of thumb handles, which defaults to `color`.
     --
     -- @type colortype|nil
     -- @meta read/write
@@ -216,8 +216,7 @@ rtk.Slider.register{
     },
 
     --- The color of the labels written next to ticks when `ticklabels` is defined, which
-    -- defaults to the theme's @{rtk.themes.slider_tick_label|`slider_tick_label`} value
-    -- if nil (default).
+    -- defaults to the theme's @{rtk.themes.slider_tick_label|`slider_tick_label`} value.
     --
     -- @type colortype|nil
     -- @meta read/write
@@ -308,7 +307,7 @@ rtk.Slider.register{
     },
 
     --- The name of the font face (e.g. `'Calibri`') for all labels, which uses the
-    -- @{rtk.themes.slider_font|global slider default} if nil (default nil).
+    -- @{rtk.themes.slider_font|global slider font} by default.
     --
     -- @type string|nil
     -- @meta read/write
@@ -319,7 +318,7 @@ rtk.Slider.register{
         reflow=rtk.Widget.REFLOW_FULL,
     },
     --- The pixel size of the slider font (e.g. 18) for all labels, which uses the
-    -- @{rtk.themes.slider_font|global slider default} if nil (default nil).
+    -- @{rtk.themes.slider_font|global slider font size} by default.
     --
     -- @type number|nil
     -- @meta read/write
