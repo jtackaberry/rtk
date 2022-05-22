@@ -73,15 +73,22 @@ rtk.Text.register{
         default='Text',
         reflow=rtk.Widget.REFLOW_FULL,
     },
-    --- The color of the text, which uses the @{rtk.themes.text|theme default} if nil
-    -- (default nil).
+    --- The color of the text, which is adaptive if nil, using the @{rtk.themes.text|text} color
+    -- defined in the dark theme if the underlying background has a low luminance, or the
+    -- text color from the light theme if the background has a high luminance (default nil).
     -- @meta read/write
     -- @type colortype
     color = rtk.Attribute{
-        default=function(self, attr)
-            return rtk.theme.text
+        reflow=rtk.Widget.REFLOW_NONE,
+        default=rtk.Attribute.NIL,
+        calculate=function(self, attr, value, target)
+            if not value then
+                local parentbg = self.parent and self.parent.calc.bg
+                local luma = rtk.color.luma(self.calc.bg, parentbg or rtk.theme.bg)
+                value = rtk.themes[luma > rtk.light_luma_threshold and 'light' or 'dark'].text
+            end
+            return {rtk.color.rgba(value)}
         end,
-        calculate=rtk.Reference('bg'),
     },
     --- Controls the wrapping behavior of text lines that exceed the bounding box imposed
     -- by our container (default `WRAP_NONE`).
@@ -215,7 +222,11 @@ function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     if self._segments and (attr == 'text' or attr == 'wrap' or attr == 'textalign' or attr == 'spacing') then
         -- Force regeneration of segments on next reflow
         self._segments.dirty = true
+    elseif attr == 'bg' and not self.color then
+        -- The background changed and we're using nil color (i.e. adaptive), so force recalculation of color.
+        self:attr('color', self.color, true, rtk.Widget.REFLOW_NONE)
     end
+
     return ok
 end
 
