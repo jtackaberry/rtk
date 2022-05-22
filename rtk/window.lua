@@ -1743,11 +1743,10 @@ function rtk.Window:_update()
     -- Now go hunting for events.  Initialize to nil now, and it'll be set to an
     -- rtk.Event if something happened.
     local event = nil
-    local last_cursor = calc.cursor
     -- Clear mouse cursor before drawing widgets to determine if any widget wants a custom cursor
     calc.cursor = rtk.mouse.cursors.UNDEFINED
 
-    -- Check for a mousewheel event.
+    -- Generate mousewheel event
     if gfx.mouse_wheel ~= 0 or gfx.mouse_hwheel ~= 0 then
         event = self._event:reset(rtk.Event.MOUSEWHEEL)
         event:set_modifiers(gfx.mouse_cap, 0)
@@ -1759,27 +1758,28 @@ function rtk.Window:_update()
         gfx.mouse_hwheel = 0
         self:_handle_window_event(event, now)
     end
+
     -- Generate key event
-    local char = gfx.getchar()
-    if char > 0 then
-        event = self._event:reset(rtk.Event.KEY)
-        event:set_modifiers(gfx.mouse_cap, 0)
-        event.char = nil
-        event.keycode = char
-        if char <= 26 and event.ctrl then
-            event.char = string.char(char + 96)
-        elseif char >= 32 and char ~= 127 then
-            if char <= 255 then
-                event.char = string.char(char)
-            elseif char <= 282 then
-                event.char = string.char(char - 160)
-            elseif char <= 346 then
-                event.char = string.char(char - 224)
+    local keycode = gfx.getchar()
+    if keycode > 0 then
+        while keycode > 0 do
+            event = self._event:reset(rtk.Event.KEY)
+            event:set_modifiers(gfx.mouse_cap, 0)
+            event:set_keycode(keycode)
+            self:onkeypresspre(event)
+            self:_handle_window_event(event, now)
+            self:onkeypresspost(event)
+            if not event.handled then
+                if event.keycode == rtk.keycodes.F12 and log.level <= log.DEBUG then
+                    rtk.debug = not rtk.debug
+                    self:queue_draw()
+                elseif event.keycode == rtk.keycodes.ESCAPE and not self.docked then
+                    self:close()
+                end
             end
+            keycode = gfx.getchar()
         end
-        self:onkeypresspre(event)
-        self:_handle_window_event(event, now)
-    elseif char < 0 then
+    elseif keycode < 0 then
         self:close()
     end
 
@@ -2041,6 +2041,9 @@ function rtk.Window:_update()
         -- assumption is that clicking inside a modal widget will result in the event
         -- being handled, so an unhandled touch activation event (MOUSEUP for touchscroll,
         -- MOUSEDOWN otherwise) implies the user clicked outside it.
+        --
+        -- It is save to test event.type for MOUSEDOWN or MOUSEUP here because this is the
+        -- last event generated above.
         if not event.handled and rtk.is_modal() and
            ((focus_changed and not self.is_focused) or event.type == rtk._touch_activate_event) then
             for _, widget in pairs(rtk._modal) do
@@ -2051,16 +2054,6 @@ function rtk.Window:_update()
             -- Unhandled click, blur focused widget.
             rtk.focused:blur(event, nil)
         end
-        if event.type == rtk.Event.KEY then
-            self:onkeypresspost(event)
-            if event.handled then
-                return
-            end
-            if event.keycode == rtk.keycodes.F12 and log.level <= log.DEBUG then
-                rtk.debug = not rtk.debug
-                self:queue_draw()
-            elseif event.keycode == rtk.keycodes.ESCAPE and not self.docked then
-                self:close()
             end
         end
         -- If the current cursor is undefined, it means no widgets requested a custom cursor,
@@ -2068,10 +2061,9 @@ function rtk.Window:_update()
         if calc.cursor == rtk.mouse.cursors.UNDEFINED then
             calc.cursor = self.cursor
         end
-        -- There are a couple edge cases in trying to be clever and only setting the cursor when
-        -- necessary, so for now we disable the cleverness and blindly set the cursor on each
-        -- update if the cursor is in the window.
-        -- if calc.cursor ~= last_cursor or last_in_window ~= self.in_window or focus_changed then
+        -- There are a couple edge cases in trying to be clever and only setting the
+        -- cursor when necessary, so for now we skip the cleverness and blindly set the
+        -- cursor on each update if the cursor is in the window.
         if self.in_window then
             if type(calc.cursor) == 'userdata' then
                 -- Set cursor using JSAPI

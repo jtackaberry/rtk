@@ -94,16 +94,23 @@ rtk.Event.register{
     -- @meta read-only
     -- @type number
     hwheel = 0,
+    --- A single-character string containing the printable character of the key, if
+    -- available.  Is nil if not translatable into a printable character.  The shift
+    -- modifier is preserved here, so for example if the user presses shift-f then
+    -- `char` is `F`, or if the user presses shift-1, `char` is `!`.
+    -- @meta read-only
+    -- @type string
+    char = nil,
     --- The raw numeric keycode of the `KEY` event that can be compared against
     -- @{rtk.keycodes}
     -- @meta read-only
     -- @type number
     keycode = nil,
-    --- A single-character string containing the printable character of the key, if
-    -- available.  Is nil if not translatable into a printable character.
+    --- Normalized keycode which ignores modifiers.  In other words, the `keynorm` for
+    -- shift-f (`F`) is the same as `f`, and shift-1 (`!`) is the same as `1`.
     -- @meta read-only
-    -- @type string
-    char = nil,
+    -- @type number
+    keynorm = nil,
     --- True if the control key was held during the `KEY` event
     -- @meta read-only
     -- @type boolean
@@ -283,6 +290,84 @@ function rtk.Event:set_modifiers(cap, button)
     self.meta = cap & 32 ~= 0
     self.buttons = cap & (1 | 2 | 64)
     self.button = button
+end
+
+-- Table to convert special characters generated via shift key to their non-shift key
+-- counterparts for the keynorm attribute.
+local keynorm_map = {
+    -- ! to 1
+    [33] = 49,
+    -- @ to 2
+    [64] = 50,
+    -- # to 3
+    [35] = 51,
+    -- $ to 4
+    [36] = 52,
+    -- % to 5
+    [37] = 53,
+    -- ^ to 6
+    [94] = 54,
+    -- & to 7
+    [38] = 55,
+    -- * to 8
+    [42] = 56,
+    -- ( to 9
+    [40] = 57,
+    -- ) to 0
+    [41] = 48,
+    -- ~ to `
+    [126] = 96,
+    -- _ to -
+    [95] = 45,
+    --  to =
+    [43] = 61,
+    -- { to [
+    [123] = 91,
+    -- } to ]
+    [125] = 93,
+    -- : to ;
+    [58] = 59,
+    -- " to '
+    [34] = 39,
+    -- < to ,
+    [60] = 44,
+    -- > to .
+    [62] = 46,
+    -- ? to /
+    [63] = 47,
+}
+
+-- Must be called after set_modifiers
+function rtk.Event:set_keycode(keycode)
+    self.keycode = math.ceil(keycode)
+    self.keynorm = keycode
+    if keycode <= 26 and self.ctrl then
+        -- Control + letter, where ctrl-a has keycode of 1.  Since
+        -- 'a' has ordinal 97, we add 96 to the keycode.
+        self.keynorm = keycode + 96
+        self.char = string.char(self.keynorm)
+    elseif keycode >= 65 and keycode <= 90 then
+        -- Capital letters, normalize to lower case.
+        self.keynorm = keycode + 32
+        self.char = string.char(keycode)
+    elseif keycode >= 32 and keycode ~= 127 then
+        if keycode <= 255 then
+            -- Printable character other than uppercase (which was handled above),
+            -- including accented characters under latin-1)
+            self.keynorm = keynorm_map[keycode] or self.keycode
+            self.char = string.char(self.keycode)
+        elseif keycode <= 282 then
+            -- Ctrl+alt + letter, where ctrl-alt-a has keycode of 257, so we would
+            -- subtract 160 to get ordinal for 'a'.
+            self.keynorm = keycode - 160
+            self.char = string.char(self.keynorm)
+        elseif keycode <= 346 then
+            -- Alt + letter, where alt-a has keycode of 321, so we would subtract
+            -- 224 to get ordinal for 'a'.
+            self.keynorm = keycode - 224
+            self.char = string.char(self.keynorm)
+        end
+    end
 end
 
 --- Marks the event as having been `handled`.
