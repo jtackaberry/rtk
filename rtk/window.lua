@@ -1618,8 +1618,8 @@ local function _get_wheel_distance(v)
     end
 end
 
-
 function rtk.Window:_update()
+    rtk.tick = rtk.tick + 1
     local calc = self.calc
     local now = reaper.time_precise()
     -- Default to false, and it will be set to true later if certain criteria are met.

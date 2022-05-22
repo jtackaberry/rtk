@@ -124,6 +124,10 @@ local rtk = {
     -- @meta read-only
     -- @type userdata
     reaper_hwnd = nil, -- set in init()
+    --- Monotonically increasing counter that is incremented each gfx update cycle
+    -- @meta read-only
+    -- @type number
+    tick = 0,
     --- Frame rate (measured on each update cycle of the main window)
     -- @meta read-only
     -- @type number
