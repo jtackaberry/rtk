@@ -190,7 +190,9 @@ rtk.CheckBox.register{
         default=rtk.CheckBox.UNCHECKED,
         calculate={
             [rtk.Attribute.NIL]=rtk.CheckBox.UNCHECKED,
+            ['true']=rtk.CheckBox.static.CHECKED,
             checked=rtk.CheckBox.static.CHECKED,
+            ['false']=rtk.CheckBox.static.UNCHECKED,
             unchecked=rtk.CheckBox.static.UNCHECKED,
             indeterminate=rtk.CheckBox.static.INDETERMINATE,
         }
