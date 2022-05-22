@@ -498,6 +498,7 @@ end
 -- @meta read/write
 -- @type table
 rtk.color.names = {
+    transparent = "#ffffff00",
     black = '#000000',
     silver = '#c0c0c0',
     gray = '#808080',
