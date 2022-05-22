@@ -2666,7 +2666,10 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                 if duration >= threshold and state == 0 and event:is_widget_pressed(self) then
                     -- Indicate that onmousedown() has been dispatched for this button on this widget.
                     event:set_button_state(self, 1)
-                    if self:_handle_mousedown(event) then
+                    -- If mousedown handler returns false, then the mousedown was *not*
+                    -- accepted, in which case bit 1 will not be set and onclick later
+                    -- will not fire.
+                    if self:_handle_mousedown(event) ~= false then
                         -- This will set the mousedown-handled button state to track the
                         -- fact that mousedown was handled by this widget.  We use this to
                         -- prevent generating a simulated deferred mousedown on mouseup
@@ -2711,7 +2714,8 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     self:queue_draw()
                 end
                 local state = event:get_button_state(self) or 0
-                if state > 0 or event:is_widget_pressed(self) then
+                -- State will be >= 2 when mousedown was accepted.
+                if state >= 2 then
                     -- Don't fire an onclick() if we had already experienced a *handled*
                     -- onlongpress (where the mouse button state for this widget will be
                     -- have bit 4 set).
@@ -2831,10 +2835,13 @@ function rtk.Widget:_accept_mousedown(event, duration, state)
     event:set_button_state('mousedown-handled', self)
     event:set_handled(self)
     if not event.simulated and event.time - self._last_mousedown_time <= rtk.double_click_delay then
-        -- Bit 2 indicates a doubleclick occurred, which is checked during mouseup.
-        event:set_button_state(self, (state or 0) | 4)
+        -- Bit 1 is mousedown accepted, bit 2 indicates a doubleclick occurred, which is
+        -- checked during mouseup.
+        event:set_button_state(self, (state or 0) | 2 | 4)
         self._last_mousedown_time = 0
     else
+        -- Bit 1 is mousedown accepted
+        event:set_button_state(self, (state or 0) | 2)
         self._last_mousedown_time = event.time
     end
     self:queue_draw()
