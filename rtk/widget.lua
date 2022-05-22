@@ -162,11 +162,14 @@ rtk.Widget.static.REFLOW_DEFAULT = nil
 -- performed one.
 rtk.Widget.static.REFLOW_NONE = 0
 --- Only do a *partial* reflow, which means only the specific widget in question will be
--- reflowed, not the entire window.
+-- reflowed, not the entire window.  This is done when the widget's own size won't change,
+-- but it may need to rearrange the contents within it.  For example, changing `halign`
+-- doesn't affect the widget's box but may affect where internal contents are positioned, so
+-- a partial reflow is needed.
 rtk.Widget.static.REFLOW_PARTIAL = 1
 --- Recalculate the geometry of *all* `visible` widgets in the window.  This includes
 -- widgets that are offscreen (for example in a viewport below the fold): unless
--- `visible` is false, they will be reflowed.
+-- `visible` is false, they will be reflowed.  This is the most expensive type of reflow.
 rtk.Widget.static.REFLOW_FULL = 2
 
 rtk.Widget.static._calc_border = function(self, value)
