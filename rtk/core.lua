@@ -384,7 +384,16 @@ rtk.mouse = {
     y = 0,
     --- Bitmap of `BUTTON_*` constants indicating mouse buttons currently pressed. See also `rtk.Event.buttons`.
     down = 0,
-    state = {order={}}
+    -- Allows tracking of custom state between mouse down and mouse up events.  Keys
+    -- correspond to mouse button constants (1=left, 2=right, etc.) and values are tables.
+    -- These per-button state tables have a time field that indicates when the mouse down
+    -- occurred, and can contain custom state set by rtk.Event:set_button_state(),
+    --
+    -- The order field is a positional table indicating the order which buttons were
+    -- pressed (for when multiple buttons are held simultaneously), and the latest field
+    -- holds the last clicked button for convenience (and is 0 when no buttons are
+    -- clicked). These fields are maintained by rtk.Window.
+    state = {order={}, latest=nil}
 }
 
 local _load_cursor
