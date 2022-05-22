@@ -94,7 +94,7 @@ rtk.Button.register{
                 if self.calc.flat == rtk.Button.FLAT then
                     -- TODO: if we really want to be clever, check to see if the icon needs to also
                     -- have a different style when the surface is drawn during mouseover.
-                    color = rtk.theme.bg
+                    color = self.parent and self.parent.calc.bg or rtk.theme.bg
                 end
                 local style = rtk.color.get_icon_style(color, rtk.theme.bg)
                 if self.icon and self.icon.style == style then

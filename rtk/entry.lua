@@ -96,7 +96,8 @@ rtk.Entry.register{
         calculate=function(self, attr, value, target)
             if type(value) == 'string' then
                 local icon = self.calc.icon
-                local style = rtk.color.get_icon_style(self.calc.bg or rtk.theme.bg, rtk.theme.bg)
+                local parentbg = self.parent and self.parent.calc.bg
+                local style = rtk.color.get_icon_style(self.calc.bg, parentbg or rtk.theme.bg)
                 if icon and icon.style == style then
                     -- Style didn't change.
                     return icon
