@@ -2437,7 +2437,7 @@ function rtk.Widget:_draw_borders(offx, offy, alpha, all)
     end
     local x, y, w, h = calc.x + offx, calc.y + offy, calc.w, calc.h
     local tb, rb, bb, lb
-    local all = all or (calc.border_uniform and calc.tborder)
+    all = all or (calc.border_uniform and calc.tborder)
     if all then
         local thickness = self:_unpack_border(all, alpha)
         -- If the border thickness is 1, which is the common case, we can paint it with a
@@ -2445,6 +2445,9 @@ function rtk.Widget:_draw_borders(offx, offy, alpha, all)
         -- each edge separately.
         if thickness == 1 then
             gfx.rect(x, y, w, h, 0)
+            return
+        elseif thickness == 0 then
+            -- Border disabled
             return
         else
             tb, rb, bb, lb = all, all, all, all
