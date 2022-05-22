@@ -102,18 +102,19 @@ function rtk.color.rgba(color)
         if hash == 1 then
             return rtk.color.hex2rgba(color)
         else
-            local a = 1
+            local a
             if hash then
+                -- In the form colorname#alpha
                 a = (tonumber(color:sub(hash + 1), 16) or 0) / 255
                 color = color:sub(1, hash - 1)
             end
             local resolved = rtk.color.names[color:lower()]
             if not resolved then
                 log.warning('rtk: color "%s" is invalid, defaulting to black', color)
-                return 0, 0, 0, a
+                return 0, 0, 0, a or 1
             end
-            local r, g, b, _ = rtk.color.hex2rgba(resolved)
-            return r, g, b, a
+            local r, g, b, a2 = rtk.color.hex2rgba(resolved)
+            return r, g, b, a or a2
         end
     elseif tp == 'number' then
         local r, g, b = color & 0xff, (color >> 8) & 0xff, (color >> 16) & 0xff
