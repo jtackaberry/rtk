@@ -133,10 +133,13 @@ end
 --   luminance returned is calculated over two blended colors
 -- @treturn number the relative luminance from 0.0 to 1.0
 function rtk.color.luma(color, under)
+    if not color then
+        return rtk.color.luma(under)
+    end
     local r, g, b, a = rtk.color.rgba(color)
     local luma = (0.2126 * r + 0.7152 * g + 0.0722 * b)
-    if a < 1.0 and under then
-        luma = math.abs((luma * a) + rtk.color.luma(under) * (1-a))
+    if a < 1.0 then
+        luma = math.abs((luma * a) + (under and (rtk.color.luma(under) * (1-a)) or 0))
     end
     return luma
 end
