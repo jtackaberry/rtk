@@ -735,7 +735,10 @@ rtk.Widget.register{
     -- the time @{_draw|drawing} ghost widgets simply returns as a no-op.
     -- @meta read/write
     -- @type boolean
-    ghost = false,
+    ghost = rtk.Attribute{
+        default=false,
+        reflow=rtk.Widget.REFLOW_NONE,
+    },
     --- A tooltip that pops up when the mouse hovers over the widget and remains still
     -- for `rtk.tooltip_delay` seconds.  The tooltip is styled according to
     -- @{rtk.themes.tooltip_font|the current theme}.  Explicit newlines are supported,
@@ -767,6 +770,7 @@ rtk.Widget.register{
     -- @meta read/write
     -- @type colortype|nil
     bg = rtk.Attribute{
+        reflow=rtk.Widget.REFLOW_NONE,
         calculate=function(self, attr, value, target)
             return value and {rtk.color.rgba(value)}
         end,
