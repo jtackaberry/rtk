@@ -181,7 +181,7 @@ function rtk.Popup:initialize(attrs, ...)
 end
 
 function rtk.Popup:_handle_event(clparentx, clparenty, event, clipped, listen)
-    rtk.Viewport._handle_event(self, clparentx, clparenty, event, clipped, listen)
+    listen = rtk.Viewport._handle_event(self, clparentx, clparenty, event, clipped, listen)
     -- Ensure we mark all activation events (MOUSEUP when touchscroll is enabled,
     -- MOUSEDOWN otherwise) within the viewport as handled to ensure we don't forfeit
     -- focus and close the popup when clicking within the viewport. Setting autofocus
@@ -189,6 +189,7 @@ function rtk.Popup:_handle_event(clparentx, clparenty, event, clipped, listen)
     if event.type == rtk._touch_activate_event and self.mouseover then
         event:set_handled(self)
     end
+    return listen
 end
 
 function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window, greedyw, greedyh)

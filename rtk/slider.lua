@@ -778,7 +778,7 @@ function rtk.Slider:_animate_thumb_overlays(event, focused, force)
         return
     end
     if focused == nil then
-        focused = self.window.is_focused and self:focused()
+        focused = self.window.is_focused and self:focused(event)
     end
     for i = 1, #self._thumbs do
         local dst = nil

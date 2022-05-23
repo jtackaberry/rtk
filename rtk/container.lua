@@ -344,6 +344,14 @@ function rtk.Container:_sync_child_refs(child, action)
     end
 end
 
+function rtk.Container:_set_focused_child(child)
+    local w = self
+    while w do
+        w._focused_child = child
+        w = w.parent
+    end
+end
+
 function rtk.Container:_validate_child(child)
     assert(rtk.isa(child, rtk.Widget), 'object being added to container is not subclassed from rtk.Widget')
 end
@@ -360,6 +368,9 @@ function rtk.Container:_reparent_child(child)
     -- changed so it is able to request a reflow from the window.
     child.window = self.window
     self:_sync_child_refs(child, 'add')
+    if rtk.focused == child then
+        self:_set_focused_child(child)
+    end
 end
 
 function rtk.Container:_unparent_child(pos)
@@ -371,8 +382,15 @@ function rtk.Container:_unparent_child(pos)
         child.parent = nil
         child.window = nil
         self:_sync_child_refs(child, 'remove')
+        if rtk.focused == child then
+            self:_set_focused_child(nil)
+        end
         return child
     end
+end
+
+function rtk.Container:focused(event)
+    return rtk.focused == self or (event and event.type == rtk.Event.KEY and rtk.focused == self._focused_child)
 end
 
 --- Adds a widget to the container.
@@ -660,7 +678,7 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
     -- obscured by the container.  Also if we're dragging with mouse button
     -- pressed, the container needs to have the opportunity to serve as a drop
     -- target.
-    rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
+    return rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
 end
 
 

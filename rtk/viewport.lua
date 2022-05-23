@@ -242,6 +242,9 @@ function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow, sync)
             oldval.parent = nil
             oldval.window = nil
             self:_sync_child_refs(oldval, 'remove')
+            if rtk.focused == oldval then
+                self:_set_focused_child(nil)
+            end
         end
         if value then
             -- Similar to rtk.Container:_reparent_child()
@@ -249,6 +252,9 @@ function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow, sync)
             value.parent = self
             value.window = self.window
             self:_sync_child_refs(value, 'add')
+            if rtk.focused == value then
+                self:_set_focused_child(value)
+            end
         end
     elseif attr == 'bg' then
         -- If no bg is specified, use the window background.  It's not guaranteed
@@ -272,12 +278,19 @@ function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow, sync)
     return true
 end
 
+-- For the next three methods, we hijack rtk.Container's implementations, which don't
+-- depend on anything not already available in rtk.Viewport
 function rtk.Viewport:_sync_child_refs(child, action)
-    -- Hijack the rtk.Container implementation, which doesn't depend on anything not
-    -- already available in rtk.Viewport.
     return rtk.Container._sync_child_refs(self, child, action)
 end
 
+function rtk.Viewport:_set_focused_child(child)
+    return rtk.Container._set_focused_child(self, child)
+end
+
+function rtk.Viewport:focused(event)
+    return rtk.Container.focused(self, event)
+end
 
 function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
@@ -617,7 +630,7 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
             event:set_handled(self)
         end
     end
-    rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
+    return rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
 end
 
 function rtk.Viewport:_get_vscrollbar_client_pos()

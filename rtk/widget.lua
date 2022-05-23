@@ -1544,16 +1544,22 @@ end
 
 --- Check if the widget currently has focus.
 --
--- This simply just checks is this widget is the same as `rtk.focused`.  In
--- rtk, exactly one (or zero) widgets can grab focus.  A container that holds
--- a focused widget is not itself considered focused.
+-- This simply just checks is this widget is the same as `rtk.focused`.  In rtk, exactly
+-- one (or zero) widgets can grab focus.  A container that holds a focused widget is not
+-- itself considered focused, but depending on the type of event, it may invoke event
+-- handlers for certain events when one of its children has focus.
 --
--- A widget obtains focus when it is `autofocus` and the mouse clicks on it
--- (and the widget is using the default `onmousedown()` handler), or if
--- `focus()` is explicitly called.
+-- A widget obtains focus when it is `autofocus` and the mouse clicks on it (and the
+-- widget is using the default `onmousedown()` handler), or if `focus()` is explicitly
+-- called.
 --
+-- @tparam rtk.Event|nil event if specified, is the event which will be dispatched
+--   to event handlers if this functions returns true.  This is ignored by rtk.Widget,
+--   but subclasses can override.  For example, `rtk.Container` overrides this and
+--   considers itself focused for `rtk.Event.KEY` events when one of its children
+--   has focus.
 -- @treturn bool true if focused, false otherwise
-function rtk.Widget:focused()
+function rtk.Widget:focused(event)
     return rtk.focused == self
 end
 
@@ -1592,6 +1598,9 @@ function rtk.Widget:focus(event)
     end
     if rtk.focused == nil and self:_handle_focus(event) ~= false then
         rtk.focused = self
+        if self.parent then
+            self.parent:_set_focused_child(self)
+        end
         self:queue_draw()
         return true
     end
@@ -1614,12 +1623,15 @@ end
 -- @treturn bool true if focus was relinquished and the blur succeeded, false
 --   otherwise
 function rtk.Widget:blur(event, other)
-    if not self:focused() then
+    if not self:focused(event) then
         -- Widget wasn't focused
         return true
     end
     if self:_handle_blur(event, other) ~= false then
         rtk.focused = nil
+        if self.parent then
+            self.parent:_set_focused_child(nil)
+        end
         self:queue_draw()
         return true
     end
@@ -2483,7 +2495,7 @@ function rtk.Widget:_get_touch_activate_delay(event)
             -- for touch scrolling.
             return 0
         end
-        return (not self:focused() and event.button == rtk.mouse.BUTTON_LEFT) and
+        return (not self:focused(event) and event.button == rtk.mouse.BUTTON_LEFT) and
                self.touch_activate_delay or rtk.touch_activate_delay
     end
 end
@@ -2575,7 +2587,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                 self:_handle_dragmousemove(event, dnd.arg)
             elseif self.hovering == false then
                 -- Mousemove event over a widget that's not currently marked as hovering.
-                if event.buttons == 0 or self:focused() then
+                if event.buttons == 0 or self:focused(event) then
                     -- No mouse buttons pressed or the widget currently has focus.  We set
                     -- the widget as hovering and mark the event as handled if the
                     -- onmouseenter() handler returns true, and assuming we haven't
@@ -2691,7 +2703,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                         end
                     end
                 end
-                if self:focused() then
+                if self:focused(event) then
                     -- This is a refired (simulated) mousedown event and as we were
                     -- previously focused we'll hold onto the focus by marking the event
                     -- as handled.
@@ -2790,7 +2802,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     -- When touchscroll is enabled, ensure we also mark the mouseup as handled if we had
     -- previously handled mousedown and were focused as a result. This prevents rtk.Window
     -- from blurring us when touchscroll is enabled.
-    if rtk.touchscroll and event.type == rtk.Event.MOUSEUP and self:focused() then
+    if rtk.touchscroll and event.type == rtk.Event.MOUSEUP and self:focused(event) then
         if event:get_button_state('mousedown-handled') == self then
             event:set_handled(self)
             self:queue_draw()
@@ -2798,7 +2810,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     end
     -- Key events don't depend on where the mouse is (as above) just whether we are
     -- focused.
-    if event.type == rtk.Event.KEY and not event.handled and self:focused() then
+    if event.type == rtk.Event.KEY and not event.handled and self:focused(event) then
         if self:_handle_keypress(event) then
             event:set_handled(self)
             self:queue_draw()
@@ -3033,7 +3045,7 @@ function rtk.Widget:_handle_mousedown(event)
     if ok ~= false then
         if self.calc.autofocus then
             self:focus(event)
-            return ok or self:focused()
+            return ok or self:focused(event)
         else
             return ok or false
         end

@@ -852,7 +852,7 @@ function rtk.Entry:_handle_keypress(event)
 end
 
 function rtk.Entry:_get_touch_activate_delay(event)
-    if self:focused() then
+    if self:focused(event) then
         -- If focused, don't delay touch activation, otherwise it frustrates drag-selections.
         return 0
     else
@@ -862,7 +862,7 @@ end
 
 
 function rtk.Entry:_handle_dragstart(event)
-    if not self:focused() or event.button ~= rtk.mouse.BUTTON_LEFT then
+    if not self:focused(event) or event.button ~= rtk.mouse.BUTTON_LEFT then
         return
     end
     -- Superclass method disables dragging so don't call it.
@@ -922,7 +922,7 @@ function rtk.Entry:_handle_doubleclick(event)
 end
 
 
-function rtk.Entry:_rendertext(x, y)
+function rtk.Entry:_rendertext(x, y, event)
     self._font:set()
     -- Drawing text onto a fully transparent image, and then blending that image over the
     -- current drawing target looks really janky.  There is almost certainly some bug with
@@ -936,7 +936,7 @@ function rtk.Entry:_rendertext(x, y)
     }
 
     self._backingstore:pushdest()
-    if self._selstart and self:focused() then
+    if self._selstart and self:focused(event) then
         local a, b  = self:get_selection_range()
         self:setcolor(rtk.theme.entry_selection_bg)
         gfx.rect(
@@ -965,7 +965,7 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
 
     rtk.Widget._draw(self, offx, offy, alpha, event, clipw, cliph, cltargetx, cltargety, parentx, parenty)
     local x, y = calc.x + offx, calc.y + offy
-    local focused = self:focused()
+    local focused = self:focused(event)
     if (y + calc.h < 0 or y > cliph or calc.ghost) and not focused then
         -- Widget would not be visible on current drawing target
         return false
@@ -989,7 +989,7 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
         self:_calcview()
     end
     if self._dirty_text then
-        self:_rendertext(x, y)
+        self:_rendertext(x, y, event)
     end
 
     local amul = calc.alpha * alpha
