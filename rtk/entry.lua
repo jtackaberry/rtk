@@ -399,7 +399,7 @@ function rtk.Entry:_calcview()
     local calc = self.calc
     local curx = self._positions[calc.caret]
     local curoffset = curx - self._loffset
-    local innerw = calc.w - (self._clp + self._crp)
+    local innerw = math.max(0, calc.w - (self._clp + self._crp))
     if calc.icon then
         innerw = innerw - (calc.icon.w * rtk.scale.value / calc.icon.density) - calc.spacing
     end
@@ -1041,7 +1041,7 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
             local curx = x + self._positions[calc.caret] + lp - self._loffset
             -- Ensure the entry box is big enough to hold the cursor, otherwise we may
             -- draw outside our box.
-            if curx > x and curx < x + calc.w - lp then
+            if curx > x and curx <= x + calc.w - rp then
                 self:setcolor(calc.textcolor, alpha)
                 gfx.line(curx, y + tp, curx, y + calc.h - bp, 0)
             end
