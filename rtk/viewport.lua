@@ -610,9 +610,9 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
 
     if (not event.handled or event.type == rtk.Event.MOUSEMOVE) and
        not (event.type == rtk.Event.MOUSEMOVE and self.window:_is_touch_scrolling(self)) and
-       self.child and self.child.visible and self.child.realized then
+       child and child.visible and child.realized then
         self:_clamp()
-        self.child:_handle_event(
+        child:_handle_event(
             x - calc.scroll_left + pre.lp + child.calc.lmargin,
             y - calc.scroll_top + pre.tp + child.calc.tmargin,
             event,
@@ -624,13 +624,16 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
         -- Only scroll and handle this effect if the inner height is greater than the
         -- viewport height.  In other words, if we don't actually have anything to scroll,
         -- let this scroll event be handled by the parent viewport (if any).
-        if self.child and self._vscrollh > 0 and event.wheel ~= 0 then
+        if child and self._vscrollh > 0 and event.wheel ~= 0 then
             local distance = event.wheel * math.min(calc.h/2, 120)
             self:scrollby(0, distance)
             event:set_handled(self)
         end
     end
-    return rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
+    listen = rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
+    -- Containers are considered in mouseover if any of their children are in mouseover
+    self.mouseover = self.mouseover or (child and child.mouseover)
+    return listen
 end
 
 function rtk.Viewport:_get_vscrollbar_client_pos()

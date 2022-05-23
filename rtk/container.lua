@@ -640,6 +640,9 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
         return false
     end
 
+    -- Set to true below when any of our children have registered mouseover
+    local chmouseover
+
     -- Handle events from highest z-index to lowest, where children at the same z level
     -- are processed in the opposite order they were added.  This is the inverse of the
     -- order they're drawn, to ensure that elements at the same z level which are painted
@@ -655,14 +658,17 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
             -- and that it wasn't, for example, unparented as part of an event handler
             -- from another widget handling this same event.
             if widget and widget.realized and widget.parent then
+                local wx, wy
                 if widget.calc.position & rtk.Widget.POSITION_FIXED ~= 0 and self.viewport then
                     -- Handling viewport and non-viewport cases separately here is inelegant in
                     -- how it blurs the layers too much, but I don't see a cleaner way.
                     local vcalc = self.viewport.calc
-                    widget:_handle_event(x + vcalc.scroll_left, y + vcalc.scroll_top, event, clipped, listen)
+                    wx, wy = x + vcalc.scroll_left, y + vcalc.scroll_top
                 else
-                    widget:_handle_event(x, y, event, clipped, listen)
+                    wx, wy = x, y
                 end
+                local _, mouseover = widget:_handle_event(wx, wy, event, clipped, listen)
+                chmouseover = chmouseover or widget.mouseover
 
                 -- It's tempting to break if the event was handled, but even if it was, we
                 -- continue to invoke the child handlers to ensure that e.g. children no longer
@@ -678,7 +684,10 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
     -- obscured by the container.  Also if we're dragging with mouse button
     -- pressed, the container needs to have the opportunity to serve as a drop
     -- target.
-    return rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
+    listen = rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
+    -- Containers are considered in mouseover if any of their children are in mouseover
+    self.mouseover = self.mouseover or chmouseover
+    return listen
 end
 
 

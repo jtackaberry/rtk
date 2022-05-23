@@ -2602,6 +2602,14 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                         self.hovering = true
                         self:_handle_mousemove(event)
                         self:queue_draw()
+                    elseif event.handled and self.mouseover then
+                        -- We *were* in mouseover, but some other widget has handled the
+                        -- mousemove widget. If we're a container, the subclass's
+                        -- _handle_event() will correct for this if the widget that handled
+                        -- the event was actually a child, but for now we reset to false
+                        -- under the assumption that a higher z-index widget has occluded
+                        -- us.
+                        self.mouseover = false
                     elseif rtk.debug then
                         -- Widget didn't respond to onmouseenter() but we have global box debugging
                         -- enabled to queue a redraw anyway.
