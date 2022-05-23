@@ -2643,9 +2643,6 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     self.mouseover = true
                     self:queue_draw()
                 end
-                if self.mouseover and calc.cursor then
-                    self.window:request_mouse_cursor(calc.cursor)
-                end
             else
                 -- In here, mousemove event with self.hovering true.
                 if event.handled then
@@ -2661,7 +2658,6 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     -- if we were dragging.  Flip mouseover back to true just in case this scenario
                     -- occurred.
                     self.mouseover = true
-                    self.window:request_mouse_cursor(calc.cursor)
                     self:_handle_mousemove(event)
                     -- The mouse is still hovering over this widget.  We implicitly mark
                     -- the mousemove event as handled to prevent any lower z-index widget
@@ -2723,9 +2719,6 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     event:set_handled(self)
                 end
             end
-            if self.mouseover and calc.cursor then
-                self.window:request_mouse_cursor(calc.cursor)
-            end
         elseif event.type == rtk.Event.MOUSEUP and not calc.disabled then
             if not event.handled then
                 if not dnd.dragging then
@@ -2761,9 +2754,6 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                             self._last_mousedown_time = 0
                         end
                     end
-                end
-                if self.mouseover and calc.cursor then
-                    self.window:request_mouse_cursor(calc.cursor)
                 end
             end
             -- dnd.dragging and dnd.dropping are also nulled (as needed) in rtk.Window.update()
@@ -2823,17 +2813,20 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     end
     -- Key events don't depend on where the mouse is (as above) just whether we are
     -- focused.
-    if event.type == rtk.Event.KEY and not event.handled and self:focused(event) then
-        if self:_handle_keypress(event) then
+    if event.type == rtk.Event.KEY and not event.handled then
+        -- Dispatch the keypress if we're consudered focused.
+        if self:focused(event) and self:_handle_keypress(event) then
             event:set_handled(self)
             self:queue_draw()
-        end
-        if self.mouseover and calc.cursor then
-            self.window:request_mouse_cursor(calc.cursor)
         end
     end
     if event.type == rtk.Event.WINDOWCLOSE then
         self:_handle_windowclose(event)
+    end
+    -- Regardless of whether we have focus, if the mouse is over us be sure to set the
+    -- custom cursor.
+    if self.mouseover and calc.cursor then
+        self.window:request_mouse_cursor(calc.cursor)
     end
     -- Indicates we listened to the event.
     return true
