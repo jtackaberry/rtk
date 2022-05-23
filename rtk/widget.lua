@@ -2027,8 +2027,8 @@ function rtk.Widget:reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
         self.box = {boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh}
         expw, exph = self:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     end
-    self:onreflow()
     self.realized = true
+    self:onreflow()
     return calc.x, calc.y, calc.w, calc.h, expw or fillw, exph or fillh
 end
 
