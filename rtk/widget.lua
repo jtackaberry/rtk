@@ -1165,8 +1165,8 @@ function rtk.Widget:_draw_debug_info(event)
     -- Calculate client coordinates
     local x = self.clientx
     local y = self.clienty
-    if x + bw > self.window.w then
-        x = self.window.w - bw
+    if x + bw > self.window.calc.w then
+        x = self.window.calc.w - bw
     elseif x < 0 then
         x = 0
     end
