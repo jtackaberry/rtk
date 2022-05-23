@@ -2276,12 +2276,17 @@ end
 function rtk.Widget:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
+    -- The sizes returned by this method have padding and border removed.  When
+    -- calculating final size later, they will need to be added in.
     local w, h, tp, rp, bp, lp, minw, maxw, minh, maxh = self:_get_content_size(
         boxw, boxh, fillw, fillh, clampw, clamph, nil, greedyw, greedyh
     )
-    -- Our default size is the given box without our padding, clamped to min/max dimensions
-    calc.w = rtk.clamp(w or (fillw and (boxw - lp - rp) or 0), minw, maxw)
-    calc.h = rtk.clamp(h or (fillh and (boxh - tp - bp) or 0), minh, maxh)
+    -- Intrinsic size of a no-op widget is purely based on given dimensions (w/h) or,
+    -- if nil, the box size if filling, otherwise clamped to min/max, with padding
+    -- added in (becuase rtk's box model is such that w/h include padding and border
+    -- sizes).
+    calc.w = rtk.clamp(w or (fillw and greedyw and (boxw - lp - rp) or 0), minw, maxw) + lp + rp
+    calc.h = rtk.clamp(h or (fillh and greedyh and (boxh - tp - bp) or 0), minh, maxh) + tp + bp
     return fillw, fillh
 end
 
