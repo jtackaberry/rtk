@@ -2287,7 +2287,7 @@ function rtk.Widget:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph
     -- sizes).
     calc.w = rtk.clamp(w or (fillw and greedyw and (boxw - lp - rp) or 0), minw, maxw) + lp + rp
     calc.h = rtk.clamp(h or (fillh and greedyh and (boxh - tp - bp) or 0), minh, maxh) + tp + bp
-    return fillw, fillh
+    return fillw and greedyw, fillh and greedyh
 end
 
 --- Invoked by parent containers after the child's `reflow()` was called,
