@@ -1793,9 +1793,6 @@ function rtk.Window:_update()
 
     rtk._touch_activate_event = rtk.touchscroll and rtk.Event.MOUSEUP or rtk.Event.MOUSEDOWN
 
-    -- Any handlers invoked above may have queued a draw, so notice that now.
-    need_draw = need_draw or self._draw_queued
-
     -- Whether any mouse button has been pressed or released this cycle
     local mouse_button_changed = (rtk.mouse.down ~= gfx.mouse_cap & rtk.mouse.BUTTON_MASK)
     -- Bitmap of buttons that are pressed
@@ -1806,6 +1803,11 @@ function rtk.Window:_update()
     local last_in_window = self.in_window
     self.in_window = gfx.mouse_x >= 0 and gfx.mouse_y >= 0 and gfx.mouse_x <= gfx.w and gfx.mouse_y <= gfx.h
     local in_window_changed = self.in_window ~= last_in_window
+
+    -- Any handlers invoked above may have queued a draw, so notice that now.  Also force
+    -- a draw if the mouse has moved in or out of the window in case some widget draw
+    -- methods use rtk.Window.in_window.
+    need_draw = need_draw or self._draw_queued or in_window_changed
 
     if self._last_mousemove_time and rtk._mouseover_widget and
        rtk._mouseover_widget ~= self._tooltip_widget and
