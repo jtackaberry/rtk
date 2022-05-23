@@ -2835,6 +2835,10 @@ function rtk.Widget:_deferred_mousedown(event, x, y)
     local mousedown_handled = event:get_button_state('mousedown-handled')
     if not mousedown_handled and event:is_widget_pressed(self) and not event:get_button_state(self) then
         local downevent = event:clone{type=rtk.Event.MOUSEDOWN, simulated=true, x=x or event.x, y=y or event.y}
+        -- Overwrite the tick that rtk.Window would have registered for the real mousedown
+        -- to the current tick.  Ensures any modal widgets added by the mousedown handler
+        -- we're about to invoke will not get summarily released,
+        event:set_button_state('tick', rtk.tick)
         if self:_handle_mousedown(downevent) then
             -- Ensure mouseup gets handled so the window doesn't blur us. It's intentional
             -- that we handle the original event here, because we want to prevent

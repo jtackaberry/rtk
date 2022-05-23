@@ -1971,6 +1971,10 @@ function rtk.Window:_update()
             log.warning('rtk: no event for mousecap=%s which indicates an internal rtk bug', gfx.mouse_cap)
         end
     end
+
+    -- XXX: from this point forward, event mustn't be meddled with.  We need to ensure
+    -- MOUSEUP events remain intact in order to properly clear button state later on.
+
     if rtk._soon_funcs then
         rtk._run_soon()
     end
@@ -1996,7 +2000,10 @@ function rtk.Window:_update()
                     -- event through the widget tree, in case a mouseup or onclick handler
                     -- will change the cursor of the widget the mouse is over.
                     calc.cursor = rtk.mouse.cursors.UNDEFINED
-                    self:_handle_window_event(self:_get_mousemove_event(true), now)
+                    -- Generate a fresh event for this so as not to mangle the existing event
+                    -- which is inspected later on.
+                    local tmp = event:clone{type=rtk.Event.MOUSEMOVE, simulated=true}
+                    self:_handle_window_event(tmp, now)
                 end
             end
             -- A no-op if the size hasn't changed.
