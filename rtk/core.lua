@@ -397,7 +397,9 @@ rtk.mouse = {
     -- pressed (for when multiple buttons are held simultaneously), and the latest field
     -- holds the last clicked button for convenience (and is 0 when no buttons are
     -- clicked). These fields are maintained by rtk.Window.
-    state = {order={}, latest=nil}
+    state = {order={}, latest=nil},
+    -- Indexed by button id, holds the position of the last mouseup event in x/y fields.
+    last = {},
 }
 
 local _load_cursor

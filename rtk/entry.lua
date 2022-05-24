@@ -898,8 +898,14 @@ function rtk.Entry:_handle_click(event)
         return ok
     end
     if event.time - self._last_doubleclick_time < 0.7 then
-        -- Triple click selects all text
-        self:select_all()
+        -- Register it as a triple click if mouse hasn't moved (much)
+        local last = rtk.mouse.last[event.button]
+        local dx = last and math.abs(last.x - event.x) or 0
+        local dy = last and math.abs(last.y - event.y) or 0
+        if dx < 3 and dy < 3 then
+            -- Triple click selects all text
+            self:select_all()
+        end
         self._last_doubleclick_time = 0
     elseif rtk.dnd.dragging ~= self then
         self:select_range(nil)

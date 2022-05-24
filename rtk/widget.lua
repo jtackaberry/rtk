@@ -2742,7 +2742,10 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                             event:set_handled(self)
                             self:queue_draw()
                         end
-                        if state & 4 ~= 0 then
+                        local last = rtk.mouse.last[event.button]
+                        local dx = last and math.abs(last.x - event.x) or 0
+                        local dy = last and math.abs(last.y - event.y) or 0
+                        if state & 4 ~= 0 and dx < 3 and dy < 3 then
                             -- If state has bit 2 set, then it means the mousedown handler
                             -- determined this is a double click.  Now that the button has
                             -- been released, let's fire the event handler.
