@@ -397,6 +397,7 @@ function rtk.Event:clone(overrides)
         event[k] = v
     end
     event.handled = nil
+    event.tick = rtk.tick
     table.merge(event, overrides or {})
     return event
 end
