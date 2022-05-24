@@ -49,20 +49,27 @@ rtk.Viewport = rtk.class('rtk.Viewport', rtk.Widget)
 -- @section scrollbarconst
 -- @compact
 
---- Never show the scrollbar, and so user can only scroll the viewport by using the
--- mouse wheel. Programmatic scrolling is also possible.
+--- Never show the scrollbar. The user can only scroll the viewport by using the mouse wheel
+-- or by touch scrolling (if enabled). Programmatic scrolling is also possible.
 -- @meta 'never'
 rtk.Viewport.static.SCROLLBAR_NEVER = 0
---- Only show the scrollbar when the mouse hovers over the @{vscrollbar_gutter|gutter
--- area}.  Space is not reserved for the scrollbar: the child is able to consume this
--- space and the scrollbar will be drawn over top.
+--- Only show the scrollbar when the mouse hovers over the viewport area. Space is not
+-- reserved for the scrollbar: the child is able to consume this space and the scrollbar
+-- will be drawn over top as a translucent overlay. This is the default mode.
 -- @meta 'hover'
 rtk.Viewport.static.SCROLLBAR_HOVER = 1
---- Always show the scrollbar when there is content to be scrolled.  Unlike
--- `SCROLLBAR_HOVER`, space is reserved for the scrollbar and so the child won't overlap
--- with the scrollbar handle.
+-- Spaces is reserved for the scrollbar only when there is content to be scrolled,
+-- otherwise the child is allowed to fill the entire viewport size, which ensures the
+-- scrollbar will never be drawn over child content.  As with `SCROLLBAR_HOVER`, the
+-- scrollbar is only made visible when the mouse is moved within the viewport area.
+-- @meta 'auto'
+rtk.Viewport.static.SCROLLBAR_AUTO = 2
+--- Always reserve space for the scrollbar, even if scrolling isn't required to see all the
+-- viewport's contents.  The scrollbar is only visible when there are contents to be
+-- scrolled, but unlike the other modes, in this case the scrollbar will always be drawn
+-- even when the mouse isn't inside the viewport area.
 -- @meta 'always'
-rtk.Viewport.static.SCROLLBAR_ALWAYS = 2
+rtk.Viewport.static.SCROLLBAR_ALWAYS = 3
 
 --- Class API
 --- @section api
@@ -128,6 +135,7 @@ rtk.Viewport.register{
             never=rtk.Viewport.SCROLLBAR_NEVER,
             always=rtk.Viewport.SCROLLBAR_ALWAYS,
             hover=rtk.Viewport.SCROLLBAR_HOVER,
+            auto=rtk.Viewport.SCROLLBAR_AUTO,
         },
     },
     --- Number of pixels inside the viewport area to offset the vertical scrollbar, where
@@ -222,7 +230,6 @@ function rtk.Viewport:initialize(attrs, ...)
         -- Initialize scrollbar alpha based on whether the scrollbar is always visible.
         current=self.calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS and 0.1 or 0,
         target=0,
-        delta=0.05
     }
     self._vscroll_in_gutter = false
 
@@ -266,8 +273,8 @@ function rtk.Viewport:_handle_attr(attr, value, oldval, trigger, reflow, sync)
         -- the white or black scrollbar is more easily visible.
         -- around the middle range
         local offset = math.max(0, 1 - (1.5 - 3*luma)^2)
-        self._scrollbar_alpha_proximity = 0.19 * (1+offset^0.2)
-        self._scrollbar_alpha_hover = 0.44 * (1+offset^0.4)
+        self._scrollbar_alpha_proximity = 0.16 * (1+offset^0.2)
+        self._scrollbar_alpha_hover = 0.40 * (1+offset^0.4)
         self._scrollbar_color = luma < 0.5 and '#ffffff' or '#000000'
     elseif attr == 'shadow' then
         -- Force regeneration on reflow.
@@ -292,6 +299,10 @@ function rtk.Viewport:focused(event)
     return rtk.Container.focused(self, event)
 end
 
+function rtk.Viewport:remove()
+    self:attr('child', nil)
+end
+
 function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     calc.x, calc.y = self:_get_box_pos(boxx, boxy)
@@ -306,14 +317,17 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     local inner_maxh = rtk.clamp(h or (boxh - vpadding), minh, maxh)
 
     -- Amount of the inner box we need to steal from children for scrollbar.  Only
-    -- do so if scrollbar is always visible.
+    -- do so if scrollbar is always visible, or if the scrollbar is auto but the
+    -- last reflow needed a scrollbar)
     local scrollw, scrollh = 0, 0
-    if calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS then
+    if calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS or
+       (calc.vscrollbar == rtk.Viewport.SCROLLBAR_AUTO and self._vscrollh > 0) then
         -- Vertical scrollbar takes from width
         scrollw = calc.scrollbar_size * rtk.scale.value
         inner_maxw = inner_maxw - scrollw
     end
-    if calc.hscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS then
+    if calc.hscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS or
+        (calc.hscrollbar == rtk.Viewport.SCROLLBAR_AUTO and self._hscrollh > 0) then
         -- Horizontal scrollbar takes from height
         scrollh = calc.scrollbar_size * rtk.scale.value
         inner_maxh = inner_maxh - scrollh
@@ -330,25 +344,33 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
         -- Remove child margin from max inner size
         inner_maxw = inner_maxw - hmargin
         inner_maxh = inner_maxh - vmargin
-        local wx, wy, ww, wh = child:reflow(
-            -- box
-            0, 0,
-            inner_maxw,
-            inner_maxh,
-            -- Explicitly pass false to child widget for fill flags to prevent clamping to
-            -- the above box.  The child of a viewport should express its full size and
-            -- reflow within that, while the viewport simply scrolls within it.
-            false, false,
-            not calc.flexw,
-            not calc.flexh,
-            uiscale,
-            -- Set the child's viewport to us
-            self,
-            window,
-            -- Unlike fill which we force to false, we do propagate the greedy flags to
-            -- ensure fill children don't balloon us to our box.
-            greedyw, greedyh
-        )
+        local wx, wy, ww, wh = self:_reflow_child(inner_maxw, inner_maxh, uiscale, window, greedyw, greedyh)
+        -- Determine if we need to do a second reflow because scrollbar is auto and we
+        -- guessed wrong as to whether one would be needed.
+        local pass2 = false
+        if calc.vscrollbar == rtk.Viewport.SCROLLBAR_AUTO then
+            if scrollw == 0 and wh > inner_maxh then
+                -- No scrollbar space reserved in first reflow, but we need one.
+                scrollw = calc.scrollbar_size * rtk.scale.value
+                inner_maxw = inner_maxw - scrollw
+                -- Only need a second pass if child width had exceeded our new maxw
+                pass2 = ww > inner_maxw
+            elseif scrollw > 0 and wh <= inner_maxh then
+                -- Scrollbar reserved, but we didn't need one.  Give the space back and
+                -- reflow. Only need a second pass if child had consumed all offered width
+                -- (rom which we can infer it was expanded), and now that we are adding
+                -- more space to maxw, it will likely consume that as well.
+                pass2 = ww == inner_maxw
+                inner_maxw = inner_maxw + scrollw
+                scrollw = 0
+            end
+        end
+        if pass2 then
+            -- We've changed inner_maxw (either adding or removing space for a scrollbar)
+            -- and it seems like the child would be affected by this, so do a second
+            -- reflow with the adjusted box.
+            wx, wy, ww, wh = self:_reflow_child(inner_maxw, inner_maxh, uiscale, window, greedyw, greedyh)
+        end
         if calc.halign == rtk.Widget.CENTER then
             wx = wx + math.max(0, inner_maxw - ccalc.w) / 2
         elseif calc.halign == rtk.Widget.RIGHT then
@@ -395,14 +417,39 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
     end
 end
 
+function rtk.Viewport:_reflow_child(maxw, maxh, uiscale, window, greedyw, greedyh)
+    local calc = self.calc
+    return calc.child:reflow(
+        -- box
+        0, 0,
+        maxw,
+        maxh,
+        -- Explicitly pass false to child widget for fill flags to prevent clamping to
+        -- the above box.  The child of a viewport should express its full size and
+        -- reflow within that, while the viewport simply scrolls within it.
+        false, false,
+        not calc.flexw,
+        not calc.flexh,
+        uiscale,
+        -- Set the child's viewport to ourself
+        self,
+        window,
+        -- Unlike fill which we force to false, we do propagate the greedy flags to
+        -- ensure fill children don't balloon us to our box.
+        greedyw, greedyh
+    )
+end
+
 function rtk.Viewport:_realize_geometry()
     local calc = self.calc
     local tp, rp, bp, lp = self:_get_padding_and_border()
     if self.child then
         local innerh = self._backingstore.h
         local ch = self.child.calc.h
-        -- Calculate scrollbar parameters even if vscrollbar=never so that scrolling by
-        -- mousewheel or API still works.
+        -- Calculate fixed scrollbar parameters even if vscrollbar=never so that scrolling by
+        -- mousewheel or API still works.  For vertical scrollbars, x position and scrollbar
+        -- height is fixed until next reflow.  y coordinate OTOH is not, as the thumb can be
+        -- dragged without reflow.
         if ch > innerh then
             self._vscrollx = calc.x + calc.w - calc.scrollbar_size * rtk.scale.value - calc.vscrollbar_offset
             self._vscrolly = calc.y + calc.h * calc.scroll_top / ch + tp
@@ -484,7 +531,7 @@ function rtk.Viewport:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, c
         -- ... we apply the proper alpha when blitting the viewport backing store onto the
         -- destination.
         self._backingstore:blit{dx=x, dy=y, alpha=alpha * calc.alpha}
-        self:_draw_scrollbars(offx, offy, cltargetx, cltargety, alpha * calc.alpha, event)
+        self:_draw_scrollbars(offx, offy, cltargetx, cltargety, alpha, event)
     end
 
     if calc.shadow then
@@ -499,42 +546,81 @@ function rtk.Viewport:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, c
 end
 
 function rtk.Viewport:_draw_scrollbars(offx, offy, cltargetx, cltargety, alpha, event)
+    if self._vscrolla.current == 0 or self._vscrollh == 0 then
+        -- Nothing to draw
+        return
+    end
     local calc = self.calc
-    local animate = self._vscrolla.current ~= self._vscrolla.target
-    if calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS or
-        (calc.vscrollbar == rtk.Viewport.SCROLLBAR_HOVER and self._vscrollh > 0 and
-         ((not rtk.dnd.dragging and self._vscroll_in_gutter) or animate or self._vscrolla.target>0)) then
-        -- scrollbar coordinates relative to parent
-        local scrx = offx + self._vscrollx
-        local scry = offy + calc.y + calc.h * calc.scroll_top / self.child.calc.h
-        local should_handle_hovering = rtk.point_in_box(
-            event.x, event.y,
-            -- Add drawing target client coordinates for testing mouse position
-            scrx + cltargetx, scry + cltargety,
-            calc.scrollbar_size * rtk.scale.value, self._vscrollh
-        )
-        if (should_handle_hovering and self._vscroll_in_gutter) or rtk.dnd.dragging == self then
-            self._vscrolla.target = self._scrollbar_alpha_hover
-            self._vscrolla.delta = 0.1
-        elseif self._vscroll_in_gutter or calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS then
-            self._vscrolla.target = self._scrollbar_alpha_proximity
-            self._vscrolla.delta = 0.1
-        end
-        if animate then
-            local newval
-            if self._vscrolla.current < self._vscrolla.target then
-                newval = math.min(self._vscrolla.current + self._vscrolla.delta, self._vscrolla.target)
-            else
-                newval = math.max(self._vscrolla.current - self._vscrolla.delta, self._vscrolla.target)
+    local scrx = offx + self._vscrollx
+    local scry = offy + calc.y + calc.h * calc.scroll_top / self.child.calc.h
+    self:setcolor(self._scrollbar_color, self._vscrolla.current * alpha)
+    gfx.rect(scrx, scry, calc.scrollbar_size * rtk.scale.value, self._vscrollh + 1, 1)
+end
+
+function rtk.Viewport:_calc_scrollbar_alpha(clparentx, clparenty, event, dragchild)
+    local calc = self.calc
+    if calc.vscrollbar == rtk.Viewport.SCROLLBAR_NEVER then
+        return
+    end
+    local dragself = (rtk.dnd.dragging == self)
+    -- Default alpha and animation step (lower values == slower)
+    local alpha = 0
+    local duration = 0.2
+
+    if self._vscrollh > 0 then
+        if not rtk._modal or rtk.is_modal(self) then
+            -- Either no modal widgets, or we're modal, so it's business as usual.
+            local overthumb = event:get_button_state(self.id)
+            if self.mouseover then
+                if overthumb == nil and self._vscroll_in_gutter then
+                    overthumb = rtk.point_in_box(
+                        event.x, event.y,
+                        clparentx + self._vscrollx,
+                        clparenty + calc.y + calc.h * calc.scroll_top / self.child.calc.h,
+                        calc.scrollbar_size * rtk.scale.value, self._vscrollh
+                    )
+                end
+                if event.type == rtk.Event.MOUSEDOWN then
+                    -- Remember for subsequent drag-mousemove whether we were over the scroll
+                    -- thumb at the time of mousedown.
+                    event:set_button_state(self.id, overthumb)
+                end
             end
-            self._vscrolla.current = newval
-            self:queue_draw()
+            if self._vscroll_in_gutter or dragself then
+                if overthumb then
+                    alpha = self._scrollbar_alpha_hover
+                    duration = 0.1
+                else
+                    alpha = self._scrollbar_alpha_proximity
+                end
+            elseif self.mouseover or calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS then
+                alpha = self._scrollbar_alpha_proximity
+            elseif dragchild and dragchild.show_scrollbar_on_drag then
+                alpha = self._scrollbar_alpha_proximity
+                duration = 0.15
+            end
+        elseif calc.vscrollbar == rtk.Viewport.SCROLLBAR_ALWAYS then
+            -- There are other modal widgets, but scrollbar is set to always
+            alpha = self._scrollbar_alpha_proximity
         end
-        self:setcolor(self._scrollbar_color)
-        gfx.a = self._vscrolla.current * alpha
-        if self._vscrollh > 0 then
-            gfx.rect(scrx, scry, calc.scrollbar_size * rtk.scale.value, self._vscrollh + 1, 1)
+    end
+    if alpha ~= self._vscrolla.target then
+        if alpha == 0 then
+            -- Slower fade-out animation
+            duration = 0.3
         end
+        rtk.queue_animation{
+            key=string.format('%s.vscrollbar', self.id),
+            src=self._vscrolla.current,
+            dst=alpha,
+            duration=duration,
+            update=function(value)
+                self._vscrolla.current = value
+                self:queue_draw()
+            end,
+        }
+        self._vscrolla.target = alpha
+        self:queue_draw()
     end
 end
 
@@ -544,7 +630,7 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
     listen = self:_should_handle_event(listen)
     local x = calc.x + clparentx
     local y = calc.y + clparenty
-    local hovering = rtk.point_in_box(event.x, event.y, x, y, calc.w, calc.h)
+    local hovering = rtk.point_in_box(event.x, event.y, x, y, calc.w, calc.h) and self.window.in_window
     local dragging = rtk.dnd.dragging
     local is_child_dragging = dragging and dragging.viewport == self
     local child = self.child
@@ -553,17 +639,13 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
     -- we are currently in proximity of the scrollbar and some other widget goes
     -- modal.  At that point we want to be able to hide the scrollbar.
     if event.type == rtk.Event.MOUSEMOVE then
-        local vscroll_in_gutter = false
+        self._vscroll_in_gutter = false
         if listen and is_child_dragging and dragging.scroll_on_drag then
+            -- If child is dragging against our boundary, autoscroll
             if event.y - 20 < y then
                 self:scrollby(0, -math.max(5, math.abs(y - event.y)), false)
             elseif event.y + 20 > y + calc.h then
                 self:scrollby(0, math.max(5, math.abs(y + calc.h - event.y)), false)
-            end
-            if dragging.show_scrollbar_on_drag then
-                -- Show scrollbar when we have a child dragging.
-                self._vscrolla.target = self._scrollbar_alpha_proximity
-                self._vscrolla.delta = 0.03
             end
         elseif listen and not dragging and not event.handled and hovering then
             if calc.vscrollbar ~= rtk.Viewport.SCROLLBAR_NEVER and self._vscrollh > 0 then
@@ -572,27 +654,11 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
                 -- Are we hovering in the scrollbar gutter?
                 if rtk.point_in_box(event.x, event.y, gutterx, guttery,
                                     calc.vscrollbar_gutter + calc.scrollbar_size*rtk.scale.value, calc.h) then
-                    vscroll_in_gutter = true
+                    self._vscroll_in_gutter = true
                     if event.x >= self._vscrollx + clparentx then
                         event:set_handled(self)
                     end
-                    -- Ensure we queue draw if we leave the scrollbar handle but still in
-                    -- the gutter.
-                    self:queue_draw()
                 end
-            end
-        end
-        if vscroll_in_gutter ~= self._vscroll_in_gutter or self._vscrolla.current > 0 then
-            self._vscroll_in_gutter = vscroll_in_gutter
-            if calc.vscrollbar == rtk.Viewport.SCROLLBAR_HOVER then
-                if not vscroll_in_gutter and not is_child_dragging then
-                    self._vscrolla.target = 0
-                    self._vscrolla.delta = 0.02
-                end
-                -- Ensure we redraw to reflect mouse leaving gutter.  But we
-                -- don't mark the event as handled because we're ok with lower
-                -- z-order widgets handling the mouseover as well.
-                self:queue_draw()
             end
         end
     elseif listen and not event.handled and event.type == rtk.Event.MOUSEDOWN then
@@ -633,6 +699,8 @@ function rtk.Viewport:_handle_event(clparentx, clparenty, event, clipped, listen
     listen = rtk.Widget._handle_event(self, clparentx, clparenty, event, clipped, listen)
     -- Containers are considered in mouseover if any of their children are in mouseover
     self.mouseover = self.mouseover or (child and child.mouseover)
+    -- Now that mouseover status is determined, calculate scrollbar visibility
+    self:_calc_scrollbar_alpha(clparentx, clparenty, event, is_child_dragging and dragging)
     return listen
 end
 
