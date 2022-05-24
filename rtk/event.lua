@@ -150,6 +150,10 @@ rtk.Event.register{
     -- @meta read-only
     -- @type number
     time = 0,
+    --- The value of `rtk.tick` when the event occurred.
+    -- @meta read-only
+    -- @type number
+    tick = nil,
     --- If true, this is a simulated `MOUSEMOVE` event used to trigger some time-based behavior
     -- (such as viewport edge-scrolling or `rtk.Widget:onlongpress()`)
     -- @meta read-only
@@ -212,6 +216,7 @@ function rtk.Event:reset(type)
     self.char = nil
     self.x = gfx.mouse_x
     self.y = gfx.mouse_y
+    self.tick = rtk.tick
     return self
 end
 
