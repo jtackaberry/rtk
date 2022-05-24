@@ -134,7 +134,7 @@ end
 -- @treturn number the relative luminance from 0.0 to 1.0
 function rtk.color.luma(color, under)
     if not color then
-        return rtk.color.luma(under)
+        return under and rtk.color.luma(under) or 0
     end
     local r, g, b, a = rtk.color.rgba(color)
     local luma = (0.2126 * r + 0.7152 * g + 0.0722 * b)
