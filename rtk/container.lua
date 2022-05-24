@@ -390,7 +390,12 @@ function rtk.Container:_unparent_child(pos)
 end
 
 function rtk.Container:focused(event)
-    return rtk.focused == self or (event and event.type == rtk.Event.KEY and rtk.focused == self._focused_child)
+    return rtk.focused == self or (
+        -- If the event is a keypress and the focused widget is a child, we consider
+        -- containers focused as well.  This means keypress events not handled by
+        -- widgets will be dispatched to their parent container(s).
+        event and event.type == rtk.Event.KEY and rtk.focused and rtk.focused == self._focused_child
+    )
 end
 
 --- Adds a widget to the container.
