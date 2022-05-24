@@ -786,7 +786,8 @@ rtk.Widget.register{
     -- @type boolean
     scroll_on_drag = true,
     --- If true, dragging this widget will cause the parent `rtk.Viewport` (if any)
-    -- to display the scrollbar while the child is @{ondragstart|dragging}
+    -- to display the scrollbar while the child is @{ondragstart|dragging}, even if
+    -- the viewport's scrollbar mode would normally have it hidden.
     -- (default `true`)
     -- @meta read/write
     -- @type boolean

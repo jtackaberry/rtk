@@ -397,7 +397,9 @@ end
 --
 -- The arguments are the same as `rtk.Widget:animate()`, plus:
 --
---   * `key`: a globally unique string that identifies this animation
+--   * `key`: a globally unique string that identifies this animation.  Any active animation
+--      with the same key is cancelled and replaced if the `dst` value is different, otherwise
+--      the `rtk.Future` from the current running animation is returned.
 --   * `widget`: an optional `rtk.Widget` to act upon.  If defined, the `attr` field specifies
 --      a particular attribute to animate.  If nil, you'll want to specify `update` in
 --      order to receive frame updates during the animation.
