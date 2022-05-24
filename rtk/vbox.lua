@@ -35,7 +35,8 @@ end
 
 -- Second pass over all children
 -- TODO: wayyyy too much duplication here with rtk.HBox._reflow_step2().
-function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_size, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
+function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, remaining_size, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
+    local expand_unit_size = expand_units > 0 and (remaining_size / expand_units) or 0
     local offset = 0
     local spacing = 0
     -- List of widgets and attrs whose height (or valign) depends on the height of siblings,
@@ -72,10 +73,21 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
             local offx = lp + clp
             local offy = offset + tp + ctp + spacing
             local expand = attrs._calculated_expand
-            if expand and expand > 0 then
+            local cellh
+            if expand and greedyh and expand > 0 then
+                local expanded_size = (expand_unit_size * expand)
+                expand_units = expand_units - expand
+                if attrs._minh and attrs._minh > expanded_size then
+                    -- Min height is greater than what expand units would have allowed.
+                    -- Respect minh, but recalculate the expand unit size so that the
+                    -- remaining widgets will fit within the remaining size.
+                    expand_unit_size = (remaining_size - attrs._minh - ctp - cbp - spacing) / expand_units
+                end
                 -- This is an expanded child which was not reflowed in pass 1, so do it now.
                 local child_maxw = rtk.clamp(w - clp - crp, attrs._minw, attrs._maxw)
-                local child_maxh = rtk.clamp((expand_unit_size * expand) - ctp - cbp - spacing, attrs._minh, attrs._maxh)
+                local child_maxh = rtk.clamp(expanded_size - ctp - cbp - spacing, attrs._minh, attrs._maxh)
+                -- Ensure height offered to child can't extend past what remains of our overall box.
+                child_maxh = math.min(child_maxh, h - maxh - spacing)
                 wx, wy, ww, wh = widget:reflow(
                     0,
                     0,
@@ -95,6 +107,13 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     -- Just sets cell width. If stretch is siblings then we'll do a second pass.
                     ww = maxw
                 end
+                -- Indicate this expanded child as having consumed the full height offered (even if it
+                -- didn't) so that below when we calculate the offset we ensure the next sibling is
+                -- properly positioned.  And if it actually consumed more than offered, we'll have
+                -- no choice but to overflow as well.
+                wh = math.max(child_maxh, wh)
+                cellh = ctp + wh + cbp
+                remaining_size = remaining_size - spacing - cellh
                 -- If width or horizontal alignment is dependent on sibling width, queue
                 -- for a second pass.
                 if need_second_pass then
@@ -103,18 +122,14 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                     }
                 else
                     self:_align_child(widget, attrs, offx, offy, ww, child_maxh, crp, cbp)
-                    self:_set_cell_box(attrs, lp, tp + offset + spacing, ww + clp + crp, child_maxh + ctp + cbp)
+                    self:_set_cell_box(attrs, lp, tp + offset + spacing, ww + clp + crp, cellh)
                 end
-                -- Indicate this expanded child as having consumed the full height offered (even if it
-                -- didn't) so that below when we calculate the offset we ensure the next sibling is
-                -- properly positioned.  And if it actually consumed more than offered, we'll have
-                -- no choice but to overflow as well.
-                wh = math.max(child_maxh, wh)
             else
                 -- Non-expanded widget with native size, already reflowed in pass 1.  Just need
                 -- to adjust position.
                 ww = attrs.stretch == rtk.Box.STRETCH_FULL and greedyw and maxw or wcalc.w
                 wh = math.max(wcalc.h, attrs._minh or 0)
+                cellh = ctp + wh + cbp
                 if need_second_pass then
                     second_pass[#second_pass+1] = {
                         widget, attrs, offx, offy, ww, wh, ctp, crp, cbp, clp, offset, spacing
@@ -125,7 +140,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_unit_si
                 end
             end
             if wcalc.position & rtk.Widget.POSITION_INFLOW ~= 0 then
-                offset = offset + spacing + ctp + wh + cbp
+                offset = offset + spacing + cellh
             end
             maxw = math.max(maxw, ww + clp + crp)
             maxh = math.max(maxh, offset)

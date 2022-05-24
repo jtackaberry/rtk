@@ -347,23 +347,24 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
     self._child_index_by_id = {}
 
     -- Now determine our intrinsic size based on child widgets.
-    local innerw, innerh, expand_unit_size, expw, exph = self:_reflow_step1(
+    local innerw, innerh, expw, exph, expand_units, remaining_size = self:_reflow_step1(
         inner_maxw, inner_maxh,
         clampw, clamph,
         uiscale, viewport, window,
         greedyw, greedyh
     )
     if self.orientation == rtk.Box.HORIZONTAL then
-        expw = (expand_unit_size > 0) or expw
+        expw = (expand_units > 0) or expw
     elseif self.orientation == rtk.Box.VERTICAL then
-        exph = (expand_unit_size > 0) or exph
+        exph = (expand_units > 0) or exph
     end
 
     innerw, innerh = self:_reflow_step2(
         inner_maxw, inner_maxh,
         innerw, innerh,
         clampw, clamph,
-        expand_unit_size,
+        expand_units,
+        remaining_size,
         uiscale, viewport, window,
         greedyw, greedyh,
         tp, rp, bp, lp
@@ -536,8 +537,9 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
                     expand_units = expand_units + attrs._calculated_expand
                 end
             else
-                -- FIXME: what do we do about minw/h?   It can eat into remaining size,
-                -- causing children to overflow the container.
+                -- minw/h could cause child to consume more than expand units would allow.
+                -- This is handled in step 2, where the expand unit size is recalculated
+                -- when this happens.
                 expand_units = expand_units + attrs._calculated_expand
             end
             -- Stretch applies to the opposite orientation of the box, unlike expand
@@ -555,6 +557,5 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
         end
     end
     self:_determine_zorders()
-    local expand_unit_size = expand_units > 0 and (remaining_size / expand_units) or 0
-    return maxw, maxh, expand_unit_size, expw, exph
+    return maxw, maxh, expw, exph, expand_units, remaining_size
 end
