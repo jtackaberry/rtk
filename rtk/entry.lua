@@ -722,6 +722,9 @@ function rtk.Entry:_handle_mousedown(event)
         local caret = self:_caret_from_mouse_event(event)
         self._selstart = nil
         self._dirty_text = true
+        -- Reset caret counter to force-draw caret to provide immediate feedback on
+        -- caret location
+        self._caretctr = 0
         self:sync('caret', caret)
         self:queue_draw()
     elseif event.button == rtk.mouse.BUTTON_RIGHT then
