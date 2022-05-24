@@ -195,7 +195,7 @@ function rtk.Popup:_handle_event(clparentx, clparenty, event, clipped, listen)
     return listen
 end
 
-function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window, greedyw, greedyh)
+function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
     local calc = self.calc
     local anchor = calc.anchor
     if anchor then
@@ -213,12 +213,14 @@ function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
             boxh = math.floor(math.min(boxh, y - calc.tmargin))
         end
         if self.width_from_anchor then
-            -- Set our widget to the full width of our anchor
-            self.w = math.floor(anchor.calc.w)
+            -- Set our widget to the full width of our anchor.  Because we are adapting the
+            -- calculated width to our exterior attribute value, we need to divide by
+            -- UI scale.
+            self.w = math.floor(anchor.calc.w / uiscale)
         end
     end
 
-    rtk.Viewport._reflow(self, boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, rescale, viewport, window, greedyw, greedyh)
+    rtk.Viewport._reflow(self, boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, uiscale, viewport, window, greedyw, greedyh)
 
     if anchor then
         -- We don't know if the anchor has been reflowed before or after us, which means
