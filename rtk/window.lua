@@ -1845,10 +1845,10 @@ function rtk.Window:_update()
         end
     end
 
+    local suppress = false
     if not event or mouse_moved then
         -- Passed to _handle_window_event() when we don't want to propagate
         -- the event to children.
-        local suppress = false
         -- Generate mousemove event if the mouse actually moved, or simulate one in the
         -- following circumstances:
         --   1. A draw has been queued (e.g. for an animation, or a blinking caret where
@@ -2101,7 +2101,12 @@ function rtk.Window:_update()
         -- There are a couple edge cases in trying to be clever and only setting the
         -- cursor when necessary, so for now we skip the cleverness and blindly set the
         -- cursor on each update if the cursor is in the window.
-        if self.in_window then
+        --
+        -- Skip meddling with the cursor if supress is true, which happens for simulated
+        -- mousemove events earlier when touch scrolling is enabled.  In this case, we
+        -- would not have dispatched the event handler of the widget under the cursor so
+        -- it wouldn't have had the opportunity to request its cursor.
+        if self.in_window and not suppress then
             if type(calc.cursor) == 'userdata' then
                 -- Set cursor using JSAPI
                 reaper.JS_Mouse_SetCursor(calc.cursor)
