@@ -2814,7 +2814,7 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     -- Key events don't depend on where the mouse is (as above) just whether we are
     -- focused.
     if event.type == rtk.Event.KEY and not event.handled then
-        -- Dispatch the keypress if we're consudered focused.
+        -- Dispatch the keypress if we're considered focused.
         if self:focused(event) and self:_handle_keypress(event) then
             event:set_handled(self)
             self:queue_draw()
@@ -2825,21 +2825,25 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
     end
     -- Regardless of whether we have focus, if the mouse is over us be sure to set the
     -- custom cursor.
-    if self.mouseover and calc.cursor then
+    if (self.mouseover or dnd.dragging == self) and calc.cursor then
         self.window:request_mouse_cursor(calc.cursor)
     end
     -- Indicates we listened to the event.
     return true
 end
 
+-- Emit a simulated mousedown event to handle touchscroll cases, where we don't want to
+-- send mousedown immediately to give the user the opportunity to pan the viewport. This
+-- is called during mouseup, or by rtk.Window during drag operations.
+--
+-- Even with touch scrolling, there are some cases where mousedown would already have been
+-- fired, for example if the viewport contents fits on screen such that no scrolling is
+-- needed, the touch activate delay will be 0 (as a small UX optimization).  So it's
+-- possible that mousedown would already have been emitted and possibly handled.
 function rtk.Widget:_deferred_mousedown(event, x, y)
     local mousedown_handled = event:get_button_state('mousedown-handled')
     if not mousedown_handled and event:is_widget_pressed(self) and not event:get_button_state(self) then
         local downevent = event:clone{type=rtk.Event.MOUSEDOWN, simulated=true, x=x or event.x, y=y or event.y}
-        -- Overwrite the tick that rtk.Window would have registered for the real mousedown
-        -- to the current tick.  Ensures any modal widgets added by the mousedown handler
-        -- we're about to invoke will not get summarily released,
-        event:set_button_state('tick', rtk.tick)
         if self:_handle_mousedown(downevent) then
             -- Ensure mouseup gets handled so the window doesn't blur us. It's intentional
             -- that we handle the original event here, because we want to prevent

@@ -1947,21 +1947,8 @@ function rtk.Window:_update()
                 rtk.mouse.state.order[#rtk.mouse.state.order+1] = event.button
                 rtk.mouse.state.latest = event.button
             elseif event.type == rtk.Event.MOUSEUP then
-                -- Some mouse button was released, where now we want to update the value
-                -- of rtk.mouse.state.latest (for simulated mousedown events later on).
-                -- This is somewhat ugly, but at least rtk.mouse.state.order won't get any
-                -- larger than the number of supported mouse buttons.
-                for i = 1, #rtk.mouse.state.order do
-                    if rtk.mouse.state.order[i] == event.button then
-                        table.remove(rtk.mouse.state.order, i)
-                        break
-                    end
-                end
-                if #rtk.mouse.state.order > 0 then
-                    rtk.mouse.state.latest = rtk.mouse.state.order[#rtk.mouse.state.order]
-                else
-                    rtk.mouse.state.latest = 0
-                end
+                -- rtk.mouse.state set above is cleared later on in this method, because
+                -- state is used for modal widget handling.
                 if rtk.touchscroll and event.buttons == 0 and self._restore_mouse_pos then
                     local x, y = table.unpack(self._restore_mouse_pos)
                     rtk.callafter(0.2, reaper.JS_Mouse_SetPosition, x, y)
@@ -2065,10 +2052,14 @@ function rtk.Window:_update()
                 -- response to mousedown.  We don't want the mouseup to immediately close
                 -- when mouseup occurs.
                 local state = rtk.mouse.state[event.button]
-                -- If state is nil, then this must have been a loss of focus by the window rather
-                -- than a mouse click.  In this case we always want to release modal.
-                local downtick = state and state.tick
-                if modaltick ~= downtick then
+                -- If state is nil, then this must have been a loss of focus by the window
+                -- rather than a mouse click.  In this case we always want to release
+                -- modal.  Otherwise, we ensure that the current touch activate event was
+                -- not the one that added the modal widgets to begin with, by verifying
+                -- that the modaltick held in button state, which is added by
+                -- rtk.add_modal(), is different than the tick when the modal widget was
+                -- added.  (In practice, the state modaltick is likely nil.)
+                if not state or (modaltick ~= state.modaltick) then
                     widget:_release_modal(event)
                 end
             end
@@ -2078,6 +2069,22 @@ function rtk.Window:_update()
             rtk.focused:blur(event, nil)
         end
         if event.type == rtk.Event.MOUSEUP then
+            rtk.mouse.last[event.button] = {x=event.x, y=event.y}
+            -- Some mouse button was released, where now we want to update the value
+            -- of rtk.mouse.state.latest (for simulated mousedown events later on).
+            -- This is somewhat ugly, but at least rtk.mouse.state.order won't get any
+            -- larger than the number of supported mouse buttons.
+            for i = 1, #rtk.mouse.state.order do
+                if rtk.mouse.state.order[i] == event.button then
+                    table.remove(rtk.mouse.state.order, i)
+                    break
+                end
+            end
+            if #rtk.mouse.state.order > 0 then
+                rtk.mouse.state.latest = rtk.mouse.state.order[#rtk.mouse.state.order]
+            else
+                rtk.mouse.state.latest = 0
+            end
             rtk.mouse.state[event.button] = nil
             if event.buttons == 0 then
                 -- Clear on mouseup if no more buttons are held.  We want to do this *after*

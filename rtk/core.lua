@@ -1133,6 +1133,14 @@ function rtk.add_modal(...)
     if rtk._modal == nil then
         rtk._modal = {}
     end
+    -- If there's state for this mouse button, it means we're in the middle of a mouse
+    -- click.  Store the current tick in the state which rtk.Window will use to ensure it
+    -- doesn't immediately release these modal widgets if mouseup should occur on the same
+    -- tick (which could happen with touchscrolling and deferred mousedown).
+    local state = rtk.mouse.state[rtk.mouse.state.latest]
+    if state then
+        state.modaltick = rtk.tick
+    end
     local widgets = {...}
     for _, widget in ipairs(widgets) do
         rtk._modal[widget.id] = {widget, rtk.tick}
