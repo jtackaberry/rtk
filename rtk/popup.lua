@@ -178,6 +178,9 @@ rtk.Popup.register{
 
 function rtk.Popup:initialize(attrs, ...)
     rtk.Viewport.initialize(self, attrs, self.class.attributes.defaults, ...)
+    -- Subltly different than the opened attribute: this is true as long as the popup is
+    -- visible even during a fade animation, even if opened may be false.
+    self._popup_visible = false
 end
 
 function rtk.Popup:_handle_event(clparentx, clparenty, event, clipped, listen)
@@ -197,11 +200,15 @@ function rtk.Popup:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph,
     local anchor = calc.anchor
     if anchor then
         local y = anchor.clienty
-        -- Before we reflow ourself, constrain the box height to fit either above or
-        -- below the anchor, depending on which has more room.
-        if y < window.h / 2 then
+        -- Before we reflow ourself, constrain the box height to fit either above or below
+        -- the anchor, depending on which has more room.
+        --
+        -- Use the calculated window height directly, as our box size is going to depend
+        -- on siblings (i.e. those other widgets directly added to the window).
+        local wh = self.window.calc.h
+        if y < wh / 2 then
             y = y + anchor.calc.h
-            boxh = math.floor(math.min(boxh, window.h - y - calc.bmargin))
+            boxh = math.floor(math.min(boxh, wh - y - calc.bmargin))
         else
             boxh = math.floor(math.min(boxh, y - calc.tmargin))
         end
@@ -228,7 +235,12 @@ function rtk.Popup:_realize_geometry()
     local calc = self.calc
     local anchor = calc.anchor
     local st, sb = calc.elevation, calc.elevation
-    if anchor and anchor.realized then
+    -- Also perform the anchor-relative calculations if the popup is currently visible,
+    -- even if the anchor isn't realized.  This handles the scenario when the anchor is
+    -- hidden as we are closing; during the fadeout animation we don't want our position
+    -- to change. The opened attribute will not be flipped to false until after the
+    -- animation is finished.
+    if anchor and anchor.clientx and (anchor.realized or self._popup_visible) then
         -- If we are anchored to a wiget, determine our position now based on the anchor's
         -- geometry and our own.  Now that we've reflowed and know our own height, we place
         -- the viewport below the anchor if it fits, otherwise above.
@@ -306,12 +318,11 @@ end
 --   available cell attributes.
 -- @treturn rtk.Popup returns self for method chaining
 function rtk.Popup:open(attrs)
-    if self:onopen() == false then
-        return
+    if self.calc.opened or self:onopen() == false then
+        return self
     end
     local calc = self.calc
     local anchor = calc.anchor
-    self:sync('opened', true)
     if not attrs and not anchor then
         -- Without an anchor and attrs to tell us otherwise, default to centered on
         -- screen.
@@ -326,25 +337,35 @@ function rtk.Popup:open(attrs)
         local window = (anchor and anchor.window) or (attrs and attrs.window) or rtk.window
         assert(window, 'no rtk.Window has been created or explicitly passed to open()')
         window:add(self, attrs)
-        rtk.defer(self._open, self)
-    else
-        self:_open()
+        if anchor and not anchor.clientx then
+            -- _open() will set visible to true, causing a reflow, but our reflow depends
+            -- upon the anchor's client coordinates in order to calculate our own geometry.
+            -- Consequently, defer _open() to next update cycle, after which time anchor
+            -- would have been drawn.
+            rtk.defer(self._open, self, attrs)
+            return self
+        end
     end
+    self:_open(attrs)
     return self
 end
 
-function rtk.Popup:_open()
+function rtk.Popup:_open(attrs)
     local anchor = self.calc.anchor
     if self:get_animation('alpha') then
         self:cancel_animation('alpha')
         self:attr('alpha', 1)
     elseif anchor and not anchor.realized then
-        return
+        -- Anchor is hidden, so we can't open.
+        return false
     end
+    self:sync('opened', true)
+    self._popup_visible = true
     rtk.add_modal(self, anchor)
     self:show()
     self:focus()
     self:scrollto(0, 0)
+    return true
 end
 
 --- Closes the popup.
@@ -365,6 +386,7 @@ function rtk.Popup:_close(event)
             self:hide()
             self:attr('alpha', 1)
             self.window:remove(self)
+            self._popup_visible = false
         end)
     rtk.reset_modal()
 end
