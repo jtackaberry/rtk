@@ -771,7 +771,11 @@ rtk.Widget.register{
     -- @type colortype|nil
     bg = rtk.Attribute{
         reflow=rtk.Widget.REFLOW_NONE,
-        calculate=function(self, attr, value, target)
+        calculate=function(self, attr, value, target, animation)
+            if not value and animation then
+                local parent = self.parent
+                value = parent and parent.calc.bg or rtk.theme.bg
+            end
             return value and {rtk.color.rgba(value)}
         end,
     },
@@ -1795,7 +1799,7 @@ function rtk.Widget:animate(kwargs)
             -- Also generate the calculated variant in case the widget's reflow function
             -- depends upon previous calculated value (as can happen with rtk.Window, for
             -- example).
-            calc[attr] = meta.calculate and meta.calculate(self, attr, kwargs.dst, {}) or kwargs.dst
+            calc[attr] = meta.calculate and meta.calculate(self, attr, kwargs.dst, {}, true) or kwargs.dst
             local window = self:_slow_get_window()
             if not window then
                 -- Trying to animate the geometry of a widget that's not parented
@@ -1820,7 +1824,7 @@ function rtk.Widget:animate(kwargs)
         -- padding) that injects other calculated attributes (like tpadding, etc.)  We
         -- are just fishing for the calculated dst value, we don't want to actually
         -- change our current calculated attributes.
-        kwargs.dst = meta.calculate(self, attr, kwargs.dst, {})
+        kwargs.dst = meta.calculate(self, attr, kwargs.dst, {}, true)
         -- Update doneval now that we've got a calculated value.
         doneval = kwargs.dst or rtk.Attribute.DEFAULT
     end
@@ -1842,8 +1846,11 @@ function rtk.Widget:animate(kwargs)
         -- want to start from the current mid-animation value, not the current animation's
         -- dst value.
         kwargs.src = self:calc(attr, true)
-    elseif not calcsrc and meta.calculate then
-        kwargs.src = meta.calculate(self, attr, kwargs.src, {})
+        calcsrc = kwargs.src ~= nil
+    end
+    if not calcsrc and meta.calculate then
+        -- Convert given exterior value to a calculated value.
+        kwargs.src = meta.calculate(self, attr, kwargs.src, {}, true)
     end
     return rtk.queue_animation(kwargs)
 end

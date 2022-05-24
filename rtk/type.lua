@@ -88,13 +88,15 @@ rtk.Attribute = {
     --
     -- If this is table, then it's a simple LUT mapping input -> output.
     --
-    -- If a function, then the function will receive 4 arguments:
+    -- If a function, then the function will receive 5 arguments:
     --   1. the instance of the object whose attribute is being set
     --   2. the attribute name
     --   3. the attribute value
     --   4. the target table for any injected dynamically calculated attributes (e.g. for shorthand attributes
     --      such as `rtk.Widget.padding`, which implicitly generates `tpadding`, `rpadding`,
     --      etc.)
+    --   5. if true, the attribute is being calculated for purposes of an animation and so
+    --      must return an animatable, non-nil value
     --
     -- The function must return the calculated version of the value.
     --
