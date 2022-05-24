@@ -2732,8 +2732,8 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                     self:queue_draw()
                 end
                 local state = event:get_button_state(self) or 0
-                -- State will be >= 2 when mousedown was accepted.
-                if state >= 2 then
+                -- Bit 1 is set when mousedown was accepted
+                if state & 2 ~= 0 then
                     -- Don't fire an onclick() if we had already experienced a *handled*
                     -- onlongpress (where the mouse button state for this widget will be
                     -- have bit 4 set).
