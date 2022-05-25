@@ -358,9 +358,9 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
             elseif scrollw > 0 and wh <= inner_maxh then
                 -- Scrollbar reserved, but we didn't need one.  Give the space back and
                 -- reflow. Only need a second pass if child had consumed all offered width
-                -- (rom which we can infer it was expanded), and now that we are adding
+                -- (from which we can infer it was expanded), and now that we are adding
                 -- more space to maxw, it will likely consume that as well.
-                pass2 = ww == inner_maxw
+                pass2 = ww >= inner_maxw
                 inner_maxw = inner_maxw + scrollw
                 scrollw = 0
             end
