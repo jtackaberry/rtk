@@ -645,7 +645,7 @@ rtk.Widget.register{
         end
     },
     --- Top margin in pixels; if specified, overrides `margin` for the top edge (default 0).
-    -- Must be numerc.
+    -- Must be numeric.
     -- @meta read/write
     -- @type number
     tmargin = rtk.Attribute{priority=true, reflow=rtk.Widget.REFLOW_FULL},
@@ -779,6 +779,75 @@ rtk.Widget.register{
             return value and {rtk.color.rgba(value)}
         end,
     },
+    --- Shorthand to set the extended "hot zone" on all 4 sides of the widget at once
+    -- (default 0).
+    --
+    -- The hot zone defines an extended area around the widget's natural boundary where
+    -- mouseover events and clicks will be recognized, allowing you to extend the
+    -- interactable area of a widget beyond what it visually depicts.  This can be useful
+    -- when constructing a `rtk.Box` with spacing between cells, but you want the widgets
+    -- occupying those cells to be clickable even within the inter-cell spacing.  Another
+    -- use case is extending the area that small widgets can be clicked, improving the UX
+    -- for touch devices.
+    --
+    -- The hot zone defines an extension relative to the widget's normal size, so, for
+    -- example, a value of 5 will extend the clickable area 5 pixels beyond the widget's
+    -- edge.
+    --
+    -- The format of this attribute is the same as `margin` and `padding`.
+    --
+    -- @note Supported units
+    --   The "px" unit suffix is optional.  Pixels are assumed and no other unit is currently
+    --   supported.  Other units may be supported in the future.
+    -- @meta read/write
+    -- @type number|table|string
+    hotzone = rtk.Attribute{
+        reflow=rtk.Widget.REFLOW_NONE,
+        replaces={'thotzone', 'rhotzone', 'bhotzone', 'lhotzone'},
+        get=function(self, attr, target)
+            return {target.thotzone, target.rhotzone, target.bhotzone, target.lhotzone}
+        end,
+        calculate=function(self, attr, value, target)
+            local t, r, b, l = rtk.Widget.static._calc_padding_or_margin(value)
+            target.thotzone, target.rhotzone, target.bhotzone, target.lhotzone = t, r, b, l
+            -- Unlike padding/margin where we're happy to blindly read the calculated
+            -- values to get zero values in the default case, because these attrs are used
+            -- by _is_mouse_over() which is invoked a *lot*, we optimize for the
+            -- overwhelmingly common case where no hotzone is defined and skip the
+            -- adjustment unless this flag is true.
+            target._hotzone_set = true
+            return {t, r, b, l}
+        end
+    },
+    --- Top hot zone extension in pixels; if specified, overrides `hotzone` for the top
+    -- edge (default 0). Must be numeric.
+    -- @meta read/write
+    -- @type number
+    thotzone = rtk.Attribute{
+        default=0,
+        priority=true,
+        reflow=rtk.Widget.REFLOW_NONE,
+        calculate=function(self, attr, value, target)
+            target._hotzone_set = true
+            return value
+        end,
+    },
+    --- Right hot zone extension in pixels; if specified, overrides `hotzone` for the right
+    -- edge (default 0). Must be numeric.
+    -- @meta read/write
+    -- @type number
+    rhotzone = rtk.Reference('thotzone'),
+    --- Bottom hot zone extension in pixels; if specified, overrides `hotzone` for the bottom
+    -- edge (default 0). Must be numeric.
+    -- @meta read/write
+    -- @type number
+    bhotzone = rtk.Reference('thotzone'),
+    --- Left hot zone extension in pixels; if specified, overrides `hotzone` for the left
+    -- edge (default 0). Must be numeric.
+    -- @meta read/write
+    -- @type number
+    lhotzone = rtk.Reference('thotzone'),
+
     --- If true, dragging this widget will cause the parent `rtk.Viewport` (if any)
     -- to scroll when the mouse is click-dragged against the viewport's edge
     -- (default `true`).
@@ -826,16 +895,16 @@ rtk.Widget.register{
     -- @meta read-only
     -- @type rtk.Window
     window = nil,
-    --- Set to true if the mouse is within the widget's region and not occluded by a
-    -- higher z-index widget, and false otherwise.
+    --- Set to true if the mouse is within the widget's region (which is extended according
+    -- to `hotzone`) and not occluded by a higher z-index widget, and false otherwise.
     -- @meta read-only
     -- @type boolean
     mouseover = false,
-    --- Set to true if the mouse is within the widget's region *and* if `onmouseenter()`
-    -- had returned a non-false value.  The semantics of "hovering" is that
-    -- the widget is interactive and responsive to the mouse entering the widget's
-    -- geometry, and so the return value of `onmouseenter()` indicates this
-    -- interactivity.
+    --- Set to true if the mouse is within the widget's region (extended according to
+    -- `hotzone`) *and* if `onmouseenter()` had returned a non-false value.  The semantics
+    -- of "hovering" is that the widget is interactive and responsive to the mouse
+    -- entering the widget's geometry, and so the return value of `onmouseenter()`
+    -- indicates this interactivity.
     --
     -- Normally `hovering` implies `mouseover`, but one exception is that if the widget is
     -- being dragged and the mouse is outside the widget's current region, `hovering`
@@ -2346,8 +2415,15 @@ end
 function rtk.Widget:_is_mouse_over(clparentx, clparenty, event)
     local calc = self.calc
     local x, y = calc.x + clparentx, calc.y + clparenty
+    local w, h = calc.w, calc.h
+    if calc._hotzone_set then
+        x = x - calc.lhotzone
+        y = y - calc.thotzone
+        w = w + calc.lhotzone + calc.rhotzone
+        h = h + calc.thotzone + calc.bhotzone
+    end
     return self.window and self.window.in_window and
-           rtk.point_in_box(event.x, event.y, x, y, calc.w, calc.h)
+           rtk.point_in_box(event.x, event.y, x, y, w, h)
 end
 
 
