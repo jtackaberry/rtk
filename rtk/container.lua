@@ -545,7 +545,9 @@ function rtk.Container:_calc_cell_attrs(widget, attrs)
     local calculated = {}
     for n = 1, #keys do
         local k = keys[n]
-        calculated[k] = self:_calc_attr(k, attrs[k], attrs, nil, 'cell', widget)
+        -- Set calculated table as target, so shorthand attributes (e.g. padding) get
+        -- expanded out to their underlying attributes.
+        calculated[k] = self:_calc_attr(k, attrs[k], calculated, nil, 'cell', widget)
     end
     return calculated
 end
