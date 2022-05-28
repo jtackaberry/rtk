@@ -321,8 +321,10 @@ function rtk._do_animations(now)
                     end
                 else
                     -- However for the final value, we *do* use onattr() so that the
-                    -- relevant event handlers get called.
-                    widget:attr(attr, exterior or anim.doneval)
+                    -- relevant event handlers get called.  doneval is preferred if
+                    -- specified (which can be rtk.Attribute.NIL if an explicit nil is
+                    -- needed), otherwise, if not set, we go with the exterior attr value.
+                    widget:attr(attr, anim.doneval or exterior)
                 end
                 -- What we lose by not calling onattr() for each intermediate step is the
                 -- automatic reflow provided by onattr.  So a bit of a kludge here, where
@@ -418,7 +420,8 @@ end
 --      described in the `update` field above. The function must return the attribute
 --      value for the next frame in the animation.
 --   * `doneval`: when the animation is finished, the target attribute will be set to this
---     final value.  Defaults to `dst` if not specified.
+--     final value.  Defaults to `dst` if not specified.  If `doneval` needs to be nil, then
+--     use `rtk.Attribute.NIL` explicitly.
 --
 -- The animation state table passed to `stepfunc` is also the same table returned here and
 -- by `rtk.Widget:get_animation()`.  It contains all user-supplied fields, fully resolved

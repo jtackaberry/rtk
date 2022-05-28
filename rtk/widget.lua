@@ -410,7 +410,10 @@ rtk.Widget.register{
         reflow_uses_exterior_value=true,
         animate=function(self, anim, scale)
             local calculated = anim.resolve(anim.easingfunc(anim.pct))
-            local exterior = (anim.pct < 1 and calculated or anim.doneval) / (scale or rtk.scale.value)
+            local exterior
+            if anim.doneval and anim.doneval ~= rtk.Attribute.NIL and anim.doneval ~= rtk.Attribute.DEFAULT then
+                exterior = (anim.pct < 1 and calculated or anim.doneval) / (scale or rtk.scale.value)
+            end
             if anim.dst == 0 or anim.dst > 1 then
                 -- Ensure if we are animating towards a non-fractional width (including 0)
                 -- that we don't return a exterior value of 0 < value <= 1.0 because this
@@ -1849,13 +1852,19 @@ function rtk.Widget:animate(kwargs)
     if attr == 'w' or attr == 'h' then
         -- If src value is nil or fractional and we're animating one of the
         -- dimensions, set the animation src to the current calculated size.
-        if not kwargs.src or (kwargs.src <= 1.0 and kwargs.src >= 0) then
-            -- Source attribute was nil.  Use the calculated value, interpreting
-            -- src as a relative value (if not nil).
+        if (not kwargs.src or kwargs.src == rtk.Attribute.NIL) or (kwargs.src <= 1.0 and kwargs.src >= 0) then
+            -- Source attribute was nil or relative.  Use the calculated value,
+            -- interpreting src as a relative value (if not nil).
+            if kwargs.src == rtk.Attribute.NIL then
+                kwargs.src = nil
+            end
             kwargs.src = calc[attr] * (kwargs.src or 1)
             calcsrc = true
         end
-        if not kwargs.dst or (kwargs.dst <= 1.0 and kwargs.dst > 0) then
+        if (not kwargs.dst or kwargs.dst == rtk.Attribute.NIL) or (kwargs.dst <= 1.0 and kwargs.dst > 0) then
+            if kwargs.dst == rtk.Attribute.NIL then
+                kwargs.dst = nil
+            end
             -- Another special case.  If we want to animate width or height toward nil
             -- (intrinsic size) or value <= 1.0 (size relative to parent), force a full reflow
             -- to determine new calculated geometry and then animate toward that.
@@ -1880,7 +1889,6 @@ function rtk.Widget:animate(kwargs)
             window:reflow(rtk.Widget.REFLOW_FULL)
             kwargs.dst = calc[attr] or 0
             calcdst = true
-            doneval = kwargs.dst
             -- Now restore original vales for this dimension.  Unfortunately we need to do
             -- another full reflow, because all the other widgets in the scene would also
             -- have been reflowed around our new target geometry.
