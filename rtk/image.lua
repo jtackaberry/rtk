@@ -681,6 +681,7 @@ function rtk.Image:blit(attrs)
     local dy = attrs.dy or 0
     local dw = attrs.dw or (sw * scale)
     local dh = attrs.dh or (sh * scale)
+    local rotation = attrs.rotation and math.rad(attrs.rotation) or self._rotation_rads
     if attrs.clipw and dw > attrs.clipw then
         sw = sw - (dw - attrs.clipw) / (dw/sw)
         dw = attrs.clipw
@@ -689,7 +690,7 @@ function rtk.Image:blit(attrs)
         sh = sh - (dh - attrs.cliph)/(dh/sh)
         dh = attrs.cliph
     end
-    if self.rotation == 0 then
+    if rotation == 0 or not rotation then
         gfx.blit(src or self.id, 1.0, 0,
             sx, sy,
             sw, sh,
@@ -698,7 +699,7 @@ function rtk.Image:blit(attrs)
             0, 0)
     else
         gfx.blit(
-            src or self.id, 1.0, self.rotation,
+            src or self.id, 1.0, rotation,
             -- source geometry
             sx - (self._soffx or 0), sy - (self._soffy or 0),
             self._dw, self._dh,
@@ -841,19 +842,21 @@ end
 -- @tparam number degrees the rotation in degrees
 -- @treturn rtk.Image returns self for method chaining
 function rtk.Image:rotate(degrees)
-    self.rotation = math.rad(degrees)
+    self.rotation = degrees
+    local rads = math.rad(degrees)
+    self._rotation_rads = rads
     -- Top left
     local x1, y1 = 0, 0
-    local xt1, yt1 = _xlate(x1, y1, self.rotation)
+    local xt1, yt1 = _xlate(x1, y1, rads)
     -- Top right
     local x2, y2 = 0 + self.w, 0
-    local xt2, yt2 = _xlate(x2, y2, self.rotation)
+    local xt2, yt2 = _xlate(x2, y2, rads)
     -- Bottom left
     local x3, y3 = 0, self.h
-    local xt3, yt3 = _xlate(x3, y3, self.rotation)
+    local xt3, yt3 = _xlate(x3, y3, rads)
     -- Bottom right
     local x4, y4 = 0 + self.w, self.h
-    local xt4, yt4 = _xlate(x4, y4, self.rotation)
+    local xt4, yt4 = _xlate(x4, y4, rads)
 
     -- Determine full bounding box of rotated image
     local xmin = math.min(xt1, xt2, xt3, xt4)
