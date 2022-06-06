@@ -331,6 +331,7 @@ local function register(cls, attrs)
         end
     end
     attributes.__class = cls.name
+    -- Note that rtk.Widget:_setattrs() bypasses this function for performance reasons.
     attributes.get = function(attr)
         return attributes[attr] or rtk.Attribute.NIL
     end

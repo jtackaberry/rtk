@@ -764,10 +764,15 @@ rtk.Widget.register{
         reflow=rtk.Widget.REFLOW_NONE,
     },
     --- Whether the widget is allowed to automatically receive focus in response to a
-    --  mouse button pressed event (default `false`)
+    -- mouse button pressed event (default `nil`).  When nil, autofocus will not occur
+    -- unless you have attached a custom `onclick` handler to the widget, in which case
+    -- it assume autofocus behavior in order to ensure the `onclick` handler fires.  If
+    -- this attribute is explicitly false, then it will never autofocus regardless of
+    -- whether there's a custom `onclick` handler.
+    --
     -- @meta read/write
-    -- @type boolean
-    autofocus = false,
+    -- @type boolean|nil
+    autofocus = nil,
     --- The widget's background color (semantics vary by widget) or nil to have
     -- no background color (default `nil`)
     -- @meta read/write
@@ -827,7 +832,6 @@ rtk.Widget.register{
     -- @meta read/write
     -- @type number
     thotzone = rtk.Attribute{
-        default=0,
         priority=true,
         reflow=rtk.Widget.REFLOW_NONE,
         calculate=function(self, attr, value, target)
@@ -998,6 +1002,24 @@ rtk.Widget.register{
     refs = nil,
 }
 
+-- Metatable for rtk.Widget.refs, which proxies to rtk.Widget:_ref().
+local _refs_metatable = {
+    __mode='v',
+    __index=function(table, key)
+        return table.__self:_ref(table, key)
+    end,
+    __newindex=function (table, key, value)
+        rawset(table, key, value)
+        table.__empty=false
+    end
+}
+
+-- Metatable for rtk.Widget.calc, which proxies to rtk.Widget:_calc()
+local _calc_metatable = {
+    __call=function(table, _, attr, instant)
+        return table.__self:_calc(attr, instant)
+    end
+}
 
 --- Public Methods.
 --
@@ -1021,28 +1043,15 @@ function rtk.Widget:initialize(attrs,...)
     -- the refs table, and which sets __empty to false when something is added.
     -- The __empty flag is checked by container implementations in order to avoid
     -- upward propagation of an empty table when we are parented.
-    self.refs = {__empty=true}
-    setmetatable(self.refs, {
-        __mode='v',
-        __index=function(table, key) return self:_ref(table, key) end,
-        __newindex=function (table, key, value)
-            rawset(table, key, value)
-            table.__empty=false
-        end
-    })
-    -- Table of calculated attributes.  See also _calc().
-    self.calc = {
-        border_uniform = true
-    }
-    setmetatable(self.calc, {
-        __call=function(_, _, attr, instant)
-            return self:_calc(attr, instant)
-        end
-    })
-    local tables = {self.class.attributes.defaults, ...}
+    self.refs = setmetatable({__empty=true, __self=self}, _refs_metatable)
+    self.calc = setmetatable({__self=self, border_uniform=true}, _calc_metatable)
+    local clsattrs = self.class.attributes
+    local tables = {clsattrs.defaults, ...}
     local merged = {}
     for n = 1, #tables do
-        table.merge(merged, tables[n])
+        for k, v in pairs(tables[n]) do
+            merged[k] = v
+        end
     end
     if attrs then
         -- Loop through user-provided attributes and if there are any shorthand attributes
@@ -1053,7 +1062,7 @@ function rtk.Widget:initialize(attrs,...)
         -- their replaced attributes in the same class hierarchy.  For performance
         -- reasons, handling this case only applies to user-provided attributes.
         for k, v in pairs(attrs) do
-            local meta = self.class.attributes.get(k)
+            local meta = clsattrs[k] or rtk.Attribute.NIL
             -- Handle positional attributes and other aliases, including into the merged
             -- attribute table based on the alias name.
             local attr = meta.alias
@@ -1066,9 +1075,11 @@ function rtk.Widget:initialize(attrs,...)
                     merged[replaces[n]] = nil
                 end
             end
+            -- Merge non-positional user-applied attributes on top of the defaults.
+            if not tonumber(k) then
+                merged[k] = v
+            end
         end
-        -- Now we can merge the user-supplied attributes on top of the defaults.
-        table.merge(merged, attrs)
         if attrs.ref then
             rtk._refs[attrs.ref] = self
             self.refs[attrs.ref] = self
@@ -1113,34 +1124,38 @@ function rtk.Widget:_setattrs(attrs)
     if not attrs then
         return
     end
-    local get = self.class.attributes.get
+    local clsattrs = self.class.attributes
     local priority = {}
     local calc = self.calc
     -- First exclude priority attributes.
     for k, v in pairs(attrs) do
-        if not tonumber(k) then
-            local meta = get(k)
-            if not meta.priority then
-                -- We can only invoke the default value function for non priority attributes,
-                -- as default funcs for priority attributes may depend on non-priority ones.
-                if v == rtk.Attribute.FUNCTION then
-                    v = self.class.attributes[k].default_func(self, k)
-                elseif v == rtk.Attribute.NIL then
-                    v = nil
-                end
-                local calculated = self:_calc_attr(k, v, nil, meta)
-                self:_set_calc_attr(k, v, calculated, calc, meta)
-            else
-                priority[#priority+1] = k
+        -- Accessing class attributes table directly improves performance only slightly,
+        -- but it's just enough that it's worth bypassing attributes.get().
+        local meta = clsattrs[k]
+        if meta and not meta.priority then
+            -- We can only invoke the default value function for non priority attributes,
+            -- as default funcs for priority attributes may depend on non-priority ones.
+            if v == rtk.Attribute.FUNCTION then
+                v = clsattrs[k].default_func(self, k)
+            elseif v == rtk.Attribute.NIL then
+                v = nil
             end
-            self[k] = v
+            local calculated = self:_calc_attr(k, v, nil, meta)
+            self:_set_calc_attr(k, v, calculated, calc, meta)
+        else
+            priority[#priority+1] = k
         end
+        self[k] = v
+    end
+    if #priority == 0 then
+        -- No priority attributes to override those set above.
+        return
     end
     -- Now pass over all priority attributes.
     for _, k in ipairs(priority) do
         local v = self[k]
         if v == rtk.Attribute.FUNCTION then
-            v = self.class.attributes[k].default_func(self, k)
+            v = clsattrs[k].default_func(self, k)
             self[k] = v
         end
         if v ~= nil then
@@ -2425,10 +2440,12 @@ function rtk.Widget:_is_mouse_over(clparentx, clparenty, event)
     local x, y = calc.x + clparentx, calc.y + clparenty
     local w, h = calc.w, calc.h
     if calc._hotzone_set then
-        x = x - calc.lhotzone
-        y = y - calc.thotzone
-        w = w + calc.lhotzone + calc.rhotzone
-        h = h + calc.thotzone + calc.bhotzone
+        local l = calc.lhotzone or 0
+        local t = calc.thotzone or 0
+        x = x - l
+        y = y - t
+        w = w + l + (calc.rhotzone or 0)
+        h = h + t + (calc.bhotzone or 0)
     end
     return self.window and self.window.in_window and
            rtk.point_in_box(event.x, event.y, x, y, w, h)
