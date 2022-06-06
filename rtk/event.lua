@@ -248,7 +248,7 @@ function rtk.Event:set_widget_mouseover(widget)
     if rtk.debug and not self.debug then
         self.debug = widget
     end
-    if widget.tooltip and not rtk._mouseover_widget and self.type == rtk.Event.MOUSEMOVE and not self.simulated then
+    if widget.calc.tooltip and not rtk._mouseover_widget and self.type == rtk.Event.MOUSEMOVE and not self.simulated then
         rtk._mouseover_widget = widget
     end
 end
