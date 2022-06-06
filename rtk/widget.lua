@@ -3173,7 +3173,11 @@ function rtk.Widget:onmousedown(event) end
 function rtk.Widget:_handle_mousedown(event)
     local ok = self:onmousedown(event)
     if ok ~= false then
-        if self.calc.autofocus then
+        local autofocus = self.calc.autofocus
+        if autofocus or
+           -- If the user has added a custom onclick handler then we implicitly assume
+           -- autofocus, otherwise the user's onclick handler would never fire.
+           (autofocus == nil and self.onclick ~= rtk.Widget.onclick) then
             self:focus(event)
             return ok or self:focused(event)
         else
