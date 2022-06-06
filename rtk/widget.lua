@@ -2521,7 +2521,8 @@ end
 --   must not exceed.  The clientx value should also be adjusted if necessary to
 --   ensure the tooltip doesn't exceed the width.
 -- @tparam number clienth like clientw except for height
-function rtk.Widget:_draw_tooltip(clientx, clienty, clientw, clienth)
+function rtk.Widget:_draw_tooltip(clientx, clienty, clientw, clienth, tooltip)
+    tooltip = tooltip or self.calc.tooltip
     -- This is undoubtedly very inefficient, allocating a new font and doing the layout
     -- each time.  However, the dependence on window geometry means we can't easily
     -- precalculate the segments as geometry can change.  Font is certainly cacheable, but
@@ -2529,7 +2530,7 @@ function rtk.Widget:_draw_tooltip(clientx, clienty, clientw, clienth)
     -- efficient.
     local font = rtk.Font(table.unpack(rtk.theme.tooltip_font))
     -- Some hardcoded magic in here, like fixed padding (5px around all edges).
-    local segments, w, h = font:layout(self.calc.tooltip, clientw - 10, clienth - 10, true)
+    local segments, w, h = font:layout(tooltip, clientw - 10, clienth - 10, true)
     rtk.color.set(rtk.theme.tooltip_bg)
     local x = rtk.clamp(clientx, 0, clientw - w - 10)
     local y = rtk.clamp(clienty + 16, 0, clienth - h - 10 - self.calc.h)
