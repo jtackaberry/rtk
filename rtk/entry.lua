@@ -991,6 +991,21 @@ function rtk.Entry:_draw(offx, offy, alpha, event, clipw, cliph, cltargetx, clta
     -- render the text over top it.
     self:_draw_bg(offx, offy, alpha, event)
 
+    if not self._dirty_text then
+        -- Ugly hack alert: because of our kludge in _rendertext(), we try to detect if
+        -- the underlying background has changed, so we can force a re-render of the
+        -- text image.  We can't cheaply be exhaustive, so this heuristic just samples a
+        -- single pixel within our box to detect broader background color changes.  If
+        -- a change was detected since last draw, then mark the text as dirty so it gets
+        -- redrawn.
+        gfx.x, gfx.y = x + lp, y + tp
+        local r, g, b = gfx.getpixel()
+        if self._lastbg_r ~= r or self._lastbg_g ~= g or self._lastbg_b ~= b then
+            self._lastbg_r, self._lastbg_g, self._lastbg_b = r, g, b
+            self._dirty_text = true
+        end
+    end
+
     if self._dirty_positions then
         self:_calcpositions(self._dirty_positions)
     end
