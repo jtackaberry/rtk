@@ -132,7 +132,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, 
                 -- Non-expanded widget with native size, already reflowed in pass 1.  Just need
                 -- to adjust position.
                 ww = math.max(wcalc.w, attrs._minw or 0)
-                wh = attrs.stretch == rtk.Box.STRETCH_FULL and greedyh and maxh or wcalc.h
+                wh = attrs.stretch == rtk.Box.STRETCH_FULL and greedyh and (maxh-ctp-cbp) or wcalc.h
                 cellw = clp + ww + crp
                 if need_second_pass then
                     second_pass[#second_pass+1] = {
@@ -140,7 +140,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, 
                     }
                 else
                     self:_align_child(widget, attrs, offx, offy, ww, wh, crp, cbp)
-                    self:_set_cell_box(attrs, lp + offset + spacing, tp, ww + clp + crp, wh + ctp + cbp)
+                    self:_set_cell_box(attrs, lp + offset + spacing, tp, cellw, wh + ctp + cbp)
                 end
             end
             if wcalc.position & rtk.Widget.POSITION_INFLOW ~= 0 then

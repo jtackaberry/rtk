@@ -127,7 +127,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, 
             else
                 -- Non-expanded widget with native size, already reflowed in pass 1.  Just need
                 -- to adjust position.
-                ww = attrs.stretch == rtk.Box.STRETCH_FULL and greedyw and maxw or wcalc.w
+                ww = attrs.stretch == rtk.Box.STRETCH_FULL and greedyw and (maxw-clp-crp) or wcalc.w
                 wh = math.max(wcalc.h, attrs._minh or 0)
                 cellh = ctp + wh + cbp
                 if need_second_pass then
@@ -136,7 +136,7 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, 
                     }
                 else
                     self:_align_child(widget, attrs, offx, offy, ww, wh, crp, cbp)
-                    self:_set_cell_box(attrs, lp, tp + offset + spacing, ww + clp + crp, wh + ctp + cbp)
+                    self:_set_cell_box(attrs, lp, tp + offset + spacing, ww + clp + crp, cellh)
                 end
             end
             if wcalc.position & rtk.Widget.POSITION_INFLOW ~= 0 then
