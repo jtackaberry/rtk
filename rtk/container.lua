@@ -649,7 +649,6 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
 
     -- Set to true below when any of our children have registered mouseover
     local chmouseover
-
     -- Handle events from highest z-index to lowest, where children at the same z level
     -- are processed in the opposite order they were added.  This is the inverse of the
     -- order they're drawn, to ensure that elements at the same z level which are painted
@@ -674,9 +673,8 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
                 else
                     wx, wy = x, y
                 end
-                local _, mouseover = widget:_handle_event(wx, wy, event, clipped, listen)
+                self:_handle_event_child(clparentx, clparenty, event, clipped, listen, wx, wy, widget, attrs)
                 chmouseover = chmouseover or widget.mouseover
-
                 -- It's tempting to break if the event was handled, but even if it was, we
                 -- continue to invoke the child handlers to ensure that e.g. children no longer
                 -- hovering can trigger onmouseleave() or lower z-index children under the mouse
@@ -697,7 +695,11 @@ function rtk.Container:_handle_event(clparentx, clparenty, event, clipped, liste
     return listen
 end
 
+function rtk.Container:_handle_event_child(clparentx, clparenty, event, clipped, listen, wx, wy, child, attrs)
+    return child:_handle_event(wx, wy, event, clipped, listen)
+end
 
+-- Invoked on each child after it has been reflowed and its geometry realized.
 function rtk.Container:_add_reflowed_child(widgetattrs, z)
     local z_children = self._reflowed_children[z]
     if z_children then
