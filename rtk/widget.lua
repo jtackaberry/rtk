@@ -2914,6 +2914,9 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
             end
             self:queue_draw()
         end
+    else
+        -- All other events, ensure mouseover is cleared.
+        self.mouseover = false
     end
     -- When touchscroll is enabled, ensure we also mark the mouseup as handled if we had
     -- previously handled mousedown and were focused as a result. This prevents rtk.Window
