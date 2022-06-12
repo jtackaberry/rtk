@@ -812,7 +812,7 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
             -- reflowed before this point (innerw/innerh), but it's also possible for
             -- widgets to overflow the container, so if that's the case we align to
             -- the smaller of the current running size and the bounding box.
-            if not attrs._halign or attrs._halign == rtk.Widget.LEFT then
+            if not attrs._halign or attrs._halign == rtk.Widget.LEFT or not greedyw then
                 wx = lp + clp
             elseif attrs._halign == rtk.Widget.CENTER then
                 wx = lp + clp + math.max(0, (math.min(innerw, inner_maxw) - ww - clp - crp) / 2)
@@ -820,7 +820,7 @@ function rtk.Container:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, cla
                 -- Right-aligned ignores left cell padding
                 wx = lp + math.max(0, math.min(innerw, inner_maxw) - ww - crp)
             end
-            if not attrs._valign or attrs._valign == rtk.Widget.TOP then
+            if not attrs._valign or attrs._valign == rtk.Widget.TOP or not greedyh then
                 wy = tp + ctp
             elseif attrs._valign == rtk.Widget.CENTER then
                 wy = tp + ctp + math.max(0, (math.min(innerh, inner_maxh) - wh - ctp - cbp) / 2)
