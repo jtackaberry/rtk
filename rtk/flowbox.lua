@@ -19,6 +19,10 @@ local rtk = require('rtk.core')
 -- are arranged vertically first, and then wrap over to the next column if space is
 -- available.
 --
+-- All cells in the FlowBox will have the same width based on the widest child in the
+-- container. This ensures that all columns are equal width.  The `minw` and `maxw`
+-- cell attributes are respected and can be used to column width.
+--
 -- @example
 --  local box = window:add(rtk.FlowBox{vspacing=5, hspacing=10})
 --  for i = 1, 6 do
