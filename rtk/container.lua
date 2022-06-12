@@ -333,7 +333,14 @@ function rtk.Container:_sync_child_refs(child, action)
         if action == 'add' then
             local w = self
             while w do
-                table.merge(w.refs, child.refs)
+                -- Can't use table.merge() as otherwise the internal __self and __empty
+                -- fields would get cloned as well, with __self being particularly
+                -- problematic.
+                for k, v in pairs(child.refs) do
+                    if k ~= '__self' and k ~= '__empty' then
+                        w.refs[k] = v
+                    end
+                end
                 w = w.parent
             end
         else
