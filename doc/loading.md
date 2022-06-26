@@ -148,6 +148,8 @@ projects.  You might choose to do this because:
   1. You want to be 100% sure that the version of rtk you've tested is what your users are using
   2. You want to avoid asking your users to install a third party dependency
   3. You've made local customizations to rtk that aren't available upstream
+  4. You want to use alpha or beta APIs that are subject to change and want to avoid ReaPack
+     updates breaking your scripts.
 
 rtk uses a custom tool called *LuaKnit* to assemble all of the project files into a single
 packed [`rtk.lua`](https://reapertoolkit.dev/rtk.lua) source file that makes it convenient

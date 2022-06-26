@@ -25,7 +25,7 @@ There are a couple different methods to install rtk:
 |-|-|-|
 | User | ReaPack | You want to use a script that requires a system-wide install of rtk. The script's documentation will indicate this, or may direct you to this site when you run it. |
 | Developer | ReaPack | Easiest method to get started. You don't want to have to distribute rtk (which is fairly sizable) along with your script, and you're comfortable asking your users to install the ReaPack for rtk. Ideal for quick, single-file scripts. |
-| Developer | Bundle | Maximum control. You want to minimize the prerequisite steps for your script, or you want the most assurance that what you tested is what your users will be running. |
+| Developer | Bundle | Maximum control. You want to minimize the prerequisite steps for your script, want to use APIs currently marked as unstable, or you want the most assurance that what you tested is what your users will be running. |
 
 Developers, you can learn more about these options on the @{loading|Loading rtk} page.
 
@@ -46,7 +46,10 @@ https://reapertoolkit.dev/index.xml
 While rtk's source code is comprised of many individual files, it is available as a single
 bundled file.
 
-[Download the latest release](https://reapertoolkit.dev/rtk.lua).  (Right click | Save Link As)
+You have two download options (right click | Save Link As):
+
+  * 👍 [Latest **stable** release](https://reapertoolkit.dev/rtk.lua)
+  * 💣 [**Test** build from current master branch](https://reapertoolkit.dev/test/rtk.lua)
 
 You can choose to distribute `rtk.lua` alongside your application, or you can also
 use rtk's custom bundler to combine your script files with rtk to produce a single
