@@ -179,7 +179,7 @@ does a decent enough job not to have motivated anything more sophisticated.
 
 [Fetch `luaknit.py` from rtk's git
 repository](https://raw.githubusercontent.com/jtackaberry/rtk/master/tools/luaknit.py).
-LuaKnit is a Python script and requires Python 3.6 or later to be installed.
+LuaKnit is a Python script and requires Python 3.6 or later.
 
 Suppose you have a directory containing `rtk.lua`, and your own project files `main.lua`
 and `commands.lua`.  It's easy to bundle all these together:
@@ -189,7 +189,7 @@ and `commands.lua`.  It's easy to bundle all these together:
 $ python3 /path/to/luaknit.py rtk.lua main.lua commands.lua -o myscript.lua
 
 # Windows
-C:\projects\myscript> python3 \path\to\luaknit.py rtk.lua main.lua commands.lua -o myscript.lua
+C:\projects\myscript> python \path\to\luaknit.py rtk.lua main.lua commands.lua -o myscript.lua
 ```
 
 That's really all there is to it.  The file `myscript.lua` can now be executed directly by

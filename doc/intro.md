@@ -51,12 +51,10 @@ You have two download options (right click | Save Link As):
   * 👍 [Latest **stable** release](https://reapertoolkit.dev/rtk.lua)
   * 💣 [**Test** build from current master branch](https://reapertoolkit.dev/test/rtk.lua)
 
-You can choose to distribute `rtk.lua` alongside your application, or you can also
-use rtk's custom bundler to combine your script files with rtk to produce a single
-script file that can be executed directly by REAPER without needing to fiddle with Lua
-package paths.
-
-Read more about this option on the @{loading|Loading rtk} page.
+You can choose to distribute `rtk.lua` alongside your application, or you can also use
+@{loading.combining_rtk_and_scripts|rtk's custom bundler} to combine your script files
+with rtk to produce a single script file that can be executed directly by REAPER without
+needing to fiddle with Lua package paths.
 
 ## Features
 
