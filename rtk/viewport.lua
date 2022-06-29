@@ -978,7 +978,7 @@ function rtk.Viewport:onscrollpre(last_left, last_top, event) end
 -- offsets.
 --
 -- Because this is invoked after the child is drawn, draw-provided attributes such as
--- offx`/`offy` or `clientx`/`clienty` will be available.
+-- `offx`/`offy` or `clientx`/`clienty` will be available.
 --
 -- This callback is invoked prior to `ondraw()`.
 --

@@ -176,7 +176,14 @@ rtk.Attribute = {
     -- attribute's field in the widget's @{rtk.Widget.calc|calc} table, however if this function
     -- is defined, it's invoked instead.
     --
-    -- This function receives 3 arguments:
+    -- This function is called after `calculate()`, but immediately before
+    -- `rtk.Widget:_handle_attr()` (which is responsible for dispatching
+    -- `rtk.Widget:onattr()`).  In the context of animations, `set()` is only called at
+    -- the end of an animation rather than within each frame (unlike `calculate()` which
+    -- is done each frame), and so it can be used to implement costly validation or side
+    -- effects.
+    --
+    -- This function receives 5 arguments:
     --   1. the instance of the object whose attributes are being fetched
     --   2. the attribute name
     --   3. the user-defined pre-calculated value for the attribute
@@ -368,6 +375,9 @@ function rtk.class(name, super, attributes)
 end
 
 --- Determine if a value is an instance or sublcass of a particular class.
+--
+-- @usage
+--   assert(rtk.isa(obj, rtk.Image), 'must pass an rtk.Image to this function')
 --
 -- @tparam any v the value to test
 -- @tparam rtk.class cls a class object as returned by `rtk.class()`

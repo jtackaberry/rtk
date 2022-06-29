@@ -391,6 +391,7 @@ end
 function rtk.IndexManager:_search_free()
     -- Start at the element we last issued an index from, under the assumption
     -- that free slots are likely to chunk together.
+    -- FIXME: except we don't do that.
     local start = self._last_idx < self._last and self._last_idx or 0
     local bit = start % 32
     local startelem = math.floor(start / 32) + 1

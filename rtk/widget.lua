@@ -1306,10 +1306,11 @@ end
 -- @tparam any value the target value for the attribute.  A special value `rtk.Attribute.DEFAULT`
 --   restores the attribute to rtk's built-in default.
 -- @tparam bool|nil trigger if false, event handlers that would normally fire
---   will be suppressed even if the value changed (except for `onattr`, that's always fired
---   if the value changed); conversely, if true, all handlers will fire even if the value
---   hasn't changed.  If nil, handlers will only fire if the value changed, which is
---   default.
+--   will be suppressed even if the value changed (except for `onattr` which is *always* fired
+--   if the value changes); conversely, if true, all handlers will fire even if the value
+--   hasn't changed.  If nil, the default behavior will be used, which is typically that
+--   handlers will only fire if the value changed (unless indicated otherwise by the event
+--   handler's documentation).
 -- @tparam reflowconst|nil reflow controls how the widget should be reflowed after the
 --   attribute is set.  If nil, then `REFLOW_DEFAULT` is used, where either a partial reflow
 --   or a full reflow will be performed, depending on what is appropriate for `attr`.  Most of

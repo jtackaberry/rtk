@@ -15,7 +15,7 @@
 local log = require('rtk.log')
 
 --- Main rtk module.  All functions and submodules across rtk are anchored under
--- this namespace.
+-- this namespace, however this page covers rtk's core functions.
 --
 -- @module rtk
 --

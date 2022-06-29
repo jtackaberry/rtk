@@ -35,7 +35,7 @@ local log = require('rtk.log')
 --
 -- ### Simple Example
 --
--- It its simplest invocation, `rtk.xmlparse()` reads a string containing an XML document
+-- In its simplest invocation, `rtk.xmlparse()` reads a string containing an XML document
 -- and returns a hierarchy of nested Lua tables representing the parsed document:
 --
 -- @code
@@ -76,7 +76,7 @@ local log = require('rtk.log')
 --    end
 --    showelem(root, 0)
 --
--- ### Complex Example
+-- ### Advanced Example
 --
 -- It's also possible to provide custom callback functions that get invoked when a new tag
 -- is started (`ontagstart`), when an element's attribute is parsed (`onattr`), and when a
@@ -127,7 +127,7 @@ local log = require('rtk.log')
 --     containing DTDs that define custom entities that are used in the document will not
 --     be parsed properly (the custom entities will remain unconverted).
 --   * Because DTDs aren't supported, the parser is non-validating.
---   * The `encoding` field in the XML declaration (`<? xml encoding="UTF-8" >`) is ignored.
+--   * The `encoding` field in the XML declaration (`<? xml encoding="UTF-8"?>`) is ignored.
 --     *Only* UTF-8 is supported.
 --   * It's not going to win any awards on speed.  It's about as fast as Python's minidom
 --     parser, and about 2x faster than [xml2lua](https://github.com/manoelcampos/xml2lua)

@@ -142,7 +142,7 @@ local log = require('rtk.log')
 -- In the example above, each strip had a unique combination of size and density.  But
 -- consider a scenario where you want to have a `delete` icon available at different sizes
 -- -- say a `medium` variant for normal buttons, and a `large` variant for circular
--- buttons.  And because you want your UI to be appropriately reactive, you would define
+-- buttons.  And because you want your UI to be appropriately responsive, you would define
 -- different densities for each size.
 --
 -- If we simplify things slightly and assume that each image just has two densities, 1x and 2x, then
