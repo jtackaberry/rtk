@@ -91,9 +91,12 @@ local log = {
     named_timers = nil,
     timers = {},
     queue = {},
-    lua_time_start = os.time(),
+    wall_time_start = os.time(),
     reaper_time_start = reaper.time_precise(),
 }
+-- Ensure initial wall clock has millisecond precision by adding the subsecond portion of
+-- the more precise REAPER-time.
+log.wall_time_start = log.wall_time_start + (log.reaper_time_start - math.floor(log.reaper_time_start))
 
 --- Log Level Constants.
 --
@@ -199,7 +202,7 @@ function log._log(level, tail, fmt, ...)
     end
 
     local now = reaper.time_precise()
-    local time = log.lua_time_start + (now - log.reaper_time_start)
+    local time = log.wall_time_start + (now - log.reaper_time_start)
     local ftime = math.floor(time)
     local msecs = string.sub(time - ftime, 3, 5)
     local label = '[' .. log.level_name(level) .. ']'
