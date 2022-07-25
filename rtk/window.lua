@@ -1267,6 +1267,10 @@ function rtk.Window:_setup_borderless()
         autofocus=true,
         touch_activate_delay=0,
         tooltip='Resize window',
+        -- Compensate for any window padding.  FIXME: this isn't dynamic, so if window
+        -- padding changes afterward it doesn't adjust.
+        bmargin=-(calc.bpadding or 0),
+        rmargin=-(calc.rpadding or 0),
     }
     resize.onmouseenter = function(this)
         if calc.borderless then
