@@ -1974,8 +1974,11 @@ function rtk.Window:_update()
     local blitted = false
     if event and calc.visible then
         -- Also check self._draw_queued in case the above simulated mousemove generated a
-        -- queued draw
-        if need_draw or self._draw_queued then
+        -- queued draw.  Also test _sync_window_attrs_on_update here: if it's true,
+        -- then it means some event handler changed a window.  We skipped reflow just
+        -- above because of it, so drawing now would be pointless as we're going to
+        -- reflow and redraw on the next update anyway.
+        if need_draw or self._draw_queued and not self._sync_window_attrs_on_update then
             if self._reflow_queued then
                 -- One of the event handlers has requested a reflow.  It'd happen on the
                 -- next update() but we do it now before drawing just to avoid potential
