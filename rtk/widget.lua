@@ -1874,7 +1874,7 @@ function rtk.Widget:animate(kwargs)
             if kwargs.src == rtk.Attribute.NIL then
                 kwargs.src = nil
             end
-            kwargs.src = calc[attr] * (kwargs.src or 1)
+            kwargs.src = (calc[attr] or 0) * (kwargs.src or 1)
             calcsrc = true
         end
         if (not kwargs.dst or kwargs.dst == rtk.Attribute.NIL) or (kwargs.dst <= 1.0 and kwargs.dst > 0) then
@@ -1940,11 +1940,13 @@ function rtk.Widget:animate(kwargs)
         -- want to start from the current mid-animation value, not the current animation's
         -- dst value.
         kwargs.src = self:calc(attr, true)
+        calc[attr] = kwargs.src
         calcsrc = kwargs.src ~= nil
     end
     if not calcsrc and meta.calculate then
         -- Convert given exterior value to a calculated value.
         kwargs.src = meta.calculate(self, attr, kwargs.src, {}, true)
+        calc[attr] = kwargs.src
     end
     return rtk.queue_animation(kwargs)
 end
