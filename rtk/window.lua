@@ -1799,7 +1799,7 @@ function rtk.Window:_update()
 
     -- Whether any mouse button has been pressed or released this cycle
     local mouse_button_changed = (rtk.mouse.down ~= gfx.mouse_cap & rtk.mouse.BUTTON_MASK)
-    -- Bitmap of buttons that are pressed
+    -- True if any buttons are currently pressed, false otherwise
     local buttons_down = (gfx.mouse_cap & rtk.mouse.BUTTON_MASK ~= 0)
     -- True if the mouse position changed from the last cycle
     local mouse_moved = (rtk.mouse.x ~= gfx.mouse_x or rtk.mouse.y ~= gfx.mouse_y)
@@ -1849,18 +1849,11 @@ function rtk.Window:_update()
         end
     end
 
+    -- Passed to _handle_window_event() when we don't want to propagate
+    -- the event to children.
     local suppress = false
     if not event or mouse_moved then
-        -- Passed to _handle_window_event() when we don't want to propagate
-        -- the event to children.
-        -- Generate mousemove event if the mouse actually moved, or simulate one in the
-        -- following circumstances:
-        --   1. A draw has been queued (e.g. for an animation, or a blinking caret where
-        --      we need to preserve the mouse cursor which is done via mousemove event)
-        --   2. Mouse just left the rtk window
-        --   3. A widget is being dragged but the mouse isn't moving (to handle the case when
-        --      dragging at the edge of a viewport
-        --   4. Long press
+        -- Check for window occlusion.
         if self.in_window and rtk.has_js_reascript_api and self.hwnd then
             -- The mouse is within the window boundary but we need to find out if the
             -- window is occluded by another window and whether the mouse cursor is over
@@ -1877,6 +1870,15 @@ function rtk.Window:_update()
                 in_window_changed = last_in_window ~= false
             end
         end
+        -- Generate mousemove event if the mouse actually moved, or simulate one in the
+        -- following circumstances:
+        --   1. A draw has been queued (e.g. for an animation, or a blinking caret where
+        --      we need to preserve the mouse cursor which is done via mousemove event)
+        --   2. Mouse just left the rtk window
+        --   3. A widget is being dragged but the mouse isn't moving (to handle the case when
+        --      dragging at the edge of a viewport
+        --   4. Long press
+
         -- Ensure we emit the event if draw is forced, or if we're moving within the window, or
         -- if we _were_ in the window but now suddenly aren't (to ensure mouseout cases are drawn)
         if need_draw or (mouse_moved and self.in_window) or in_window_changed or
