@@ -2862,10 +2862,15 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                         -- is adjusted for UI scale and the tolerance is much greater with
                         -- touch scrolling is enabled, as double-tap with a touch screen
                         -- will result in more pixel drift than an actual mouse click.
-                        local dx = last and math.abs(last.x - event.x) or 0
-                        local dy = last and math.abs(last.y - event.y) or 0
-                        local thresh = (rtk.touchscroll and 30 or 5) * rtk.scale.value
-                        if state & 4 ~= 0 and dx < thresh and dy < thresh then
+                        --
+                        -- XXX: threshold disabled for now, until I can remember the use case
+                        -- for why I added it to begin with, and then improve UX of normal
+                        -- double clicks relative ot that use case.
+                        --
+                        -- local dx = last and math.abs(last.x - event.x) or 0
+                        -- local dy = last and math.abs(last.y - event.y) or 0
+                        -- local thresh = (rtk.touchscroll and 30 or 5) * rtk.scale.value
+                        if state & 4 ~= 0 then --and dx < thresh and dy < thresh then
                             -- If state has bit 2 set, then it means the mousedown handler
                             -- determined this is a double click.  Now that the button has
                             -- been released, let's fire the event handler.
