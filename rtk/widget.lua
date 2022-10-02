@@ -2856,9 +2856,15 @@ function rtk.Widget:_handle_event(clparentx, clparenty, event, clipped, listen)
                             self:queue_draw()
                         end
                         local last = rtk.mouse.last[event.button]
+                        -- Require the mouse cursor not to have moved more than some
+                        -- threshold in order to register a double click.  The threshold
+                        -- is adjusted for UI scale and the tolerance is much greater with
+                        -- touch scrolling is enabled, as double-tap with a touch screen
+                        -- will result in more pixel drift than an actual mouse click.
                         local dx = last and math.abs(last.x - event.x) or 0
                         local dy = last and math.abs(last.y - event.y) or 0
-                        if state & 4 ~= 0 and dx < 3 and dy < 3 then
+                        local thresh = (rtk.touchscroll and 25 or 4) * rtk.scale.value
+                        if state & 4 ~= 0 and dx < thresh and dy < thresh then
                             -- If state has bit 2 set, then it means the mousedown handler
                             -- determined this is a double click.  Now that the button has
                             -- been released, let's fire the event handler.
