@@ -2443,12 +2443,13 @@ function rtk.Widget:_is_mouse_over(clparentx, clparenty, event)
     local x, y = calc.x + clparentx, calc.y + clparenty
     local w, h = calc.w, calc.h
     if calc._hotzone_set then
-        local l = calc.lhotzone or 0
-        local t = calc.thotzone or 0
+        local scale = rtk.scale.value
+        local l = (calc.lhotzone or 0) * scale
+        local t = (calc.thotzone or 0) * scale
         x = x - l
         y = y - t
-        w = w + l + (calc.rhotzone or 0)
-        h = h + t + (calc.bhotzone or 0)
+        w = w + l + (calc.rhotzone or 0) * scale
+        h = h + t + (calc.bhotzone or 0) * scale
     end
     return self.window and self.window.in_window and
            rtk.point_in_box(event.x, event.y, x, y, w, h)
