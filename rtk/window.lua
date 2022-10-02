@@ -1821,7 +1821,7 @@ function rtk.Window:_update()
         need_draw = true
     end
     if mouse_button_changed and rtk.touchscroll and self._jsx then
-        self._restore_mouse_pos = {self._jsx, self._jsy}
+        self._restore_mouse_pos = {self._jsx, self._jsy, nil}
     end
     if mouse_moved then
         if self.in_window then
@@ -1956,9 +1956,8 @@ function rtk.Window:_update()
                 -- rtk.mouse.state set above is cleared later on in this method, because
                 -- state is used for modal widget handling.
                 if rtk.touchscroll and event.buttons == 0 and self._restore_mouse_pos then
-                    local x, y = table.unpack(self._restore_mouse_pos)
-                    rtk.callafter(0.2, reaper.JS_Mouse_SetPosition, x, y)
-                    self._restore_mouse_pos = nil
+                    -- Request the stored mouse cursor position get restored in 200ms.
+                    self._restore_mouse_pos[3] = now + 0.2
                 end
             end
             self:_handle_window_event(event, now)
@@ -2127,6 +2126,15 @@ function rtk.Window:_update()
             -- Cursor moved out of window, allow standard OS move/resize mouse cursors to
             -- take affect as mouse moves in proximity to the outside border.
             reaper.JS_WindowMessage_Release(self.hwnd, "WM_SETCURSOR")
+        end
+    end
+    -- Restore mouse cursor position if requested and there are no current buttons down.
+    if self._restore_mouse_pos and not buttons_down then
+        local x, y, when = table.unpack(self._restore_mouse_pos)
+        if when and now >= when then
+            -- Note _restore_mouse_pos can't be non-nil unless JSAPI is available.
+            reaper.JS_Mouse_SetPosition(x, y)
+            self._restore_mouse_pos = nil
         end
     end
     if mouse_moved then
