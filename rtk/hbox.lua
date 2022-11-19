@@ -90,7 +90,7 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, 
                     expand_unit_size = (remaining_size - attrs._minw - clp - crp - remaining_spacing) / expand_units
                 end
                 -- This is an expanded child which was not reflowed in pass 1, so do it now.
-                local child_maxw = rtk.clamp(expanded_size - clp - crp, attrs._minw, attrs._maxh)
+                local child_maxw = rtk.clamp(expanded_size - clp - crp, attrs._minw, attrs._maxw)
                 -- Ensure width offered to child can't extend past what remains of our overall box.
                 child_maxw = math.min(child_maxw, w - maxw - spacing)
                 local child_maxh = rtk.clamp(h - ctp - cbp, attrs._minh, attrs._maxh)
