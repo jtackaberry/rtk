@@ -39,8 +39,8 @@ end
 -- TODO: there is too much in common here with VBox:_reflow_step2().  This needs
 -- to be refactored better, by using more tables with indexes rather than unpacking
 -- to separate variables.
-function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, remaining_size, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
-    local expand_unit_size = expand_units > 0 and (remaining_size / expand_units) or 0
+function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, remaining_size, total_spacing, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
+    local expand_unit_size = expand_units > 0 and ((remaining_size - total_spacing) / expand_units) or 0
     local offset = 0
     local spacing = 0
     -- List of widgets and attrs whose height (or valign) depends on the height of siblings,
@@ -83,12 +83,14 @@ function rtk.HBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, 
                 expand_units = expand_units - expand
                 if attrs._minw and attrs._minw > expanded_size then
                     -- Min width is greater than what expand units would have allowed.
-                    -- Respect minw, but recalculate the expand unit size so that the
-                    -- remaining widgets will fit within the remaining size.
-                    expand_unit_size = (remaining_size - attrs._minw - clp - crp - spacing) / expand_units
+                    -- Respect minw, but degrade gracefully by recalculating the expand
+                    -- unit size so that the remaining widgets will fit within the
+                    -- remaining size.
+                    local remaining_spacing = total_spacing - attrs._running_spacing_total
+                    expand_unit_size = (remaining_size - attrs._minw - clp - crp - remaining_spacing) / expand_units
                 end
                 -- This is an expanded child which was not reflowed in pass 1, so do it now.
-                local child_maxw = rtk.clamp(expanded_size - clp - crp - spacing, attrs._minw, attrs._maxh)
+                local child_maxw = rtk.clamp(expanded_size - clp - crp, attrs._minw, attrs._maxh)
                 -- Ensure width offered to child can't extend past what remains of our overall box.
                 child_maxw = math.min(child_maxw, w - maxw - spacing)
                 local child_maxh = rtk.clamp(h - ctp - cbp, attrs._minh, attrs._maxh)

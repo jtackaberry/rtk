@@ -35,8 +35,8 @@ end
 
 -- Second pass over all children
 -- TODO: wayyyy too much duplication here with rtk.HBox._reflow_step2().
-function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, remaining_size, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
-    local expand_unit_size = expand_units > 0 and (remaining_size / expand_units) or 0
+function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, remaining_size, total_spacing, uiscale, viewport, window, greedyw, greedyh, tp, rp, bp, lp)
+    local expand_unit_size = expand_units > 0 and ((remaining_size - total_spacing) / expand_units) or 0
     local offset = 0
     local spacing = 0
     -- List of widgets and attrs whose height (or valign) depends on the height of siblings,
@@ -79,9 +79,11 @@ function rtk.VBox:_reflow_step2(w, h, maxw, maxh, clampw, clamph, expand_units, 
                 expand_units = expand_units - expand
                 if attrs._minh and attrs._minh > expanded_size then
                     -- Min height is greater than what expand units would have allowed.
-                    -- Respect minh, but recalculate the expand unit size so that the
-                    -- remaining widgets will fit within the remaining size.
-                    expand_unit_size = (remaining_size - attrs._minh - ctp - cbp - spacing) / expand_units
+                    -- Respect minh, but degrade gracefully by recalculating the expand
+                    -- unit size so that the remaining widgets will fit within the
+                    -- remaining size.
+                    local remaining_spacing = total_spacing - attrs._running_spacing_total
+                    expand_unit_size = (remaining_size - attrs._minh - ctp - cbp - remaining_spacing) / expand_units
                 end
                 -- This is an expanded child which was not reflowed in pass 1, so do it now.
                 local child_maxw = rtk.clamp(w - clp - crp, attrs._minw, attrs._maxw)

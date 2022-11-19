@@ -347,7 +347,7 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
     self._child_index_by_id = {}
 
     -- Now determine our intrinsic size based on child widgets.
-    local innerw, innerh, expw, exph, expand_units, remaining_size = self:_reflow_step1(
+    local innerw, innerh, expw, exph, expand_units, remaining_size, total_spacing = self:_reflow_step1(
         inner_maxw, inner_maxh,
         clampw, clamph,
         uiscale, viewport, window,
@@ -365,6 +365,7 @@ function rtk.Box:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, u
         clampw, clamph,
         expand_units,
         remaining_size,
+        total_spacing,
         uiscale, viewport, window,
         greedyw, greedyh,
         tp, rp, bp, lp
@@ -406,6 +407,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
     local expand_units = 0
     local maxw, maxh = 0, 0
     local spacing = 0
+    local total_spacing = 0
     local expw, exph = false, false
 
     for n, widgetattrs in ipairs(self.children) do
@@ -534,6 +536,7 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
                         remaining_size = remaining_size - (clamph and (wh + ctp + cbp + spacing) or 0)
                     end
                 else
+                    -- This is an expanded cell
                     expand_units = expand_units + attrs._calculated_expand
                 end
             else
@@ -550,12 +553,18 @@ function rtk.Box:_reflow_step1(w, h, clampw, clamph, uiscale, viewport, window, 
             elseif orientation == rtk.Box.HORIZONTAL and attrs.stretch == rtk.Box.STRETCH_FULL and greedyh then
                 maxh = h
             end
+            -- Track the running total of spacing consumed at this point, which is used
+            -- by step2 in case minw/minh exceeds the expanded cell size in order to
+            -- recalculate a new expand unit size in the middle of reflow based on
+            -- remaining usable space.
+            attrs._running_spacing_total = spacing
             spacing = (attrs.spacing or self.spacing) * rtk.scale.value
+            total_spacing = total_spacing + spacing
             self:_add_reflowed_child(widgetattrs, attrs.z or wcalc.z or 0)
         else
             widget.realized = false
         end
     end
     self:_determine_zorders()
-    return maxw, maxh, expw, exph, expand_units, remaining_size
+    return maxw, maxh, expw, exph, expand_units, remaining_size, total_spacing
 end
