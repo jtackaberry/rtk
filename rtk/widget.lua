@@ -3175,9 +3175,6 @@ end
 -- The default implementation focuses the widget if `autofocus` is true and returns true
 -- if the focus was accepted to indicate the event is considered handled.
 --
--- It is also necessary for implementations to return true in order for `onclick()`,
--- `ondoubleclick()` and `onlongpress()` to be eligible to fire.
---
 -- @tparam rtk.Event event a `rtk.Event.MOUSEDOWN` event, where
 --   `rtk.Event.button` will indicate which mouse button was pressed.
 -- @treturn bool|nil returning true indicates the event is to be marked as handled
@@ -3244,11 +3241,6 @@ end
 --
 -- The default implementation does nothing.
 --
--- This event will not fire if the handler for `onmousedown()` did not return true.
--- The default `onmousedown()` behavior returns true if `autofocus` is true, but
--- without `autofocus` enabled you would need to explicitly add a handler that
--- returns true in order for `onclick()` to be emitted.
---
 -- @tparam rtk.Event event an `rtk.Event.MOUSEUP` event, where
 --   `rtk.Event.button` will indicate which mouse button was pressed.
 -- @treturn bool|nil returning true indicates the event is to be marked as handled
@@ -3265,8 +3257,6 @@ end
 --
 -- The default implementation does nothing.
 --
--- Like `onclick()`, this event will not fire if `onmousedown()` did not return true.
---
 -- @tparam rtk.Event event the `rtk.Event.MOUSEUP` event that triggered the double click
 -- @treturn bool|nil returning true indicates the event is to be marked as handled
 --   and it will not propagate to lower z-index widgets.
@@ -3281,8 +3271,6 @@ end
 -- a widget.
 --
 -- The default implementation does nothing.
---
--- Like `onclick()`, this event will not fire if `onmousedown()` did not return true.
 --
 -- @tparam rtk.Event event an `rtk.Event.MOUSEDOWN` event that triggered the long press
 -- @treturn bool|nil returning true indicates the event is to be marked as handled
