@@ -15,11 +15,10 @@
 local rtk = require('rtk.core')
 local log = require('rtk.log')
 
---- @warning Beta widget
---   The Slider widget is currently in beta and its API is subject to change.  Vertical
---   orientation sliders are not yet implemented.
---
---   It will graduate to stable in rtk v1.3.
+--- @warning Horizontal only
+--   Vertical orientation sliders are not yet implemented. This will come in a future release.
+--   If this is important to you, please chime in on the
+--   [GitHub issue](https://github.com/jtackaberry/rtk/issues/16).
 --
 --- The slider widget is useful for inputting numeric values.
 --
