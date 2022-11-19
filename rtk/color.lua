@@ -496,8 +496,16 @@ function rtk.color.hsl2rgb(h, s, l, a)
 end
 
 --- A table that maps [CSS color names](https://www.w3schools.com/cssref/css_colors.asp) to
--- HTML-style hex color strings.  You can also insert your own custom color names into
--- this table.
+-- HTML-style hex color strings. All color names are lowercase, without spaces or special
+-- characters.  A special `transparent` color name is included that has a zero alpha channel,
+-- which could be used with widget borders, for example, to ensure the border space is consumed
+-- but is otherwise invisible.
+--
+-- You can also insert your own custom color names into this table:
+--
+-- @code
+--   rtk.color.names['mycustomcolor'] = '#12ab34'
+--
 -- @meta read/write
 -- @type table
 rtk.color.names = {

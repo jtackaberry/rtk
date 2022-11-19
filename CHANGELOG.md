@@ -1,5 +1,19 @@
 # Change Log
 
+## 1.3.0 - 2022-11-20
+
+#### New Features
+
+
+#### Minor Enhancements
+
+* Allow newlines in `rtk.Application.status` text
+* Expand the number of scenarios in which a full reflow is avoided when setting `rtk.Text.text`
+
+#### Bug Fixes
+
+
+
 ## 1.2.0 - 2022-03-22
 
 #### New Features
