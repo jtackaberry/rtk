@@ -124,7 +124,8 @@ local rtk = {
     -- @meta read-only
     -- @type userdata
     reaper_hwnd = nil, -- set in init()
-    --- Monotonically increasing counter that is incremented each gfx update cycle
+    --- Monotonically increasing counter that is incremented each gfx update cycle as long
+    -- as an `rtk.Window` is currently open
     -- @meta read-only
     -- @type number
     tick = 0,
