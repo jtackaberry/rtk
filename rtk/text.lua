@@ -91,7 +91,7 @@ rtk.Text.register{
         end,
     },
     --- Controls the wrapping behavior of text lines that exceed the bounding box imposed
-    -- by our container (default `WRAP_NONE`).
+    -- by our container or the widget's @{w|explicitly defined width} (if set) (default `WRAP_NONE`).
     -- @meta read/write
     -- @type wrapconst
     wrap = rtk.Attribute{
@@ -241,8 +241,8 @@ function rtk.Text:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clamph, 
     local hpadding = lp + rp
     local vpadding = tp + bp
 
-    local lmaxw = (clampw or (fillw and greedyw)) and (boxw - hpadding) or w or math.inf
-    local lmaxh = (clamph or (fillh and greedyh)) and (boxh - vpadding) or h or math.inf
+    local lmaxw = w or ((clampw or (fillw and greedyw)) and (boxw - hpadding) or math.inf)
+    local lmaxh = h or ((clamph or (fillh and greedyh)) and (boxh - vpadding) or math.inf)
     -- Avoid re-laying out the string if nothing relevant has changed.
     local seg = self._segments
     if not seg or seg.boxw ~= lmaxw or not seg.isvalid() then
