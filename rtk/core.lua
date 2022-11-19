@@ -1268,7 +1268,14 @@ end
 --
 -- This wraps `reaper.defer()` with the ability to pass arguments to the function (a minor
 -- convenience to avoid an anonymous function in common cases) and, more importantly,
--- error handling by means of using `rtk.call()`.
+-- error handling by means of using `rtk.call()`.  Another difference with
+-- `reaper.defer()` is that any callbacks scheduled with `rtk.defer()` will be ignored
+-- when `rtk.quit()` is called, whereas functions scheduled with `reaper.defer()` will be
+-- invoked.
+--
+-- It's generally recommended to prefer `rtk.defer`() over REAPER's native
+-- `reaper.defer()` API in order to benefit from the improved ergonomics and error
+-- handling.
 --
 -- @tparam function func the function to invoke
 -- @tparam any ... one or more arguments to pass to `func`
@@ -1347,9 +1354,11 @@ end
 
 --- Terminates the script, closing any open `rtk.Window`.
 --
--- Unlike `rtk.Window:close()` which can keep the a script running provided there
--- are pending deferred calls (e.g. scheduled with `rtk.callafter()`), this function
--- abandons any deferred calls and exits immediately.
+-- Unlike `rtk.Window:close()` which can keep the a script running provided there are
+-- pending deferred calls, this function abandons any deferred calls and exits
+-- immediately. Note that this only applies to deferred functions scheduled with
+-- `rtk.defer()`, `rtk.callsoon()`, or `rtk.callafter()`; any functions scheduled with
+-- REAPER's native `reaper.defer()` *will* be invoked.
 --
 -- If `rtk.Window:open()` is called subsequently, it will act as a no-op.
 function rtk.quit()
