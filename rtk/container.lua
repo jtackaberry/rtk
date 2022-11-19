@@ -559,22 +559,9 @@ function rtk.Container:_calc_cell_attrs(widget, attrs)
     return calculated
 end
 
---- Moves an existing child widget to a new index, shifting surrounding
--- widgets.
---
--- @tparam rtk.Widget widget the widget to be repositioned.
--- @tparam number targetidx the new position for the widget, where 1 is the
---   first widget in the container.  Out-of-bounds indexes are clamped.
--- @treturn boolean true if the widget if the widget changed positions,
---   or false if the widget was already at targetidx.
-function rtk.Container:reorder(widget, targetidx)
-    local srcidx = self:get_child_index(widget)
-    if srcidx ~= nil and srcidx ~= targetidx and (targetidx <= srcidx or targetidx - 1 ~= srcidx) then
+function rtk.Container:_reorder(srcidx, targetidx)
+    if srcidx ~= nil and srcidx ~= targetidx then
         local widgetattrs = table.remove(self.children, srcidx)
-        local org = targetidx
-        if targetidx > srcidx then
-            targetidx = targetidx - 1
-        end
         table.insert(self.children, rtk.clamp(targetidx, 1, #self.children + 1), widgetattrs)
         self._child_index_by_id = nil
         self:queue_reflow(rtk.Widget.REFLOW_FULL)
@@ -584,14 +571,33 @@ function rtk.Container:reorder(widget, targetidx)
     end
 end
 
+--- Moves an existing child widget to a new index, shifting surrounding widgets.
+--
+-- @tparam rtk.Widget widget the widget to be repositioned.
+-- @tparam number targetidx the new position for the widget, where 1 is the first cell in
+--   the container, 2 is the second cell, and so on.  Out-of-bounds indexes are clamped.
+--   If the target index is the same as the widget's current index then no action is
+--   taken.
+-- @treturn boolean true if the widget if the widget changed positions,
+--   or false if the widget was already at targetidx or if the given widget is not in this
+--   container
+function rtk.Container:reorder(widget, targetidx)
+    local srcidx = self:get_child_index(widget)
+    return self:_reorder(srcidx, targetidx)
+end
+
 --- Moves an existing child widget ahead of another child.
 --
 -- @tparam rtk.Widget widget the widget to move in front of the target
 -- @tparam rtk.Widget target the other child
 -- @treturn boolean whether the widget changed positions
 function rtk.Container:reorder_before(widget, target)
+    local srcidx = self:get_child_index(widget)
     local targetidx = self:get_child_index(target)
-    return self:reorder(widget, targetidx)
+    if not srcidx or not targetidx then
+        return false
+    end
+    return self:_reorder(srcidx, targetidx > srcidx and targetidx-1 or targetidx)
 end
 
 --- Moves an existing child widget after another child.
@@ -600,8 +606,12 @@ end
 -- @tparam rtk.Widget target the other child
 -- @treturn boolean whether the widget changed positions
 function rtk.Container:reorder_after(widget, target)
+    local srcidx = self:get_child_index(widget)
     local targetidx = self:get_child_index(target)
-    return self:reorder(widget, targetidx + 1)
+    if not srcidx or not targetidx then
+        return false
+    end
+    return self:_reorder(srcidx, srcidx > targetidx and targetidx+1 or targetidx)
 end
 
 --- Returns the widget at the given index.
