@@ -371,15 +371,21 @@ function rtk.Viewport:_reflow(boxx, boxy, boxw, boxh, fillw, fillh, clampw, clam
             -- reflow with the adjusted box.
             wx, wy, ww, wh = self:_reflow_child(inner_maxw, inner_maxh, uiscale, window, greedyw, greedyh)
         end
-        if calc.halign == rtk.Widget.CENTER then
-            wx = wx + math.max(0, inner_maxw - ccalc.w) / 2
-        elseif calc.halign == rtk.Widget.RIGHT then
-            wx = wx + math.max(0, (inner_maxw - ccalc.w) - rp)
+        -- We can skip alignment for non-greedy reflows because they don't influence the
+        -- viewport's dimensions and that's all a non-greedy reflow cares about.
+        if greedyw then
+            if calc.halign == rtk.Widget.CENTER then
+                wx = wx + math.max(0, inner_maxw - ccalc.w) / 2
+            elseif calc.halign == rtk.Widget.RIGHT then
+                wx = wx + math.max(0, (inner_maxw - ccalc.w) - rp)
+            end
         end
-        if calc.valign == rtk.Widget.CENTER then
-            wy = wy + math.max(0, inner_maxh - ccalc.h) / 2
-        elseif calc.valign == rtk.Widget.BOTTOM then
-            wy = wy + math.max(0, (inner_maxh - ccalc.h) - bp)
+        if greedyh then
+            if calc.valign == rtk.Widget.CENTER then
+                wy = wy + math.max(0, inner_maxh - ccalc.h) / 2
+            elseif calc.valign == rtk.Widget.BOTTOM then
+                wy = wy + math.max(0, (inner_maxh - ccalc.h) - bp)
+            end
         end
         -- Update child position if alignment had changed it
         ccalc.x = wx
