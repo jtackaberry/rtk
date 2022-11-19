@@ -198,6 +198,9 @@ function rtk.Text:initialize(attrs, ...)
     self._theme_font = self._theme_font or rtk.theme.text_font or rtk.theme.default_font
     rtk.Widget.initialize(self, attrs, rtk.Text.attributes.defaults, ...)
     self._font = rtk.Font()
+    -- Calculated in _handle_attr() and used to determine if the number of lines needed
+    -- to render the text changes for reflow optimization purposes
+    self._num_newlines = nil
 end
 
 function rtk.Text:__tostring_info()
@@ -206,13 +209,18 @@ end
 
 
 function rtk.Text:_handle_attr(attr, value, oldval, trigger, reflow, sync)
-    if attr == 'text' and reflow == rtk.Widget.REFLOW_DEFAULT and self.w and not self.calc.wrap then
-        -- We have a fixed with and aren't wrapping.  Provided neither old nor new values
-        -- contain newlines, we can skip the costly full refow.  Technically we could skip
-        -- full reflow if the number of newlines is the same, but this handles the common
-        -- case.
-        if not value:find('\n') and not oldval:find('\n') then
-            reflow = rtk.Widget.REFLOW_PARTIAL
+    if attr == 'text' and reflow == rtk.Widget.REFLOW_DEFAULT and not self.calc.wrap then
+        -- Do we have a fixed width, either because our 'w' attribute explicitly defined
+        -- or because we are filling our parent's box width?
+        if self.w or (self.box and self.box[5]) then
+            -- If the number of newlines hasn't changed then we know our height won't
+            -- change since wrapping is disabled, and we already know our width is
+            -- fixed, in which case we can do a partial reflow instead.
+            local c = value:count('\n')
+            if c == self._num_newlines then
+                reflow = rtk.Widget.REFLOW_PARTIAL
+            end
+            self._num_newlines = c
         end
     end
     local ok = rtk.Widget._handle_attr(self, attr, value, oldval, trigger, reflow, sync)

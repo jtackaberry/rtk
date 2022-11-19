@@ -536,6 +536,26 @@ function string.hash(s)
     return hash & 0x7fffffffffffffff
 end
 
+--- Returns the number of occurrences of a substring.
+--
+-- @example
+--   local s = 'Foo\nbar\nbaz'
+--   local num_lf = s:count('\n')
+--
+-- @tparam string s the string to search within
+-- @tparam string sub the substring to count
+-- @treturn number the number of occurrences of `sub` in `s`
+function string.count(s, sub)
+    -- This is the most efficient implementation I could come up with.  It's about
+    -- 2x faster than using gsub().
+    local c = -1
+    local idx = 0
+    while idx do
+        _, idx = s:find(sub, idx + 1)
+        c = c + 1
+    end
+    return c
+end
 
 local function val_to_str(v, seen)
     if "string" == type(v) then

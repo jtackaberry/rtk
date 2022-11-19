@@ -138,7 +138,10 @@ function rtk.Application:initialize(attrs, ...)
         rpadding=10,
         z=110,
     }
-    self.statusbar.text = self.statusbar:add(rtk.Text{color=rtk.theme.text_faded, text=""}, {expand=1})
+    -- fillw implies expand but also enables an optimization with rtk.Text where as long
+    -- as the newline count doesn't change in the status text, we can use a more efficient
+    -- partial reflow.
+    self.statusbar.text = self.statusbar:add(rtk.Text{color=rtk.theme.text_faded, text=""}, {fillw=true})
     rtk.VBox.initialize(self, attrs, self.class.attributes.defaults, ...)
 
     self:add(self.toolbar, {minw=150, bpadding=2})
@@ -156,9 +159,7 @@ function rtk.Application:_handle_attr(attr, value, oldval, trigger, reflow, sync
         return ok
     end
     if attr == 'status' then
-        -- We aren't affecting widget geometry by setting the label, so just force a partial
-        -- reflow.
-        self.statusbar.text:attr('text', value or ' ', nil, rtk.Widget.REFLOW_PARTIAL)
+        self.statusbar.text:attr('text', value or ' ')
     end
     return ok
 end
