@@ -58,7 +58,7 @@ rtk.Viewport.static.SCROLLBAR_NEVER = 0
 -- will be drawn over top as a translucent overlay. This is the default mode.
 -- @meta 'hover'
 rtk.Viewport.static.SCROLLBAR_HOVER = 1
--- Spaces is reserved for the scrollbar only when there is content to be scrolled,
+--- Spaces is reserved for the scrollbar only when there is content to be scrolled,
 -- otherwise the child is allowed to fill the entire viewport size, which ensures the
 -- scrollbar will never be drawn over child content.  As with `SCROLLBAR_HOVER`, the
 -- scrollbar is only made visible when the mouse is moved within the viewport area.
