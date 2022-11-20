@@ -1,6 +1,6 @@
 # Change Log
 
-## 1.3.0 - TBD (not yet released)
+## 1.3.0 - 2022-11-20
 
 #### New Features
 
