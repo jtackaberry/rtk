@@ -261,7 +261,11 @@ rtk.Window.register{
         end,
         calculate=function(self, attr, value, target)
             -- Adjust values by framebuffer scale.  Min/max clamping is done during reflow.
-            return value and value * rtk.scale.framebuffer
+            -- If value is nil then we need to autosize, so just return the current calculated
+            -- value until we have a chance to recompute the autosized value in the next update
+            -- cycle, so as to avoid a nil geometry while potentially being in the middle of
+            -- dispatching an event (#20).
+            return value and value * rtk.scale.framebuffer or target[attr]
         end,
     },
     --- Like `w` but for the window height (default nil).
