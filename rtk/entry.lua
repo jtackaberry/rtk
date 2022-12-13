@@ -579,10 +579,17 @@ function rtk.Entry:_edit(insert, delete_selection, dela, delb, caret)
     end
     if value ~= calc.value then
         caret = rtk.clamp(caret, 1, #value + 1)
-        self:sync('value', value)
+        -- The caret attribute's calculate function clamps the caret range to the current
+        -- calculated value, not our new value.  So if we sync caret before value here, we
+        -- could end up clamping to the wrong place. But syncing value first will normally
+        -- emit onchange() before the caret is updated, which we don't want either (#19).
+        -- The solution below sets value first but disables the event trigger, which we'll
+        -- fire ourselves directly.
+        self:sync('value', value, nil, false)
         if caret ~= calc.caret then
             self:sync('caret', caret)
         end
+        self:_handle_change()
         self._dirty_view = true
     end
 end
