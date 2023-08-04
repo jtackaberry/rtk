@@ -2325,8 +2325,7 @@ end
 -- the bottom of the screen, while on other platforms it's the top of the screen.
 --
 -- This method returns a normalized version of the `y` attribute so that it's always
--- relative to the top of the screen, regardless of platform. screen, regardless of the
--- platform.
+-- relative to the top of the screen, regardless of platform.
 --
 -- @treturn number|nil the normalized `y` coordinate
 function rtk.Window:get_normalized_y()
