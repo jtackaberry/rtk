@@ -261,12 +261,24 @@ function rtk.Shadow:_draw_rectangle(x, y, alpha)
         self._image:popdest()
         self._needs_draw = false
     end
+    -- Shadow edge segments look like this:
+    --    +--------------------------+
+    --    |       top edge    |      |
+    --    |------+------------+      |
+    --    |      |            |      |
+    --    | left |   inner    | rght |
+    --    | edge |    box     | edge |
+    --    |      |            |      |
+    --    |------+------------+      |
+    --    |    bottom edge    |      |
+    --    +-------------------+------+
     if tr > 0 then
         -- Right edge
         self._image:blit{
             sx=pad + tl + self.w,
             sw=tr + pad,
-            sh=h,
+            -- Right edge has no height scaling, we blit the full height
+            sh=nil,
             dx=x + self.w,
             dy=y - tt - pad,
             alpha=alpha
