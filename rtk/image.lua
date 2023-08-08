@@ -786,6 +786,7 @@ end
 function rtk.Image:blur(strength, x, y, w, h)
     if not self.w then
         -- No image to blur, no-op
+        return self
     end
     self:pushdest()
     gfx.mode = 6
