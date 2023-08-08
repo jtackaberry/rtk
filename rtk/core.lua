@@ -1204,7 +1204,7 @@ end
 --- Pops the last image destination off the stack.
 --
 -- When the stack is empty, the `rtk.Window` will be the target for drawing.
-function rtk.popdest(expect)
+function rtk.popdest()
     gfx.dest = table.remove(rtk._dest_stack, #rtk._dest_stack)
 end
 

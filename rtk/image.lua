@@ -439,7 +439,7 @@ end
 -- was called will be restored as the current drawing target.
 function rtk.Image:popdest()
     assert(gfx.dest == self.id, 'rtk.Image.popdest() called on image that is not the current drawing target')
-    rtk.popdest(self.id)
+    rtk.popdest()
 end
 
 --- Clones the current image contents into a new rtk.Image object with a new image buffer.
