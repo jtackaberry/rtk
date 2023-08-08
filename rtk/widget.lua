@@ -1188,17 +1188,22 @@ end
 
 function rtk.Widget:_get_debug_color()
     if not self.debug_color then
-        -- Generate a debug color based on the widget id
-        local function hashint(i, seed)
-            math.randomseed(i * (seed*53))
-            return math.random(40, 235) / 255.0
+        -- Generate a debug color based on the widget id using a simple xorshift PRNG.
+        local x = self.id:hash() * 100
+        x = x ~ (x << 13)
+        x = x ~ (x >> 7)
+        x = x ~ (x << 17)
+        -- Take it as a packed 24-bit RGB value
+        local color = table.pack(rtk.color.rgba(x % 16777216))
+        -- To make sure it's relatively visible for both dark and light themes, adjust
+        -- luma if it's below 0.2 or above 0.8.
+        local luma = rtk.color.luma(color)
+        if luma < 0.2 then
+            color = table.pack(rtk.color.mod(color, 1, 1, 2.5))
+        elseif luma > 0.8 then
+            color = table.pack(rtk.color.mod(color, 1, 1, 0.75))
         end
-        local id = self.id:hash()
-        self.debug_color = {
-            hashint(id, 1),
-            hashint(id, 2),
-            hashint(id, 3),
-        }
+        self.debug_color = color
     end
     return self.debug_color
 end
