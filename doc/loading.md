@@ -81,7 +81,7 @@ local function init(attempts)
     ok, rtk = pcall(function() return require('rtk') end)
     if ok then
         -- Import worked. We can invoke the main function.
-        return main()
+        return rtk.call(main)
     end
     local installmsg = 'Visit https://reapertoolkit.dev for installation instructions.'
     if not attempts then
