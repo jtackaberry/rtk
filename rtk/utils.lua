@@ -557,6 +557,10 @@ function string.count(s, sub)
     return c
 end
 
+-- _table_tostring() and val_to_str() have recursive dependencies.  Declare
+-- _table_tostring now, which will get properly defined after val_to_str()
+local _table_tostring = nil
+
 local function val_to_str(v, seen)
     if "string" == type(v) then
         v = string.gsub(v, "\n", "\\n")
@@ -566,11 +570,11 @@ local function val_to_str(v, seen)
         return '"' .. string.gsub(v, '"', '\\"') .. '"'
     else
         if type(v) == 'table' and not v.__tostring then
-            return seen[tostring(v)] and '<recursed>' or table.tostring(v, seen)
+            return seen[tostring(v)] and '<recursed>' or _table_tostring(v, seen)
         else
             return tostring(v)
         end
-        return "table" == type(v) and table.tostring(v, seen) or tostring(v)
+        return "table" == type(v) and _table_tostring(v, seen) or tostring(v)
     end
 end
 
@@ -582,7 +586,7 @@ local function key_to_str(k, seen)
     end
 end
 
-local function _table_tostring(tbl, seen)
+_table_tostring = function(tbl, seen)
     local result, done = {}, {}
     seen = seen or {}
     local id = tostring(tbl)
