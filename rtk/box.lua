@@ -52,7 +52,7 @@ local log = require('rtk.log')
 -- @code
 --  local box = window:add(rtk.HBox())
 --  -- Creates a 3-column layout.  fillh=true is needed for this simple example to ensure
---  -- the Spacer widgets fill the height of the box.  (stretch=true would also work for
+--  -- the Spacer widgets fill the height of the box.  (stretch='full' would also work for
 --  -- this demonstration, although it is subtly different.)
 --  box:add(rtk.Spacer(), {expand=1, fillh=true, bg='cornflowerblue'})
 --  box:add(rtk.Spacer(), {expand=1, fillh=true, bg='royalblue'})
@@ -136,7 +136,7 @@ rtk.Box.static.FLEXSPACE = {}
 -- @section stretchconst
 -- @compact
 
---- No stretching is done, the cell is based on the widget's desired size
+--- No stretching is done, the cell is based on the widget's intrinsic size
 -- @meta 'none'
 rtk.Box.static.STRETCH_NONE = 0
 
@@ -166,13 +166,13 @@ rtk.Box.register{
     -- (default nil).
     --
     -- If not defined (or `expand` is 0), which is default, then the cell will
-    -- "shrinkwrap" to the child's desired size in the box direction.  By setting
+    -- "shrinkwrap" to the child's intrinsic size in the box direction.  By setting
     -- `expand` to a value greater than 0, the cell will be sized according its ratio of
     -- expand units relative to all other expanded siblings, minus any space needed for
     -- non-expanded children.
     --
     -- For example, if only one child in the box has `expand=1` then space for all
-    -- other cells will first be reserved to fit their (non-expanded) children's desired
+    -- other cells will first be reserved to fit their (non-expanded) children's intrinsic
     -- size, and then all remaining space in the container will be given to the expanded
     -- cell.
     --
