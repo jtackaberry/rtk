@@ -789,14 +789,14 @@ function rtk.Window:_get_geometry_from_attrs(overrides)
     local calc = self.calc
     local x = self.x
     local y = self.y
-    -- If x or y is nil, then we assume center alignment on the primary display.
+    -- If x or y is nil, then default to center positioning on the primary display display
     if not x then
         x = 0
-        overrides.halign = rtk.Widget.CENTER
+        overrides.halign = overrides.halign or rtk.Widget.CENTER
     end
     if not y then
         y = 0
-        overrides.valign = rtk.Widget.CENTER
+        overrides.valign = overrides.valign or rtk.Widget.CENTER
     end
     -- Use calculated values here (rather than self.w/h) to ensure we respect minw/minh
     -- clamping done by those attrs' calculate funcitons.
