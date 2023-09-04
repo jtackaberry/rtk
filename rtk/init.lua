@@ -96,6 +96,15 @@ local function init()
     rtk.set_theme_by_bgcolor(rtk.color.get_reaper_theme_bg() or '#262626')
     -- Flag to indicate this theme was not set by explicit user call to rtk.set_theme()
     rtk.theme.default = true
+
+    -- Ensure we invoke the window's onclose event and flush any pending logs to the
+    -- console before final shutdown.
+    reaper.atexit(function()
+        if rtk.window and rtk.window.running then
+            rtk.window:close()
+        end
+        rtk.log.flush()
+    end)
 end
 
 init()
