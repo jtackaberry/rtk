@@ -2530,6 +2530,7 @@ end
 --   must not exceed.  The clientx value should also be adjusted if necessary to
 --   ensure the tooltip doesn't exceed the width.
 -- @tparam number clienth like clientw except for height
+-- @tparam string tooltip the text of the tooltip to draw
 function rtk.Widget:_draw_tooltip(clientx, clienty, clientw, clienth, tooltip)
     tooltip = tooltip or self.calc.tooltip
     -- This is undoubtedly very inefficient, allocating a new font and doing the layout
