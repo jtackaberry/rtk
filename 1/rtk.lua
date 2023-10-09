@@ -1,7 +1,7 @@
 -- This is generated code. See https://reapertoolkit.dev/ for more info.
--- version: 1.3.0
--- build: Sun Nov 20 21:44:10 UTC 2022
-__RTK_VERSION='1.3.0'
+-- version: 1.4.0
+-- build: Mon Oct  9 17:45:25 UTC 2023
+__RTK_VERSION='1.4.0'
 rtk=(function()
 __mod_rtk_core=(function()
 __mod_rtk_log=(function()
@@ -199,7 +199,7 @@ end
 function rtk.pushdest(dest)rtk._dest_stack[#rtk._dest_stack+1]=gfx.dest
 gfx.dest=dest
 end
-function rtk.popdest(expect)gfx.dest=table.remove(rtk._dest_stack,#rtk._dest_stack)end
+function rtk.popdest()gfx.dest=table.remove(rtk._dest_stack,#rtk._dest_stack)end
 local function _handle_error(err)rtk._last_error=err
 rtk._last_traceback=debug.traceback()end
 function rtk.onerror(err,traceback)log.error("fatal: %s\n%s", err, traceback)log.flush()error(err)end
@@ -578,21 +578,22 @@ _,idx=s:find(sub,idx+1)c=c+1
 end
 return c
 end
+local _table_tostring=nil
 local function val_to_str(v,seen)if "string" == type(v) then
 v=string.gsub(v, "\n", "\\n")if string.match(string.gsub(v,"[^'\"]",""), '^"+$') then
 return "'" .. v .. "'"end
 return '"' .. string.gsub(v, '"', '\\"') .. '"'else
 if type(v)=='table' and not v.__tostring then
-return seen[tostring(v)] and '<recursed>' or table.tostring(v, seen)else
+return seen[tostring(v)] and '<recursed>' or _table_tostring(v, seen)else
 return tostring(v)end
-return "table" == type(v) and table.tostring(v, seen) or tostring(v)end
+return "table" == type(v) and _table_tostring(v, seen) or tostring(v)end
 end
 local function key_to_str(k,seen)if "string" == type(k) and string.match(k, "^[_%a][_%a%d]*$") then
 return k
 else
 return "[" .. val_to_str(k, seen) .. "]"end
 end
-local function _table_tostring(tbl,seen)local result,done={},{}seen=seen or {}local id=tostring(tbl)seen[id]=1
+_table_tostring=function(tbl,seen)local result,done={},{}seen=seen or {}local id=tostring(tbl)seen[id]=1
 for k,v in ipairs(tbl)do
 table.insert(result,val_to_str(v,seen))done[k]=true
 end
@@ -1360,7 +1361,7 @@ self.id=nil
 end
 end
 function rtk.Image:pushdest()assert(self.id, 'create() or load() must be called first')rtk.pushdest(self.id)end
-function rtk.Image:popdest()assert(gfx.dest==self.id, 'rtk.Image.popdest() called on image that is not the current drawing target')rtk.popdest(self.id)end
+function rtk.Image:popdest()assert(gfx.dest==self.id, 'rtk.Image.popdest() called on image that is not the current drawing target')rtk.popdest()end
 function rtk.Image:clone()local newimg=rtk.Image(self.w,self.h)if self.id then
 newimg:blit{src=self,sx=self.x,sy=self.y}end
 newimg.density=self.density
@@ -1439,6 +1440,7 @@ end
 function rtk.Image:rect(color,x,y,w,h,fill)self:pushdest()rtk.color.set(color)gfx.rect(x,y,w,h,fill)self:popdest()return self
 end
 function rtk.Image:blur(strength,x,y,w,h)if not self.w then
+return self
 end
 self:pushdest()gfx.mode=6
 x=x or 0
@@ -1748,7 +1750,7 @@ rtk.gfx.roundrect(pad+i,pad+i,self.w+tl+tr-i*2,self.h+tt+tb-i*2,self.elevation,0
 self._image:popdest()self._needs_draw=false
 end
 if tr>0 then
-self._image:blit{sx=pad+tl+self.w,sw=tr+pad,sh=h,dx=x+self.w,dy=y-tt-pad,alpha=alpha
+self._image:blit{sx=pad+tl+self.w,sw=tr+pad,sh=nil,dx=x+self.w,dy=y-tt-pad,alpha=alpha
 }end
 if tb>0 then
 self._image:blit{sy=pad+tt+self.h,sw=self.w+tl+pad,sh=tb+pad,dx=x-tl-pad,dy=y+self.h,alpha=alpha
@@ -2025,9 +2027,12 @@ return rtk._refs[key]
 end
 end
 function rtk.Widget:_get_debug_color()if not self.debug_color then
-local function hashint(i,seed)math.randomseed(i*(seed*53))return math.random(40,235)/255.0
+local x=self.id:hash()*100
+x=x ~(x<<13)x=x ~(x>>7)x=x ~(x<<17)local color=table.pack(rtk.color.rgba(x%16777216))local luma=rtk.color.luma(color)if luma<0.2 then
+color=table.pack(rtk.color.mod(color,1,1,2.5))elseif luma>0.8 then
+color=table.pack(rtk.color.mod(color,1,1,0.75))end
+self.debug_color=color
 end
-local id=self.id:hash()self.debug_color={hashint(id,1),hashint(id,2),hashint(id,3),}end
 return self.debug_color
 end
 function rtk.Widget:_draw_debug_box(offx,offy,event)local calc=self.calc
@@ -3429,7 +3434,7 @@ end
 end
 icon:popdest()rtk.Window.static._icon_resize_grip=icon
 end
-rtk.Window.register{x=rtk.Attribute{type='number',default=rtk.Attribute.NIL,reflow=rtk.Widget.REFLOW_NONE,redraw=false,window_sync=true,},y=rtk.Attribute{type='number',default=rtk.Attribute.NIL,reflow=rtk.Widget.REFLOW_NONE,redraw=false,window_sync=true,},w=rtk.Attribute{priority=true,type='number',window_sync=true,reflow_uses_exterior_value=true,animate=function(self,anim)return rtk.Widget.attributes.w.animate(self,anim,rtk.scale.framebuffer)end,calculate=function(self,attr,value,target)return value and value*rtk.scale.framebuffer
+rtk.Window.register{x=rtk.Attribute{type='number',default=rtk.Attribute.NIL,reflow=rtk.Widget.REFLOW_NONE,redraw=false,window_sync=true,},y=rtk.Attribute{type='number',default=rtk.Attribute.NIL,reflow=rtk.Widget.REFLOW_NONE,redraw=false,window_sync=true,},w=rtk.Attribute{priority=true,type='number',window_sync=true,reflow_uses_exterior_value=true,animate=function(self,anim)return rtk.Widget.attributes.w.animate(self,anim,rtk.scale.framebuffer)end,calculate=function(self,attr,value,target)return value and value*rtk.scale.framebuffer or target[attr]
 end,},h=rtk.Attribute{priority=true,type='number',window_sync=true,reflow_uses_exterior_value=true,animate=rtk.Reference('w'),calculate=rtk.Reference('w'),},minw=rtk.Attribute{default=100,window_sync=true,reflow_uses_exterior_value=true,},minh=rtk.Attribute{default=30,window_sync=true,reflow_uses_exterior_value=true,},maxw=rtk.Attribute{window_sync=true,reflow_uses_exterior_value=true,},maxh=rtk.Attribute{window_sync=true,reflow_uses_exterior_value=true,},visible=rtk.Attribute{window_sync=true,},docked=rtk.Attribute{default=false,window_sync=true,reflow=rtk.Widget.REFLOW_NONE,},dock=rtk.Attribute{default=rtk.Window.DOCK_RIGHT,calculate={bottom=rtk.Window.DOCK_BOTTOM,left=rtk.Window.DOCK_LEFT,top=rtk.Window.DOCK_TOP,right=rtk.Window.DOCK_RIGHT,floating=rtk.Window.DOCK_FLOATING
 },window_sync=true,reflow=rtk.Widget.REFLOW_NONE,},pinned=rtk.Attribute{default=false,window_sync=true,calculate=function(self,attr,value,target)return rtk.has_js_reascript_api and value
 end,},borderless=rtk.Attribute{default=false,window_sync=true,calculate=rtk.Reference('pinned')},title=rtk.Attribute{default='REAPER application',reflow=rtk.Widget.REFLOW_NONE,window_sync=true,redraw=false,},opacity=rtk.Attribute{default=1.0,reflow=rtk.Widget.REFLOW_NONE,window_sync=true,redraw=false,},resizable=rtk.Attribute{default=true,reflow=rtk.Widget.REFLOW_NONE,window_sync=true,},hwnd=nil,in_window=false,is_focused=not rtk.has_js_reascript_api and true or false,running=false,cursor=rtk.mouse.cursors.POINTER,scalability=rtk.Widget.BOX,}function rtk.Window:initialize(attrs,...)rtk.Container.initialize(self,attrs,self.class.attributes.defaults,...)rtk.window=self
@@ -3536,11 +3541,11 @@ local x=self.x
 local y=self.y
 if not x then
 x=0
-overrides.halign=rtk.Widget.CENTER
+overrides.halign=overrides.halign or rtk.Widget.CENTER
 end
 if not y then
 y=0
-overrides.valign=rtk.Widget.CENTER
+overrides.valign=overrides.valign or rtk.Widget.CENTER
 end
 local w=rtk.isrel(self.w)and(self.w*sw)or(calc.w/scale)local h=rtk.isrel(self.h)and(self.h*sh)or(calc.h/scale)w=rtk.clamp(w,minw and minw/scale,maxw and maxw/scale)h=rtk.clamp(h,minh and minh/scale,maxh and maxh/scale)if sw and sh then
 if overrides.halign==rtk.Widget.LEFT then
@@ -4105,7 +4110,7 @@ self._last_mousemove_time=nil
 end
 event.time=now
 if not suppress then
-rtk.Container._handle_event(self,0,0,event,false,rtk._modal==nil)end
+self:_handle_event(0,0,event,false,rtk._modal==nil)end
 assert(event.type~=rtk.Event.MOUSEDOWN or event.button~=0)if event.type==rtk.Event.MOUSEUP then
 self._last_mouseup_time=event.time
 rtk._drag_candidates=nil
@@ -5034,9 +5039,9 @@ dela=rtk.clamp(dela,1,#value)delb=rtk.clamp(delb,1,#value+1)value=value:sub(1,de
 if insert then
 self._dirty_positions=math.min(caret-1,self._dirty_positions or math.inf)value=value:sub(0,caret-1)..insert..value:sub(caret)caret=caret+insert:len()end
 if value~=calc.value then
-caret=rtk.clamp(caret,1,#value+1)self:sync('value', value)if caret~=calc.caret then
+caret=rtk.clamp(caret,1,#value+1)self:sync('value', value, nil, false)if caret~=calc.caret then
 self:sync('caret', caret)end
-self._dirty_view=true
+self:_handle_change()self._dirty_view=true
 end
 end
 function rtk.Entry:delete_range(a,b)self:push_undo()self:_edit(nil,nil,a,b)end
@@ -6081,7 +6086,9 @@ elseif rtk.os.linux then
 rtk.font.multiplier=0.7
 end
 rtk.set_theme_by_bgcolor(rtk.color.get_reaper_theme_bg() or '#262626')rtk.theme.default=true
-end
+reaper.atexit(function()if rtk.window and rtk.window.running then
+rtk.window:close()end
+rtk.log.flush()end)end
 init()return rtk
 end)()
 return rtk
