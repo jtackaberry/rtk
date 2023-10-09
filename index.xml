@@ -2,6 +2,31 @@
 <index version="1" name="rtk" desc="REAPER Toolkit (rtk)">
   <category name="Development">
     <reapack name="rtk" desc="REAPER Toolkit (rtk)" type="script">
+      <version name="1.4.0" author="Jason Tackaberry" time="2023-10-09T17:47:24Z">
+        <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20231009T174723/1/rtk.lua</source>
+        <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
+
+# 1.4.0 - 2023-10-09
+
+## Minor Enhancements
+
+* Improved logic for generating debug box overlay colors when setting `rtk.debug` to true. Previously `math.random()` was used with a fixed seed, which significantly weakened random number generation for other uses.
+* The `rtk.Window.onclose()` event handler is now invoked on all script exit conditions if the window is open
+* Minor documentation improvements
+
+
+## Bug Fixes
+
+* Fixed a crash caused by setting `rtk.Window.w` or `rtk.Window.h` attributes to nil (which denotes autosizing) within an event handler ([#20](https://github.com/jtackaberry/rtk/issues/20))
+* Fixed a crash when calling `rtk.Image:blur()` before the image has been loaded
+* Fixed stack overflow caused by passing a recursive table (i.e. a table which contains either a direct or indirect value of itself) to `table.tostring()`
+* Fixed `halign` / `valign` parameters for `rtk.Window:open()` sometimes not being respected
+* Ensured `rtk.Entry.caret` reflects the correct position before firing `rtk.Entry.onchange` ([#19](https://github.com/jtackaberry/rtk/issues/19))
+
+
+For a complete historical change log, visit https://reapertoolkit.dev/changelog
+]]></changelog>
+      </version>
       <version name="1.3.0" author="Jason Tackaberry" time="2022-11-20T21:44:24Z">
         <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20221120T214423/1/rtk.lua</source>
         <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
@@ -162,18 +187,6 @@ For a complete historical change log, visit https://reapertoolkit.dev/changelog
 * Fixed widgets not properly respecting changes to rtk.font.multiplier on reflow
 * Fixed window height clamping on Windows and Linux when rtk.Window:open() is called with constrain option
 * When setting the rtk.Window.w or rtk.Window.h attribute, fixed a bug where the other dimension would end up being halved on MacOS systems with Retina displays
-
-
-For a complete historical change log, visit https://reapertoolkit.dev/changelog
-]]></changelog>
-      </version>
-      <version name="1.0.0" author="Jason Tackaberry" time="2022-02-19T01:56:03Z">
-        <source file="../1/rtk.lua" type="script" main="nomain">https://raw.githubusercontent.com/jtackaberry/rtk/release/20220219T015602/1/rtk.lua</source>
-        <changelog><![CDATA[This REAPER Toolkit bundle includes the following major API versions:
-
-# 1.0.0
-
-Initial release marking API stability.
 
 
 For a complete historical change log, visit https://reapertoolkit.dev/changelog
