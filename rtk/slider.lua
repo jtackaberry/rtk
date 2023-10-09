@@ -1,4 +1,4 @@
--- Copyright 2022 Jason Tackaberry
+-- Copyright 2022-2023 Jason Tackaberry
 --
 -- Licensed under the Apache License, Version 2.0 (the "License");
 -- you may not use this file except in compliance with the License.
@@ -76,8 +76,6 @@ local log = require('rtk.log')
 --
 -- ![](../img/slider-range.gif)
 --
---
--- @section greedy
 --
 -- @note Intrinsic size is greedy
 --   Unlike most widgets whose @{geometry|intrinsic size} is based on some aspect of
