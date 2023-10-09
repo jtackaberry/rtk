@@ -2182,7 +2182,7 @@ function rtk.Window:_handle_window_event(event, now, suppress)
     -- If suppress is true, it means we don't want to propagate the event to children, but
     -- do want to execute the logic below, e.g. for drag and drop.
     if not suppress then
-        rtk.Container._handle_event(self, 0, 0, event, false, rtk._modal == nil)
+        self:_handle_event(0, 0, event, false, rtk._modal == nil)
     end
 
     -- log.info('handle window: %s %s', self.title, event)
